@@ -59,7 +59,7 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(shake).toBeHidden()
   await expect(eaten).toHaveText('570')
   await expect(macros).toContainText('Protein70 g')
-  await expect(logged).toContainText('2 × 1 serving · 320 kcal')
+  await expect(logged.getByRole('button', { name: /E2E Shake/ })).toContainText('320 kcal2 × 1 serving')
 
   // Delete → Undo restores.
   await logged.getByRole('button', { name: /E2E Bar/ }).click()
@@ -144,11 +144,11 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await expect(calBar).toHaveAttribute('aria-valuetext', '160 of 300 kcal')
   // Protein 30 > 25 → over; carbs/fat under.
   await expect(macros.locator('.macro.over')).toHaveCount(1)
-  await expect(macros).toContainText('Protein30 g / 25 g (over)')
-  await expect(macros).toContainText('Carbs5 g / 40 g')
+  await expect(macros).toContainText('Protein5 g over 25 g')
+  await expect(macros).toContainText('Carbs35 g left of 40 g')
   const protein = page.getByRole('progressbar', { name: 'Protein' })
   await expect(protein).toHaveAttribute('aria-valuenow', '25')
-  await expect(protein).toHaveAttribute('aria-valuetext', '30 g / 25 g')
+  await expect(protein).toHaveAttribute('aria-valuetext', '30 g eaten of 25 g')
   await expect(page.getByRole('progressbar', { name: 'Fat' })).toHaveAttribute('aria-valuenow', '2')
 
   // 2 servings → 320 kcal, 20 over; bar clamps at the target.

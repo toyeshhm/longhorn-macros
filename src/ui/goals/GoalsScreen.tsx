@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { localDateKey } from '../../dates'
 import type { ProfileRow } from '../../db/types'
 import {
@@ -7,6 +7,7 @@ import {
 } from '../../goals'
 import { log } from '../../log'
 import { supabase } from '../../supabase/client'
+import type { Tab } from '../components/TabBar'
 import { useApp } from '../context'
 import { useLatestWeight, useProfile } from '../hooks'
 import { Chips } from '../menu/MenuScreen'
@@ -48,15 +49,38 @@ function errorKey(message: string): ErrorKey {
   return TARGET_FIELDS.find((f) => f.key === override)?.key ?? 'form'
 }
 
-export function GoalsScreen() {
+type Saved = 'first' | 'again' | null
+
+export function GoalsScreen({ onGo }: { onGo: (tab: Tab) => void }) {
+  const { userId } = useApp()
   const profile = useProfile()
   const weight = useLatestWeight()
+  // Lives outside the keyed form: the first save flips the key and remounts it, and the live region must persist.
+  const [saved, setSaved] = useState<Saved>(null)
   if (profile === undefined || weight === undefined) return <p class="loading">Loading…</p>
-  return <GoalsForm key={profile === null ? 'new' : 'existing'} profile={profile} latestWeightLb={weight?.weightLb ?? null} />
+  return (
+    <div class="goals">
+      <GoalsForm key={profile === null ? 'new' : 'existing'} profile={profile} latestWeightLb={weight?.weightLb ?? null}
+        onSaved={setSaved} onEdit={() => { setSaved(null) }} />
+      <div class="save-status">
+        <p role="status" class="muted">{saved === 'first' ? 'Targets set.' : saved === 'again' ? 'Saved' : ''}</p>
+        {saved === 'first' && <button type="button" class="link" onClick={() => { onGo('Menu') }}>Log a meal</button>}
+      </div>
+      <button type="button" class="logout" onClick={() => {
+        supabase.auth.signOut().then(
+          ({ error }) => { if (error) log.warn('auth.sign_out_failed', { userId, reason: error.message }) },
+          (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },
+        )
+      }}>Log out</button>
+    </div>
+  )
 }
 
-function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; latestWeightLb: number | null }) {
+function GoalsForm({ profile, latestWeightLb, onSaved, onEdit }: {
+  profile: ProfileRow | null; latestWeightLb: number | null; onSaved: (s: Saved) => void; onEdit: () => void
+}) {
   const { store, userId } = useApp()
+  const formRef = useRef<HTMLFormElement>(null)
   const firstRun = profile === null
   const [sex, setSex] = useState<Sex>(profile?.sex ?? 'male')
   const [birthYear, setBirthYear] = useState(profile ? String(profile.birthYear) : '')
@@ -73,8 +97,10 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
   })
   const [adaptiveEnabled, setAdaptiveEnabled] = useState(profile?.adaptiveEnabled ?? true)
   const [errors, setErrors] = useState<Partial<Record<ErrorKey, string>>>({})
-  const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+
+  // After a failed save, focus the first invalid field so its message is announced and on screen.
+  useEffect(() => { formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus() }, [errors])
 
   const override: Partial<Targets> = {}
   for (const { key } of TARGET_FIELDS) if (overrides[key].trim() !== '') override[key] = num(overrides[key])
@@ -96,7 +122,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
   const save = async (): Promise<void> => {
     const found = validate()
     setErrors(found)
-    setStatus(null)
+    onEdit()
     if (Object.keys(found).length > 0) return
     setBusy(true)
     try {
@@ -111,7 +137,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
         ...draft, id: userId, updatedAt: '', deletedAt: null,
         tdeeEstimate: current?.tdeeEstimate ?? null, tdeeUpdatedOn: current?.tdeeUpdatedOn ?? null, tdeePrevious: current?.tdeePrevious ?? null,
       })
-      setStatus('Saved')
+      onSaved(firstRun ? 'first' : 'again')
     } catch (e) {
       log.error('ui.profile_put_failed', { error: String(e) })
       setErrors({ form: `Couldn't save: ${String(e)}` })
@@ -126,11 +152,33 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
   const describedBy = (k: ErrorKey): string | undefined => (errors[k] === undefined ? undefined : `goals-err-${k}`)
   const year = new Date().getFullYear()
   const live = weightOk && validateProfile(draft).length === 0 ? { weightLb, targets: computeTargets(draft, weightLb, year) } : null
+  const computed = live ? computeTargets({ ...draft, override: null }, live.weightLb, year) : null
+
+  const panel = live ? (
+    <section class="goal-panel" aria-labelledby="targets-title">
+      <h2 id="targets-title">Your targets</h2>
+      <dl class="targets">
+        <div><dt>Calories</dt><dd>{live.targets.calories} <small>kcal</small></dd></div>
+        <div><dt>Protein</dt><dd>{live.targets.protein} <small>g</small></dd></div>
+        <div><dt>Carbs</dt><dd>{live.targets.carbs} <small>g</small></dd></div>
+        <div><dt>Fat</dt><dd>{live.targets.fat} <small>g</small></dd></div>
+      </dl>
+      <dl class="basis">
+        <dt>Resting burn (BMR)</dt><dd>{Math.round(bmr(draft, live.weightLb, year))} kcal</dd>
+        <dt>Daily burn with activity</dt><dd>{Math.round(formulaTdee(draft, live.weightLb, year))} kcal</dd>
+        <dt>Maintenance used</dt>
+        <dd>{Math.round(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
+      </dl>
+    </section>
+  ) : (
+    <p class="notice">Fill in your profile{firstRun ? ' and current weight' : ''} to see your targets.</p>
+  )
 
   return (
-    <div class="goals">
+    <>
       {firstRun && <p class="notice">Set up your profile and first weigh-in to get daily targets.</p>}
-      <form class="goals-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
+      {!firstRun && panel}
+      <form ref={formRef} class="goals-form" noValidate onInput={onEdit} onSubmit={(ev) => { ev.preventDefault(); void save() }}>
         <h2>About you</h2>
         <Chips legend="Sex" name="sex" options={SEX_OPTIONS} value={sex} onSelect={setSex} />
         <label class="field">
@@ -179,7 +227,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
         }} />
         <label class="field">
           Pace
-          <select value={String(rate)} aria-describedby={describedBy('rate')} onChange={(ev) => { setRate(Number(ev.currentTarget.value)) }}>
+          <select value={String(rate)} aria-invalid={errors.rate !== undefined} aria-describedby={describedBy('rate')} onChange={(ev) => { setRate(Number(ev.currentTarget.value)) }}>
             {RATE_OPTIONS[goal].map((r) => <option key={r} value={String(r)}>{paceLabel(goal, r)}</option>)}
           </select>
         </label>
@@ -194,10 +242,11 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
                 <label class="field">
                   {label}
                   <input type="number" inputMode="decimal" min={0} max={10000} step="any" value={overrides[key]}
-                    placeholder={live ? String(computeTargets({ ...draft, override: null }, live.weightLb, year)[key]) : ''}
-                    aria-invalid={errors[key] !== undefined} aria-describedby={describedBy(key)}
+                    aria-invalid={errors[key] !== undefined}
+                    aria-describedby={[describedBy(key), computed ? `goals-hint-${key}` : undefined].filter((id) => id !== undefined).join(' ') || undefined}
                     onInput={(ev) => { const v = ev.currentTarget.value; setOverrides((prev) => ({ ...prev, [key]: v })) }} />
                 </label>
+                {computed && <p id={`goals-hint-${key}`} class="hint">Computed: {computed[key]}</p>}
                 {err(key)}
               </div>
             ))}
@@ -206,40 +255,13 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
         <label class="toggle">
           <input type="checkbox" checked={adaptiveEnabled} onChange={(ev) => { setAdaptiveEnabled(ev.currentTarget.checked) }} />
-          <span>Adaptive TDEE: learn my maintenance from my weight trend</span>
+          <span>Learn my maintenance calories from my weight trend</span>
         </label>
 
         {errors.form !== undefined && <p role="alert" class="error">{errors.form}</p>}
         <button type="submit" class="primary" disabled={busy}>Save goals</button>
-        {status !== null && <p role="status" class="muted">{status}</p>}
       </form>
-
-      {live ? (
-        <section class="goal-panel" aria-labelledby="targets-title">
-          <h2 id="targets-title">Your targets</h2>
-          <dl class="targets">
-            <div><dt>Calories</dt><dd>{live.targets.calories} <small>kcal</small></dd></div>
-            <div><dt>Protein</dt><dd>{live.targets.protein} <small>g</small></dd></div>
-            <div><dt>Fat</dt><dd>{live.targets.fat} <small>g</small></dd></div>
-            <div><dt>Carbs</dt><dd>{live.targets.carbs} <small>g</small></dd></div>
-          </dl>
-          <dl class="basis">
-            <dt>BMR</dt><dd>{Math.round(bmr(draft, live.weightLb, year))} kcal</dd>
-            <dt>Formula TDEE</dt><dd>{Math.round(formulaTdee(draft, live.weightLb, year))} kcal</dd>
-            <dt>Maintenance used</dt>
-            <dd>{Math.round(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
-          </dl>
-        </section>
-      ) : (
-        <p class="notice">Fill in your profile{firstRun ? ' and current weight' : ''} to see your targets.</p>
-      )}
-
-      <button type="button" class="logout" onClick={() => {
-        supabase.auth.signOut().then(
-          ({ error }) => { if (error) log.warn('auth.sign_out_failed', { userId, reason: error.message }) },
-          (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },
-        )
-      }}>Log out</button>
-    </div>
+      {firstRun && panel}
+    </>
   )
 }

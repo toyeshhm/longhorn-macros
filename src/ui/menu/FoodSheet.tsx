@@ -1,6 +1,6 @@
 import { useState } from 'preact/hooks'
 import { localDateKey } from '../../dates'
-import { MEALS, type Meal } from '../../db/types'
+import { MEALS, type LogEntry, type Meal } from '../../db/types'
 import { log } from '../../log'
 import { NUTRIENT_KEYS, round1, scaleNutrients, type Nutrients } from '../../nutrition'
 import type { SearchItem } from '../../search'
@@ -31,7 +31,7 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
   item: SearchItem
   legends: readonly string[]
   onClose: () => void
-  onAdded: (meal: Meal) => void
+  onAdded: (entry: LogEntry) => void
 }) {
   const { store, viewDate } = useApp()
   const [text, setText] = useState('1')
@@ -49,12 +49,13 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
     setBusy(true)
     setError(null)
     try {
-      await store.put('food_log', {
+      const entry: LogEntry = {
         id: crypto.randomUUID(), date: viewDate, meal, hall: item.hall, station: item.station, name: item.name,
         recipeNumber: item.recipeNumber, customFoodId: item.customFoodId, portion: item.portion, servings,
         perServing: item.nutrients, updatedAt: '', deletedAt: null,
-      })
-      onAdded(meal)
+      }
+      await store.put('food_log', entry)
+      onAdded(entry)
     } catch (e) {
       log.error('ui.food_log_put_failed', { error: String(e) })
       setError(`Couldn't save: ${String(e)}`)

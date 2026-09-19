@@ -43,7 +43,9 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(servings).toHaveValue('2')
   await servings.fill('1.5')
   await add.click()
-  await expect(page.getByRole('status').filter({ hasText: /^Added to / })).toBeVisible()
+  const added = page.getByRole('status').filter({ hasText: /^Added to / })
+  await expect(added).toBeVisible()
+  await expect(added.getByRole('button', { name: 'Undo' })).toBeVisible()
   await expect(sheet).toBeHidden()
 
   await tabs.getByRole('button', { name: 'Today' }).click()
@@ -51,8 +53,11 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(logged).toContainText(first.name)
   await expect(logged).toContainText(`${String(Math.round(1.5 * first.nutrients.calories))} kcal`)
 
-  // Search replaces browse.
+  // What was just logged is one tap away above the menu.
   await tabs.getByRole('button', { name: 'Menu' }).click()
+  await expect(page.getByRole('region', { name: 'Logged recently' })).toContainText(first.name)
+
+  // Search replaces browse.
   const search = page.getByRole('searchbox', { name: 'Search foods' })
   await search.fill('a')
   const results = page.getByRole('list', { name: 'Search results' })
@@ -87,8 +92,8 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(logged).toContainText('160 kcal')
 })
 
-// Hall choice survives a reload; day and meal chips pick what's shown (checked against the live feed).
-test('hall is remembered; day and meal chips switch the listing', async ({ page }) => {
+// Hall choice survives a reload; the day and meal pickers choose what's shown (checked against the live feed).
+test('hall is remembered; day and meal pickers switch the listing', async ({ page }) => {
   const menu = await fetchMenu(fetch)
   const day = menu.dates.at(-1)
   if (day === undefined) throw new Error('UT feed has no dates')
@@ -112,18 +117,18 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
   await tabs.getByRole('button', { name: 'Menu' }).click()
   await expect(hall.getByRole('radio', { name: 'JCL' })).toBeChecked()
 
-  const days = page.getByRole('radiogroup', { name: 'Day' }).getByRole('radio')
-  await expect(days).toHaveCount(menu.dates.length)
-  await days.last().check()
-  await expect(days.last()).toBeChecked()
-  const mealChips = page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio')
-  await expect(mealChips).toHaveCount(meals.length)
+  const daySelect = page.getByRole('combobox', { name: 'Day' })
+  await expect(daySelect.getByRole('option')).toHaveCount(menu.dates.length)
+  await daySelect.selectOption(day)
+  await expect(daySelect).toHaveValue(day)
+  const mealSelect = page.getByRole('combobox', { name: 'Meal' })
+  await expect(mealSelect.getByRole('option')).toHaveCount(meals.length)
   const last = meals.at(-1)
   if (last === undefined) {
     await expect(page.getByText('No menu posted for this hall and day.')).toBeVisible()
     return
   }
-  await page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio', { name: last.name, exact: true }).check()
+  await mealSelect.selectOption(last.name)
   const firstItem = groupByStation(last.items)[0]?.items[0]
   await expect(page.locator('section.station button.food-row').first()).toContainText(firstItem?.name ?? '')
 })

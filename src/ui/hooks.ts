@@ -69,9 +69,11 @@ export function useLatestWeight(): WeightEntry | null | undefined {
   }, [])
 }
 
-export function useTargets(): Targets | null {
+// undefined while loading, null when there's no profile or weigh-in yet.
+export function useTargets(): Targets | null | undefined {
   const profile = useProfile()
   const weight = useLatestWeight()
-  if (!profile || !weight) return null
+  if (profile === undefined || weight === undefined) return undefined
+  if (profile === null || weight === null) return null
   return computeTargets(profile, weight.weightLb, new Date().getFullYear())
 }
