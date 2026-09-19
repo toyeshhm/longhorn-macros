@@ -1,1 +1,9 @@
 .superpowers/
+node_modules
+dist
+dev-dist
+coverage
+.env*
+playwright-report
+test-results
+supabase/.temp
