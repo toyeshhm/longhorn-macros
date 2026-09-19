@@ -166,8 +166,12 @@ export function parseFeed(json: unknown): Menu {
   return { cachedAt, dates: dates.map(feedDateToKey), days }
 }
 
-export async function fetchMenu(fetchFn: typeof fetch): Promise<Menu> {
+export async function fetchFeed(fetchFn: typeof fetch): Promise<unknown> {
   const r = await fetchFn(FEED_URL)
   if (!r.ok) throw new Error(`UT menu HTTP ${String(r.status)}`)
-  return parseFeed(await r.json())
+  return r.json()
+}
+
+export async function fetchMenu(fetchFn: typeof fetch): Promise<Menu> {
+  return parseFeed(await fetchFeed(fetchFn))
 }

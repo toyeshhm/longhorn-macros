@@ -104,6 +104,11 @@ export class SyncEngine {
     clearTimeout(this.retry)
   }
 
+  // True after a failed cycle until the next one succeeds (a backoff retry is pending).
+  get retrying(): boolean {
+    return this.attempt > 0
+  }
+
   async pending(): Promise<{ queued: number; failed: number }> {
     const items = await this.store.outbox()
     const failed = items.filter((i) => i.failed !== null).length
