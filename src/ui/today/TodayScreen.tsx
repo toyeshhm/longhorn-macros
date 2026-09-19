@@ -67,10 +67,6 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
       <section class="calories" aria-label="Calories">
         <p class="hero-label">{left === null ? 'calories eaten' : left < 0 ? 'target passed' : 'calories left'}{viewDate === today ? ' today' : ''}</p>
         <p class={`hero-num${left !== null && left < 0 ? ' over' : ''}`}>
-          <svg class="swipe" viewBox="0 0 190 72" preserveAspectRatio="none" aria-hidden="true">
-            <path d="M6.2 12.4C44 9.8 104 9.4 184.6 7.2 186.4 9.6 185 20 184.2 34 183.4 48 185.6 57.4 183 63.6 132 64.8 64 65.2 4.4 68.2 2.4 65.4 4.6 52 4 38.6 3.6 26 2.8 17.6 6.2 12.4Z" />
-            <path class="swipe-streak" d="M5.4 14.2C58 12.4 120 11 184.8 9.6L184 18.4C122 19.8 58 21.6 4.8 23.6Z" />
-          </svg>
           <span class="big" data-ink={n(left === null ? eaten : Math.abs(left))}>{n(left === null ? eaten : Math.abs(left))}</span>
           {left !== null && left < 0 && <span class="over-word"> over</span>}
         </p>

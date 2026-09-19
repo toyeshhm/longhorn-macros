@@ -87,7 +87,7 @@ Under the texture it is still a tool used standing in the J2 line with one thumb
 The theme is light only (`color-scheme: light`). A printed page does not invert; there is no dark mode.
 
 **Key Characteristics:**
-- Two inks plus paper; three extra macro inks used only for protein, carbs and fat.
+- Two inks plus paper; two extra macro inks used only for carbs (teal) and fat (mustard). Protein prints in the blue drum as a solid fill, calories in the orange.
 - Misregistration is the signature: orange plate offset 1.5 to 3px from the blue.
 - Hand-drawn SVG for every mark; no icon library, no stock primitives.
 - Motion is rare: the "line boil" on doodles, the sheet slide, the toast. Reduced motion stops all of them, plus the tab plate fade.
@@ -95,19 +95,19 @@ The theme is light only (`color-scheme: light`). A printed page does not invert;
 
 ## 2. Colors
 
-A two-ink riso palette on warm stock, with three macro inks that only ever mean one nutrient each.
+A two-ink riso palette on warm stock, with two extra macro inks that only ever mean one nutrient each.
 
 ### Primary
-- **Federal Blue** (#2B4C9B): linework, bar outlines' hatch, chart dots, primary buttons, selected chips, toast.
+- **Federal Blue** (#2B4C9B): linework, bar outlines' hatch, chart dots, primary buttons, selected chips, toast. Also the protein ink, always as a solid fill (never as a line), so it stays distinct from blue hatch and type.
 - **Ink** (#1E3470): all body type and hand-drawn strokes (10.6:1 on paper).
 - **Deep Ink** (#0F1A40): food names, eaten amounts, values in tables (15.3:1).
 - **Soft Ink** (#56608A): secondary text: servings/portion, meta rows, units, chart labels (5.5:1 on paper, headroom left for grain).
 
 ### Secondary
-- **Burnt Orange** (#BF5700): the second drum. Highlighter swipe, big-number fill, active-tab plate, primary-button offset plate, link underlines, calorie and protein bars. Always multiplied; never used for body text (4.1:1).
+- **Burnt Orange** (#BF5700): the second drum. Big-number overprint, active-tab plate, primary-button offset plate, link underlines, the calories-eaten bar. Always multiplied; never used for body text (4.1:1).
 
 ### Tertiary (macro inks)
-- **Protein: Burnt Orange** (#BF5700).
+- **Protein: Federal Blue** (#2B4C9B), solid fill. Calories keep the orange.
 - **Carbs: Riso Teal** (#00838A).
 - **Fat: Riso Mustard** (#E0A800), always with a blue hand-drawn outline so it reads on paper.
 
@@ -118,9 +118,9 @@ A two-ink riso palette on warm stock, with three macro inks that only ever mean 
 - **Over** (#9A3412): over-target amounts, errors, invalid fields (6.6:1). Always paired with words ("over", the error message).
 
 ### Named Rules
-**The Macro Ink Rule.** Protein is orange, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
+**The Macro Ink Rule.** Calories are orange, protein blue, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
 
-**The Two Drum Rule.** Anything decorative is blue or orange. The macro inks are data, not decoration.
+**The Two Drum Rule.** Anything decorative is blue or orange. The macro inks are data, not decoration. Blue as protein data is always a solid plate; blue as decoration is always a line or hatch.
 
 ## 3. Typography
 
@@ -132,7 +132,7 @@ Both self-hosted as latin-subset woff2 under `public/fonts/` (OFL, licence files
 **Character:** Bungee is the rubber stamp; Courier Prime is the typewritten copy. Bungee is caps-only, so it is kept to numerals and short headings; units next to a Bungee number are set in Courier (`734 kcal`, not `734 KCAL`).
 
 ### Hierarchy
-- **Display** (Bungee, 4.5rem, 0.95): the calories-left numeral only. Blue 2px outline, orange multiply fill offset (2.5px, -2px), on a hand-drawn orange highlighter swipe at 22% fill so the orange numeral still separates from it. The overprint is a `::before` with empty alt text (`content: attr(data-ink) / ''`) so screen readers hear the number once.
+- **Display** (Bungee, 4.5rem, 0.95): the calories-left numeral only. Blue 2px outline, orange multiply fill offset (2.5px, -2px), straight on the paper (the highlighter swipe behind it was dropped at owner review). The overprint is a `::before` with empty alt text (`content: attr(data-ink) / ''`) so screen readers hear the number once.
 - **Headline** (Bungee, 1.75rem): screen mastheads, with a 2px/1.5px orange text-shadow as the off-register plate.
 - **Title** (Bungee, 0.95 to 1.3rem): date line, station and meal headers, sheet titles, stat values.
 - **Body** (Courier Prime 400, 1rem, 1.45): everything else. Inputs never below 16px.
@@ -163,7 +163,7 @@ Three hand-inked frames of the same doodle, swapped at ~8fps with `step-end` vis
 Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble that moves with the amount; the part still left is hatched in blue. Over target: the fill runs full and dark cross-hatch overprints it, and the text says "over". `role="progressbar"` with value text.
 
 ### Today hero
-Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral on the swipe (plus "over" when over), "**eaten** eaten of **target**" (no unit; the label already says calories), then the full-width calories InkBar. Macro rows below share one subgrid so the three bars align.
+Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral (plus "over" when over), "**eaten** eaten of **target**" (no unit; the label already says calories), then the full-width calories InkBar in orange. Macro rows below share one subgrid so the three bars align.
 
 ### Buttons
 - **Shape:** hand-drawn wobble radius (`255px 12px 225px 10px / 12px 225px 10px 255px`), 1.5px ink border, 44px tall.
@@ -189,7 +189,7 @@ Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per i
 - **Do** check every new text color against paper at 4.5:1 with grain in mind.
 - **Don't** add dark mode or auto-invert.
 - **Don't** use orange for text below 18px bold.
-- **Don't** use a macro ink for anything but its macro, or a macro ink without its name.
+- **Don't** use teal or mustard for anything but their macro, fill anything but protein with solid blue in a data mark, or show a macro ink without its name.
 - **Don't** pull icons from a library or draw marks with perfect primitives.
 - **Don't** add soft shadows, gradients, glass or side-stripe borders.
 - **Don't** animate anything else on a loop; the boil is for doodles only.
