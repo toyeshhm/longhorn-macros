@@ -89,6 +89,27 @@ test('menu items are gathered across all days and halls', () => {
   expect(index.map((i) => i.recipeNumber).sort()).toEqual(['A', 'B'])
 })
 
+test('the same recipeNumber served at two halls on the same day collapses to one deterministic entry', () => {
+  // Confirmed reachable against the real UT FoodPro feed: tests/fixtures/feed-sample.json
+  // (recorded live 2026-09-18) lists recipe "300041" ("Mini Cinnamon Roll") under both
+  // J2 Dining and Kins Dining's breakfast bakery station on the same day — the feed's
+  // recipes_data catalog is keyed globally by recipe number and referenced from multiple
+  // hall/station listings, so this is not a hypothetical edge case.
+  const menu: Menu = {
+    cachedAt: '2026-01-01T00:00:00Z',
+    dates: ['2026-01-01'],
+    days: {
+      '2026-01-01': [
+        { hall: 'J2', meals: [{ name: 'Breakfast', items: [{ recipeNumber: '300041', name: 'Mini Cinnamon Roll', station: 'Bakery', portion: '1 each', nutrients: nutrients(270), legends: [] }] }] },
+        { hall: 'Kins', meals: [{ name: 'Breakfast', items: [{ recipeNumber: '300041', name: 'Mini Cinnamon Roll', station: 'Bakery', portion: '1 each', nutrients: nutrients(270), legends: [] }] }] },
+      ],
+    },
+  }
+  const index = buildIndex({ menu, history: [], customFoods: [] })
+  expect(index).toHaveLength(1)
+  expect(index[0]).toMatchObject({ key: 'r:300041', source: 'menu', hall: 'Kins' })
+})
+
 test('history item with no recipe or custom food dedups on lowercased name + portion', () => {
   const index = buildIndex({
     menu: null,
