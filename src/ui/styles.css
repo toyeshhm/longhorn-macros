@@ -9,6 +9,7 @@
   --error: #b3261e;
   --info-bg: #fff4e8;
   --error-bg: #fdecea;
+  --over: #a1260d;
   --tabbar-h: 56px;
   color-scheme: light dark;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -25,6 +26,7 @@
     --error: #ffb4ab;
     --info-bg: #33241a;
     --error-bg: #3b1d1a;
+    --over: #ff8a70;
   }
 }
 * { box-sizing: border-box; }
@@ -124,3 +126,19 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0 4px;
 .nutrient-grid input { width: 100%; }
 
 .toast { position: fixed; left: 50%; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 12px); transform: translateX(-50%); padding: 10px 16px; border-radius: 8px; background: var(--text); color: var(--bg); }
+
+.date-nav { display: flex; align-items: center; gap: 8px; }
+.date-nav h2 { margin: 0; font-size: 1.1rem; min-width: 8em; text-align: center; }
+.calories p { margin: 12px 0 4px; }
+.calories .big { font-size: 2.5rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.left { color: var(--muted); }
+.over, .macro.over .macro-head { color: var(--over); font-weight: 600; }
+.bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; }
+.bar-fill { height: 100%; background: var(--accent); }
+.bar-fill.over, .macro.over .bar-fill { background: var(--over); }
+.macros { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+.macro-head { display: flex; justify-content: space-between; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.micros { color: var(--muted); font-size: 0.9rem; }
+.meal-group h3 { display: flex; justify-content: space-between; margin: 16px 0 0; font-size: 1rem; }
+button.danger { color: var(--error); border-color: var(--error); }
+.toast button.link { color: inherit; text-decoration: underline; }

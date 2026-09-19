@@ -7,9 +7,10 @@ import { LocalStore } from '../sync/store'
 import { SyncBanner } from './components/Banner'
 import { TabBar, type Tab } from './components/TabBar'
 import { AppContext, useApp } from './context'
-import { useLive, useProfile } from './hooks'
+import { useProfile } from './hooks'
 import { Login } from './Login'
 import { MenuScreen } from './menu/MenuScreen'
+import { TodayScreen } from './today/TodayScreen'
 
 interface Session { store: LocalStore; engine: SyncEngine; userId: string }
 
@@ -83,26 +84,11 @@ function Tabs() {
       <main class="screen">
         <h1>{tab}</h1>
         {tab === 'Menu' && <MenuScreen />}
-        {tab === 'Today' && <TodayPlaceholder />}
+        {tab === 'Today' && <TodayScreen onGo={setTab} />}
         {tab === 'Goals' && <GoalsPlaceholder firstRun={profile === null} />}
       </main>
       <TabBar tab={tab} onSelect={setTab} />
     </>
-  )
-}
-
-// ponytail: stand-in until the Today screen lands (Task 11); lists the viewed day's entries so Menu's Add is visible.
-function TodayPlaceholder() {
-  const { store, viewDate } = useApp()
-  const entries = useLive(() => store.logForDate(viewDate), [viewDate])
-  if (!entries) return null
-  if (entries.length === 0) return <p class="muted">Nothing logged yet.</p>
-  return (
-    <ul aria-label="Logged foods">
-      {entries.map((e) => (
-        <li key={e.id}>{e.name} · {e.meal} · {e.servings} × {e.portion} · {Math.round(e.perServing.calories * e.servings)} kcal</li>
-      ))}
-    </ul>
   )
 }
 

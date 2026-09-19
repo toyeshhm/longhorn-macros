@@ -19,11 +19,11 @@ const NUTRIENT_LABELS: Readonly<Record<keyof Nutrients, { label: string; unit: s
   sodium: { label: 'Sodium', unit: 'mg' },
 }
 
-function isMeal(v: string): v is Meal {
+export function isMeal(v: string): v is Meal {
   return MEALS.some((m) => m === v)
 }
 
-function capitalize(s: string): string {
+export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 

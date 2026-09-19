@@ -47,7 +47,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(sheet).toBeHidden()
 
   await tabs.getByRole('button', { name: 'Today' }).click()
-  const logged = page.getByRole('list', { name: 'Logged foods' })
+  const logged = page.getByRole('region', { name: 'Logged foods' })
   await expect(logged).toContainText(first.name)
   await expect(logged).toContainText(`${String(Math.round(1.5 * first.nutrients.calories))} kcal`)
 
