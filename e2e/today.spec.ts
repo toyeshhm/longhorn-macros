@@ -1,4 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
+import { createClient } from '@supabase/supabase-js'
+import { loadEnv } from 'vite'
 
 async function createCustomFood(page: Page, name: string, values: Record<string, string>): Promise<void> {
   await page.getByRole('button', { name: '+ Custom food' }).click()
@@ -16,7 +18,7 @@ async function addToLunch(page: Page, name: string): Promise<void> {
   await expect(sheet).toBeHidden()
 }
 
-// No profile exists (Goals lands in Task 13), so totals are checked without targets.
+// This test has no profile, so it checks totals without targets. The next test seeds one.
 test('totals, edit servings, delete with undo, date nav, repeat a meal', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
@@ -99,4 +101,63 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(page.getByRole('status').filter({ hasText: 'Added 2 items' })).toBeVisible()
   await expect(eaten).toHaveText('980')
   await expect(logged.getByRole('button', { name: /E2E Bar/ })).toHaveCount(2)
+})
+
+// No Goals UI until Task 13: seed a profile (targets via override) and a weight straight into the real local DB, then sign in so pull brings them down.
+test('targets: left / over text and progressbars', async ({ page }) => {
+  const env = loadEnv('test', process.cwd(), 'VITE_')
+  const url = env.VITE_SUPABASE_URL
+  const key = env.VITE_SUPABASE_ANON_KEY
+  if (!url || !key) throw new Error('run `make db-env` first')
+  const email = `e2e-${crypto.randomUUID()}@example.test`
+  const password = crypto.randomUUID()
+  const client = createClient(url, key, { auth: { persistSession: false } })
+  const { error: signUpError } = await client.auth.signUp({ email, password })
+  expect(signUpError).toBeNull()
+  const now = new Date().toISOString()
+  const { error: profileError } = await client.from('profile').insert({
+    sex: 'male', birth_year: 2006, height_in: 70, activity: 'moderate', goal: 'maintain', rate_lb_per_week: 0,
+    override: { calories: 300, protein: 25, carbs: 40, fat: 10 }, adaptive_enabled: false, updated_at: now,
+  })
+  expect(profileError).toBeNull()
+  const { error: weightError } = await client.from('weights').insert({ id: crypto.randomUUID(), date: '2026-01-15', weight_lb: 170, updated_at: now })
+  expect(weightError).toBeNull()
+
+  await page.goto('/')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  await createCustomFood(page, 'E2E Shake', { 'Calories (kcal)': '160', 'Protein (g)': '30', 'Carbs (g)': '5', 'Fat (g)': '2' })
+  await tabs.getByRole('button', { name: 'Today' }).click()
+
+  const calories = page.getByRole('region', { name: 'Calories' })
+  const macros = page.getByRole('region', { name: 'Macros' })
+  await expect(calories).toContainText('160 kcal eaten of 300')
+  await expect(calories.locator('.left')).toHaveText('140 left')
+  await expect(page.getByRole('button', { name: 'Set up your goals' })).toHaveCount(0)
+  const calBar = page.getByRole('progressbar', { name: 'Calories eaten' })
+  await expect(calBar).toHaveAttribute('aria-valuenow', '160')
+  await expect(calBar).toHaveAttribute('aria-valuemax', '300')
+  await expect(calBar).toHaveAttribute('aria-valuetext', '160 of 300 kcal')
+  // Protein 30 > 25 → over; carbs/fat under.
+  await expect(macros.locator('.macro.over')).toHaveCount(1)
+  await expect(macros).toContainText('Protein30 g / 25 g (over)')
+  await expect(macros).toContainText('Carbs5 g / 40 g')
+  const protein = page.getByRole('progressbar', { name: 'Protein' })
+  await expect(protein).toHaveAttribute('aria-valuenow', '25')
+  await expect(protein).toHaveAttribute('aria-valuetext', '30 g / 25 g')
+  await expect(page.getByRole('progressbar', { name: 'Fat' })).toHaveAttribute('aria-valuenow', '2')
+
+  // 2 servings → 320 kcal, 20 over; bar clamps at the target.
+  await page.getByRole('region', { name: 'Logged foods' }).getByRole('button', { name: /E2E Shake/ }).click()
+  const shake = page.getByRole('dialog', { name: 'E2E Shake' })
+  await shake.getByRole('textbox', { name: 'Servings' }).fill('2')
+  await shake.getByRole('button', { name: 'Save' }).click()
+  await expect(shake).toBeHidden()
+  await expect(calories.locator('p.over')).toHaveText('20 over')
+  await expect(calories.locator('.bar-fill.over')).toHaveCount(1)
+  await expect(calBar).toHaveAttribute('aria-valuenow', '300')
+  await expect(calBar).toHaveAttribute('aria-valuetext', '320 of 300 kcal')
 })
