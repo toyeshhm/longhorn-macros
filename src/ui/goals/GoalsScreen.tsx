@@ -8,6 +8,7 @@ import {
 import { log } from '../../log'
 import { supabase } from '../../supabase/client'
 import { useApp } from '../context'
+import { n } from '../format'
 import { useLatestWeight, useProfile } from '../hooks'
 import { Swatch } from '../icons/Marks'
 import { Chips } from '../menu/MenuScreen'
@@ -217,14 +218,14 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
         <section class="goal-panel" aria-label="Your targets">
           <h2>Your daily targets</h2>
           <dl>
-            <dt>BMR</dt><dd>{Math.round(bmr(draft, live.weightLb, year))} kcal</dd>
-            <dt>Formula TDEE</dt><dd>{Math.round(formulaTdee(draft, live.weightLb, year))} kcal</dd>
+            <dt>BMR</dt><dd>{n(bmr(draft, live.weightLb, year))} kcal</dd>
+            <dt>Formula TDEE</dt><dd>{n(formulaTdee(draft, live.weightLb, year))} kcal</dd>
             <dt>Maintenance used</dt>
-            <dd>{Math.round(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
-            <dt class="target">Calories</dt><dd class="target">{live.targets.calories} kcal</dd>
+            <dd>{n(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
+            <dt class="target">Calories</dt><dd class="target">{n(live.targets.calories)} kcal</dd>
             <dt class="target"><Swatch ink="protein" />Protein</dt><dd class="target">{live.targets.protein} g</dd>
-            <dt class="target"><Swatch ink="fat" />Fat</dt><dd class="target">{live.targets.fat} g</dd>
             <dt class="target"><Swatch ink="carbs" />Carbs</dt><dd class="target">{live.targets.carbs} g</dd>
+            <dt class="target"><Swatch ink="fat" />Fat</dt><dd class="target">{live.targets.fat} g</dd>
           </dl>
         </section>
       ) : (

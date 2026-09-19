@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
 async function createCustomFood(page: Page, name: string, values: Record<string, string>): Promise<void> {
-  await page.getByRole('button', { name: '+ Custom food' }).click()
+  await page.getByRole('button', { name: 'Custom food', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill(name)
   for (const [label, v] of Object.entries(values)) await form.getByLabel(label).fill(v)
@@ -60,6 +60,16 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(eaten).toHaveText('570')
   await expect(macros).toContainText('Protein70 g')
   await expect(logged.getByRole('button', { name: /E2E Shake/ })).toContainText('2 × 1 serving320 kcal')
+
+  // A logged entry can move to another meal from its sheet.
+  await logged.getByRole('button', { name: /E2E Shake/ }).click()
+  await shake.getByLabel('Meal').selectOption('dinner')
+  await shake.getByRole('button', { name: 'Save' }).click()
+  await expect(logged.getByRole('heading', { name: 'Dinner' })).toContainText('320 kcal')
+  await logged.getByRole('button', { name: /E2E Shake/ }).click()
+  await shake.getByLabel('Meal').selectOption('lunch')
+  await shake.getByRole('button', { name: 'Save' }).click()
+  await expect(logged.getByRole('heading', { name: 'Lunch' })).toContainText('570 kcal')
 
   // Delete → Undo restores.
   await logged.getByRole('button', { name: /E2E Bar/ }).click()
@@ -135,7 +145,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
 
   const calories = page.getByRole('region', { name: 'Calories' })
   const macros = page.getByRole('region', { name: 'Macros' })
-  await expect(calories).toContainText('160 kcal eaten of 300')
+  await expect(calories).toContainText('160 eaten of 300')
   await expect(calories.locator('.hero-label')).toHaveText('calories left today')
   await expect(calories.locator('.big')).toHaveText('140')
   await expect(page.getByRole('button', { name: 'Set up your goals' })).toHaveCount(0)
@@ -145,7 +155,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await expect(calBar).toHaveAttribute('aria-valuetext', '160 of 300 kcal')
   // Protein 30 > 25 → over; carbs/fat under.
   await expect(macros.locator('.macro.over')).toHaveCount(1)
-  await expect(macros).toContainText('Protein30 g / 25 g (over)')
+  await expect(macros).toContainText('Protein30 g / 25 g over')
   await expect(macros).toContainText('Carbs5 g / 40 g')
   const protein = page.getByRole('progressbar', { name: 'Protein' })
   await expect(protein).toHaveAttribute('aria-valuenow', '25')
@@ -160,6 +170,8 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await expect(shake).toBeHidden()
   await expect(calories.locator('.hero-label')).toHaveText('target passed today')
   await expect(calories.locator('p.over')).toHaveText('20 over')
+  // The orange overprint is decoration: screen readers hear the number once.
+  await expect(calories).toMatchAriaSnapshot('- paragraph: 20 over')
   await expect(calories.locator('.bar-fill.over')).toHaveCount(1)
   await expect(calBar).toHaveAttribute('aria-valuenow', '300')
   await expect(calBar).toHaveAttribute('aria-valuetext', '320 of 300 kcal')

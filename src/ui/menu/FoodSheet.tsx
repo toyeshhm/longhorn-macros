@@ -28,15 +28,29 @@ export function capitalize(s: string): string {
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-export function FoodSheet({ item, legends, onClose, onAdded }: {
+export function MealSelect({ meal, onMeal }: { meal: Meal; onMeal: (m: Meal) => void }) {
+  return (
+    <label class="field">
+      Meal
+      <select value={meal} onChange={(ev) => { const v = ev.currentTarget.value; if (isMeal(v)) onMeal(v) }}>
+        {MEALS.map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
+      </select>
+    </label>
+  )
+}
+
+export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
   item: SearchItem
   legends: readonly string[]
+  menuMeal: string | null // the Meal chip being browsed on Menu; wins over the clock when it names a log meal
   onClose: () => void
   onAdded: (meal: Meal) => void
 }) {
   const { store, viewDate } = useApp()
   const [text, setText] = useState('1')
   const [meal, setMeal] = useState<Meal>(() => {
+    const chip = menuMeal?.toLowerCase() ?? ''
+    if (isMeal(chip)) return chip
     const now = new Date()
     return viewDate === localDateKey(now) ? defaultMealFor(now) : 'lunch'
   })
@@ -69,12 +83,7 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
       {where !== '' && <p class="where">{where}</p>}
       <p class="portion">Portion: {item.portion}</p>
       <Stepper text={text} onText={setText} />
-      <label class="field">
-        Meal
-        <select value={meal} onChange={(ev) => { const v = ev.currentTarget.value; if (isMeal(v)) setMeal(v) }}>
-          {MEALS.map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
-        </select>
-      </label>
+      <MealSelect meal={meal} onMeal={setMeal} />
       <table class="nutrients">
         <caption>Nutrition{servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}</caption>
         <tbody>

@@ -90,7 +90,8 @@ The theme is light only (`color-scheme: light`). A printed page does not invert;
 - Two inks plus paper; three extra macro inks used only for protein, carbs and fat.
 - Misregistration is the signature: orange plate offset 1.5 to 3px from the blue.
 - Hand-drawn SVG for every mark; no icon library, no stock primitives.
-- Motion is rare: the "line boil" on doodles, the sheet slide, the toast.
+- Motion is rare: the "line boil" on doodles, the sheet slide, the toast. Reduced motion stops all of them, plus the tab plate fade.
+- Every kcal and mg figure goes through `n()` in `src/ui/format.ts` (thousands separators), so a value never prints two ways.
 
 ## 2. Colors
 
@@ -114,7 +115,7 @@ A two-ink riso palette on warm stock, with three macro inks that only ever mean 
 - **Paper** (#F7F3EA): page and sheet stock, with the grain layer over it.
 - **Paper Raised** (#FBF9F3): form boxes, buttons, the targets slip.
 - **Paper Shade** (#EDE7DA): banners.
-- **Over** (#9A3412): over-target amounts, errors, invalid fields (6.6:1). Always paired with words ("over", "(over)", the error message).
+- **Over** (#9A3412): over-target amounts, errors, invalid fields (6.6:1). Always paired with words ("over", the error message).
 
 ### Named Rules
 **The Macro Ink Rule.** Protein is orange, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
@@ -131,7 +132,7 @@ Both self-hosted as latin-subset woff2 under `public/fonts/` (OFL, licence files
 **Character:** Bungee is the rubber stamp; Courier Prime is the typewritten copy. Bungee is caps-only, so it is kept to numerals and short headings; units next to a Bungee number are set in Courier (`734 kcal`, not `734 KCAL`).
 
 ### Hierarchy
-- **Display** (Bungee, 4.5rem, 0.95): the calories-left numeral only. Blue 2px outline, orange multiply fill offset (2.5px, -2px), on a hand-drawn orange highlighter swipe.
+- **Display** (Bungee, 4.5rem, 0.95): the calories-left numeral only. Blue 2px outline, orange multiply fill offset (2.5px, -2px), on a hand-drawn orange highlighter swipe at 22% fill so the orange numeral still separates from it. The overprint is a `::before` with empty alt text (`content: attr(data-ink) / ''`) so screen readers hear the number once.
 - **Headline** (Bungee, 1.75rem): screen mastheads, with a 2px/1.5px orange text-shadow as the off-register plate.
 - **Title** (Bungee, 0.95 to 1.3rem): date line, station and meal headers, sheet titles, stat values.
 - **Body** (Courier Prime 400, 1rem, 1.45): everything else. Inputs never below 16px.
@@ -142,7 +143,7 @@ Both self-hosted as latin-subset woff2 under `public/fonts/` (OFL, licence files
 
 ## 4. Elevation
 
-Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard orange offset (`box-shadow: 3px 3px 0 #BF5700`, 2px for chips, 4px at 55% for the targets slip). Pressing a button moves it 1px onto its plate. Bottom sheets are a fresh sheet of the same grained stock over a blue ink wash (`rgb(30 52 112 / .35)`).
+Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard orange offset (`box-shadow: 3px 3px 0 #BF5700`, 2px for chips, 4px at 55% for the targets slip). Pressing a button moves it 1px onto its plate. Bottom sheets are a fresh sheet of the same grained stock (grain tile under a 60% paper veil, which equals the page layer's 40%) over a blue ink wash (`rgb(30 52 112 / .35)`).
 
 **The Grain Layer.** One `body::after`, fixed, `pointer-events: none`, tiled `src/ui/ink/grain.svg` (feTurbulence rasterised once), 40% opacity, promoted with `will-change: transform`. The tile's specks are dark with alpha, so alpha-over reads as multiply; a full-screen `mix-blend-mode` was tried and doubled repaint cost (e2e went from 21s to 45s with logout timeouts), so don't add it back. Never per element.
 
@@ -153,7 +154,7 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 - Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`.
 - Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on Today's empty state and Login; utensils on empty menu/search; scale on no weigh-ins.
 - CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, grain): `src/ui/ink/*.svg`. Colors are baked in as hex because an image cannot read CSS tokens; keep them in step with the tokens above.
-- **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things (chart dots are the one exception: they are data).
+- **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things.
 
 ### Line boil
 Three hand-inked frames of the same doodle, swapped at ~8fps with `step-end` visibility keyframes (`.boil-1/2/3`, 0.36s cycle). `prefers-reduced-motion` freezes frame 1. Only on doodles.
@@ -162,29 +163,29 @@ Three hand-inked frames of the same doodle, swapped at ~8fps with `step-end` vis
 Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble that moves with the amount; the part still left is hatched in blue. Over target: the fill runs full and dark cross-hatch overprints it, and the text says "over". `role="progressbar"` with value text.
 
 ### Today hero
-Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral on the swipe (plus "over" when over), "**eaten** kcal eaten of **target**", then the full-width calories InkBar. Macro rows below share one subgrid so the three bars align.
+Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral on the swipe (plus "over" when over), "**eaten** eaten of **target**" (no unit; the label already says calories), then the full-width calories InkBar. Macro rows below share one subgrid so the three bars align.
 
 ### Buttons
 - **Shape:** hand-drawn wobble radius (`255px 12px 225px 10px / 12px 225px 10px 255px`), 1.5px ink border, 44px tall.
 - **Primary:** blue plate, paper text, orange offset plate.
-- **Secondary:** raised paper, ink text. **Danger:** over-red text and border. **Link:** ink text with a 2px orange underline. **Stamp:** Bungee in orange (the "Today" jump, Undo).
+- **Secondary:** raised paper, ink text. **Danger:** over-red text and border. **Link:** ink text with a 2px orange underline. **Stamp:** Bungee in ink with an orange off-register text-shadow (the "Today" jump, hung under the next arrow so the date nav never shifts).
 
 ### Chips (hall / day / meal / range / sex / goal)
 Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed.
 
 ### Inputs
-Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`. Focus everywhere: 2.5px orange outline.
+Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`. Focus everywhere: 2.5px orange outline; on the blue toast plate it switches to paper (orange on blue is 1.75:1). Date inputs use a hand-drawn calendar (`ink/calendar.svg`) in place of the browser picker glyph.
 
 ### Lists
 Station and meal headers are Bungee with a hand-drawn blue rule, sticky on Menu. Rows are divided by a dashed pencil rule. Food name: Courier 700 in Deep Ink. Portion/servings: Courier 400 in Soft Ink, smaller.
 
 ### Chart
-Blue weigh-in dots of slightly varying size, EWMA trend in orange multiply offset (1.5, -1), wobbly dashed gridlines and a hand-drawn L axis.
+Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per index), EWMA trend as a freehand cubic line with hand-picked nudges, in orange multiply offset (1.5, -1), wobbly dashed gridlines and a hand-drawn L axis. A small key under the chart names both marks ("weigh-in", "trend (smoothed)").
 
 ## 6. Do's and Don'ts
 
 - **Do** keep numbers the hero: one stamped numeral per screen at most.
-- **Do** say state in words: "over", "(over)", "Couldn't reach UT dining", "changes waiting to sync".
+- **Do** say state in words: "over", "Couldn't reach UT dining", "changes waiting to sync".
 - **Do** check every new text color against paper at 4.5:1 with grain in mind.
 - **Don't** add dark mode or auto-invert.
 - **Don't** use orange for text below 18px bold.

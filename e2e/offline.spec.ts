@@ -33,7 +33,7 @@ test('offline reload serves shell and saved menu; offline edits sync on reconnec
   await expect(page.getByRole('status').filter({ hasText: /^Showing the menu saved .+\. Couldn't reach UT dining\.$/ })).toBeVisible()
   await expect(stations.first().getByRole('heading')).toBeVisible()
 
-  await page.getByRole('button', { name: '+ Custom food' }).click()
+  await page.getByRole('button', { name: 'Custom food', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill(food)
   await form.getByLabel('Calories (kcal)').fill('300')

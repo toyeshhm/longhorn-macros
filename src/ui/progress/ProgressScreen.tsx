@@ -6,6 +6,7 @@ import { addDays, localDateKey } from '../../dates'
 import type { LogEntry, ProfileRow } from '../../db/types'
 import { log } from '../../log'
 import { useApp } from '../context'
+import { n } from '../format'
 import { useLive, useProfile } from '../hooks'
 import { Swatch } from '../icons/Marks'
 import { Chips } from '../menu/MenuScreen'
@@ -19,7 +20,7 @@ const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonly WeightPoint[], allLog: readonly LogEntry[], today: string): string {
   if (profile?.tdeeEstimate != null && profile.tdeeUpdatedOn !== null) {
     const on = new Date(`${profile.tdeeUpdatedOn}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    return `Maintenance estimate: ${String(Math.round(profile.tdeeEstimate))} kcal (updated ${on})`
+    return `Maintenance estimate: ${n(profile.tdeeEstimate)} kcal (updated ${on})`
   }
   // Only the eligibility part of the result is used here; previous/pace don't affect it.
   const r = evaluateAdaptive({ today, lastRunOn: null, previous: 0, plannedLbPerWeek: 0, weights, intake: dailyIntake(allLog) })
@@ -95,7 +96,7 @@ export function ProgressScreen() {
       {weights && <WeightChart raw={raw} trend={trend} />}
 
       <section class="stats" aria-label="Last 7 days">
-        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : <>{Math.round(stats.avgCalories)}<small> kcal</small></>}</span></div>
+        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : <>{n(stats.avgCalories)}<small> kcal</small></>}</span></div>
         <div class="stat"><span class="stat-label"><Swatch ink="protein" />Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '—' : <>{Math.round(stats.avgProtein)}<small> g</small></>}</span></div>
         <div class="stat"><span class="stat-label">Days logged</span><span class="stat-value">{stats.daysLogged}<small> / 7</small></span></div>
       </section>

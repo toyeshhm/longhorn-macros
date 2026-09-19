@@ -9,7 +9,7 @@ import { Banner } from '../components/Banner'
 import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
 import { UtensilsDoodle } from '../icons/Doodles'
-import { Swatch } from '../icons/Marks'
+import { PlusMark, Swatch } from '../icons/Marks'
 import { useLive, useMenu } from '../hooks'
 import { CustomFoodForm } from './CustomFoodForm'
 import { FoodSheet } from './FoodSheet'
@@ -138,7 +138,7 @@ export function MenuScreen() {
       <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
         placeholder="Search menu, history, custom foods" value={query}
         onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
-      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}>+ Custom food</button>
+      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />Custom food</button>
 
       {stale && cachedAt !== null && (
         <Banner tone="info">Showing the menu saved {savedAgo(cachedAt, now)}. Couldn't reach UT dining.</Banner>
@@ -187,7 +187,7 @@ export function MenuScreen() {
         </Sheet>
       )}
       {sheet?.kind === 'food' && (
-        <FoodSheet key={sheet.item.key} item={sheet.item}
+        <FoodSheet key={sheet.item.key} item={sheet.item} menuMeal={activeMeal}
           legends={sheet.item.recipeNumber === null ? [] : legendsByRecipe.get(sheet.item.recipeNumber) ?? []}
           onClose={close} onAdded={(m) => { setSheet(null); setToast(`Added to ${m}`) }} />
       )}

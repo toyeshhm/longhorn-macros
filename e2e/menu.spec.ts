@@ -49,7 +49,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await tabs.getByRole('button', { name: 'Today' }).click()
   const logged = page.getByRole('region', { name: 'Logged foods' })
   await expect(logged).toContainText(first.name)
-  await expect(logged).toContainText(`${String(Math.round(1.5 * first.nutrients.calories))} kcal`)
+  await expect(logged).toContainText(`${Math.round(1.5 * first.nutrients.calories).toLocaleString('en-US')} kcal`)
 
   // Search replaces browse.
   await tabs.getByRole('button', { name: 'Menu' }).click()
@@ -61,7 +61,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await search.fill('')
 
   // Custom food: save opens its sheet; Esc closes; it is then searchable and addable.
-  await page.getByRole('button', { name: '+ Custom food' }).click()
+  await page.getByRole('button', { name: 'Custom food', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill('Protein Shake')
   await form.getByLabel('Calories (kcal)').fill('160')
@@ -126,6 +126,9 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
   await page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio', { name: last.name, exact: true }).check()
   const firstItem = groupByStation(last.items)[0]?.items[0]
   await expect(page.locator('section.station button.food-row').first()).toContainText(firstItem?.name ?? '')
+  // The Meal chip being browsed is the meal an Add logs to, not the clock's guess.
+  await page.locator('section.station button.food-row').first().click()
+  await expect(page.getByRole('dialog').getByLabel('Meal')).toHaveValue(last.name.toLowerCase())
 })
 
 test.describe(() => {

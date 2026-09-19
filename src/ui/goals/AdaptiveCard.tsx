@@ -4,6 +4,7 @@ import type { WeightEntry } from '../../db/types'
 import { computeTargets, formulaTdee } from '../../goals'
 import type { SyncEngine } from '../../sync/engine'
 import type { LocalStore } from '../../sync/store'
+import { n } from '../format'
 
 export interface AdaptiveUpdate { from: number; to: number; reason: string }
 
@@ -38,7 +39,7 @@ export async function runAdaptive(store: LocalStore, engine: SyncEngine, userId:
 export function AdaptiveCard({ update, onUndo, onDismiss }: { update: AdaptiveUpdate; onUndo: () => void; onDismiss: () => void }) {
   return (
     <section class="adaptive-card notice" aria-label="Targets updated" aria-live="polite">
-      <p>Targets updated {update.from} → {update.to} kcal: {update.reason}</p>
+      <p>Targets updated {n(update.from)} → {n(update.to)} kcal: {update.reason}</p>
       <button type="button" class="stamp" onClick={onUndo}>Undo</button>
       <button type="button" class="link" onClick={onDismiss}>Dismiss</button>
     </section>

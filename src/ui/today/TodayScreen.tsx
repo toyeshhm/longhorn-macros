@@ -8,6 +8,7 @@ import { InkBar } from '../components/InkBar'
 import { MacroBar } from '../components/MacroBar'
 import type { Tab } from '../components/TabBar'
 import { useApp } from '../context'
+import { n } from '../format'
 import { useLive, useTargets } from '../hooks'
 import { BowlDoodle } from '../icons/Doodles'
 import { ArrowMark } from '../icons/Marks'
@@ -16,7 +17,6 @@ import { EntrySheet } from './EntrySheet'
 import { RepeatMeal } from './RepeatMeal'
 
 const UNDO_MS = 5000
-const n = (v: number): string => v.toLocaleString('en-US')
 const TOAST_MS = 3000
 
 function dateLabel(key: string, today: string): string {
@@ -74,7 +74,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
           <span class="big" data-ink={n(left === null ? eaten : Math.abs(left))}>{n(left === null ? eaten : Math.abs(left))}</span>
           {left !== null && left < 0 && <span class="over-word"> over</span>}
         </p>
-        {targets && <p class="eaten"><strong>{n(eaten)}</strong> kcal eaten of <strong>{n(targets.calories)}</strong></p>}
+        {targets && <p class="eaten"><strong>{n(eaten)}</strong> eaten of <strong>{n(targets.calories)}</strong></p>}
         {targets && (
           <InkBar ink="calories" eaten={eaten} target={targets.calories} label="Calories eaten"
             valueText={`${String(eaten)} of ${String(targets.calories)} kcal`} />
@@ -90,13 +90,13 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         <MacroBar ink="fat" label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
       </section>
       <p class="micros" aria-label="Micronutrients">
-        Fiber {round1(s.total.fiber)} g · Sugar {round1(s.total.sugar)} g · Sodium {Math.round(s.total.sodium)} mg
+        Fiber {round1(s.total.fiber)} g · Sugar {round1(s.total.sugar)} g · Sodium {n(s.total.sodium)} mg
       </p>
 
       <section aria-label="Logged foods" class="logged">
         {s.byMeal.map((g) => (
           <section key={g.meal} class="meal-group">
-            <h3><span>{capitalize(g.meal)}</span><span class="meal-kcal">{Math.round(g.calories)} kcal</span></h3>
+            <h3><span>{capitalize(g.meal)}</span><span class="meal-kcal">{n(g.calories)} kcal</span></h3>
             <ul class="food-list">
               {g.entries.map((e) => (
                 <li key={e.id}>
@@ -105,7 +105,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
                       <span class="food-name">{e.name}</span>
                       <span class="food-meta">{e.servings} × {e.portion}</span>
                     </span>
-                    <span class="food-kcal">{Math.round(e.perServing.calories * e.servings)} kcal</span>
+                    <span class="food-kcal">{n(e.perServing.calories * e.servings)} kcal</span>
                   </button>
                 </li>
               ))}

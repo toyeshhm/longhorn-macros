@@ -36,7 +36,7 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await page.getByLabel('Activity').selectOption({ label: 'Moderate: exercise 3–5×/wk' })
   await page.getByLabel('Cut').check()
   await page.getByLabel('Pace').selectOption({ label: 'lose 1 lb/week' })
-  for (const t of ['Calories2270 kcal', 'Protein170 g', 'Fat63 g', 'Carbs256 g']) await expect(panel).toContainText(t)
+  for (const t of ['Calories2,270 kcal', 'Protein170 g', 'Fat63 g', 'Carbs256 g']) await expect(panel).toContainText(t)
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByLabel('Current weight (lb)')).toHaveCount(0) // saved: no longer first run
   await expect(page.getByText('Welcome! Set up your profile')).toHaveCount(0)
@@ -47,13 +47,13 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,000')
+  await expect(calories).toContainText(' eaten of 2,000')
   await tabs.getByRole('button', { name: 'Goals' }).click()
   await page.getByLabel('Calories (kcal)').fill('')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,270')
+  await expect(calories).toContainText(' eaten of 2,270')
   await expect(page.getByRole('region', { name: 'Targets updated' })).toHaveCount(0)
 
   // Adaptive: seed 21 days of 2500 kcal + 10 flat weigh-ins into the real local DB as this user, reload so pull brings them in.
@@ -80,22 +80,22 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await page.reload()
   // previous = formula 2770.4; estimate = 2500 (flat trend); blend → 2635 maintenance → 2135 target on a 1 lb/wk cut.
   const card = page.getByRole('region', { name: 'Targets updated' })
-  await expect(card).toContainText("Targets updated 2270 → 2135 kcal: you're losing slower than planned")
+  await expect(card).toContainText("Targets updated 2,270 → 2,135 kcal: you're losing slower than planned")
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,135')
+  await expect(calories).toContainText(' eaten of 2,135')
   await tabs.getByRole('button', { name: 'Goals' }).click()
-  await expect(panel).toContainText('Maintenance used2635 kcal (learned from your data)')
+  await expect(panel).toContainText('Maintenance used2,635 kcal (learned from your data)')
 
   await card.getByRole('button', { name: 'Undo' }).click()
   await expect(card).toHaveCount(0)
-  await expect(panel).toContainText('Calories2270 kcal')
+  await expect(panel).toContainText('Calories2,270 kcal')
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,270')
+  await expect(calories).toContainText(' eaten of 2,270')
 
   // Not re-applied on the next open (ran today; the undo keeps the run date).
   await page.reload()
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,270')
+  await expect(calories).toContainText(' eaten of 2,270')
   await expect(card).toHaveCount(0)
 })
 
@@ -136,11 +136,11 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   const calories = page.getByRole('region', { name: 'Calories' })
   const card = page.getByRole('region', { name: 'Targets updated' })
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,270')
+  await expect(calories).toContainText(' eaten of 2,270')
   // Pull applies profile last, so a target means logs and weights are local too; reopen so the runner sees them.
   await page.reload()
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,270')
+  await expect(calories).toContainText(' eaten of 2,270')
   await expect(card).toHaveCount(0)
 
   await tabs.getByRole('button', { name: 'Goals' }).click()
@@ -152,9 +152,9 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   await expect(card).toHaveCount(0) // runs when the app opens, not on save
 
   await page.reload()
-  await expect(card).toContainText('Targets updated 2270 → 2135 kcal')
+  await expect(card).toContainText('Targets updated 2,270 → 2,135 kcal')
   await card.getByRole('button', { name: 'Dismiss' }).click()
   await expect(card).toHaveCount(0)
   await tabs.getByRole('button', { name: 'Today' }).click()
-  await expect(calories).toContainText('kcal eaten of 2,135')
+  await expect(calories).toContainText(' eaten of 2,135')
 })

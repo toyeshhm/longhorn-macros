@@ -10,7 +10,7 @@ test('weight log replaces same-day entry, chart dots, weekly stats, adaptive sta
 
   // Log one food today so the stats have something to show.
   await tabs.getByRole('button', { name: 'Menu' }).click()
-  await page.getByRole('button', { name: '+ Custom food' }).click()
+  await page.getByRole('button', { name: 'Custom food', exact: true }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill('E2E Shake')
   for (const [label, v] of [['Calories (kcal)', '160'], ['Protein (g)', '30'], ['Carbs (g)', '5'], ['Fat (g)', '2']] as const) await form.getByLabel(label).fill(v)
@@ -28,7 +28,7 @@ test('weight log replaces same-day entry, chart dots, weekly stats, adaptive sta
   await expect(date).toHaveValue(today)
   await expect(weight).toHaveAttribute('inputmode', 'decimal')
 
-  const dots = page.locator('.weight-chart circle')
+  const dots = page.locator('.weight-chart > svg .dot')
   const rows = page.locator('.weight-chart tbody tr')
   await weight.fill('170')
   await save.click()

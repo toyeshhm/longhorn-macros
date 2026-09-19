@@ -11,7 +11,7 @@ export function MacroBar({ ink, label, eaten, target, unit }: { ink: Ink; label:
     <div class={`macro${over ? ' over' : ''}`}>
       <span class="macro-name"><Swatch ink={ink} />{label}</span>
       {target !== null && target > 0 ? <InkBar ink={ink} eaten={eaten} target={target} label={label} valueText={text} /> : <span />}
-      <span class="macro-num"><strong>{amount}</strong>{target !== null && ` / ${String(round1(target))} ${unit}`}{over && <span class="over-tag"> (over)</span>}</span>
+      <span class="macro-num"><strong>{amount}</strong>{target !== null && ` / ${String(round1(target))} ${unit}`}{over && <span class="over-tag"> over</span>}</span>
     </div>
   )
 }
