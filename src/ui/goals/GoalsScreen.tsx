@@ -14,11 +14,11 @@ import { Chips } from '../menu/MenuScreen'
 const SEX_OPTIONS = [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }] as const
 const GOAL_OPTIONS = [{ value: 'cut', label: 'Cut' }, { value: 'maintain', label: 'Maintain' }, { value: 'bulk', label: 'Bulk' }] as const
 const ACTIVITY_OPTIONS: readonly { value: Activity; label: string }[] = [
-  { value: 'sedentary', label: 'Sedentary — mostly sitting' },
-  { value: 'light', label: 'Light — walking to class daily' },
-  { value: 'moderate', label: 'Moderate — exercise 3–5×/wk' },
-  { value: 'active', label: 'Active — hard training 6–7×/wk' },
-  { value: 'very_active', label: 'Very active — athlete / 2-a-days' },
+  { value: 'sedentary', label: 'Sedentary: mostly sitting' },
+  { value: 'light', label: 'Light: walking to class daily' },
+  { value: 'moderate', label: 'Moderate: exercise 3–5×/wk' },
+  { value: 'active', label: 'Active: hard training 6–7×/wk' },
+  { value: 'very_active', label: 'Very active: athlete, 2-a-days' },
 ]
 const TARGET_FIELDS: readonly { key: keyof Targets; label: string }[] = [
   { key: 'calories', label: 'Calories (kcal)' }, { key: 'protein', label: 'Protein (g)' },
@@ -129,8 +129,9 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
   return (
     <div class="goals">
-      {firstRun && <p class="notice">Welcome! Set up your profile and first weigh-in to get daily targets.</p>}
+      {firstRun && <p class="notice">Set up your profile and first weigh-in to get daily targets.</p>}
       <form class="goals-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
+        <h2>About you</h2>
         <Chips legend="Sex" name="sex" options={SEX_OPTIONS} value={sex} onSelect={setSex} />
         <label class="field">
           Birth year
@@ -171,6 +172,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
             {ACTIVITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>
         </label>
+        <h2>Goal</h2>
         <Chips legend="Goal" name="goal" options={GOAL_OPTIONS} value={goal} onSelect={(g) => {
           setGoal(g)
           if (!RATE_OPTIONS[g].includes(rate)) setRate(RATE_OPTIONS[g][0] ?? 0)
@@ -204,32 +206,35 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
         <label class="toggle">
           <input type="checkbox" checked={adaptiveEnabled} onChange={(ev) => { setAdaptiveEnabled(ev.currentTarget.checked) }} />
-          Adaptive TDEE — learn my maintenance from my weight trend
+          <span>Adaptive TDEE: learn my maintenance from my weight trend</span>
         </label>
 
         {errors.form !== undefined && <p role="alert" class="error">{errors.form}</p>}
-        <button type="submit" class="primary" disabled={busy}>Save</button>
+        <button type="submit" class="primary" disabled={busy}>Save goals</button>
         {status !== null && <p role="status" class="muted">{status}</p>}
       </form>
 
       {live ? (
-        <section class="goal-panel" aria-label="Your targets">
-          <dl>
+        <section class="goal-panel" aria-labelledby="targets-title">
+          <h2 id="targets-title">Your targets</h2>
+          <dl class="targets">
+            <div><dt>Calories</dt><dd>{live.targets.calories} <small>kcal</small></dd></div>
+            <div><dt>Protein</dt><dd>{live.targets.protein} <small>g</small></dd></div>
+            <div><dt>Fat</dt><dd>{live.targets.fat} <small>g</small></dd></div>
+            <div><dt>Carbs</dt><dd>{live.targets.carbs} <small>g</small></dd></div>
+          </dl>
+          <dl class="basis">
             <dt>BMR</dt><dd>{Math.round(bmr(draft, live.weightLb, year))} kcal</dd>
             <dt>Formula TDEE</dt><dd>{Math.round(formulaTdee(draft, live.weightLb, year))} kcal</dd>
             <dt>Maintenance used</dt>
             <dd>{Math.round(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
-            <dt>Calories</dt><dd>{live.targets.calories} kcal</dd>
-            <dt>Protein</dt><dd>{live.targets.protein} g</dd>
-            <dt>Fat</dt><dd>{live.targets.fat} g</dd>
-            <dt>Carbs</dt><dd>{live.targets.carbs} g</dd>
           </dl>
         </section>
       ) : (
-        <p class="muted">Fill in your profile{firstRun ? ' and current weight' : ''} to see your targets.</p>
+        <p class="notice">Fill in your profile{firstRun ? ' and current weight' : ''} to see your targets.</p>
       )}
 
-      <button type="button" onClick={() => {
+      <button type="button" class="logout" onClick={() => {
         supabase.auth.signOut().then(
           ({ error }) => { if (error) log.warn('auth.sign_out_failed', { userId, reason: error.message }) },
           (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },

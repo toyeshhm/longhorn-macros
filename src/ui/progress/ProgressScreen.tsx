@@ -5,6 +5,7 @@ import { weeklyStats } from '../../chart'
 import { addDays, localDateKey } from '../../dates'
 import type { LogEntry, ProfileRow } from '../../db/types'
 import { log } from '../../log'
+import { round1 } from '../../nutrition'
 import { useApp } from '../context'
 import { useLive, useProfile } from '../hooks'
 import { Chips } from '../menu/MenuScreen'
@@ -30,8 +31,8 @@ function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonl
     return `Needs ${parts.join(' and ')}`
   }
   return profile?.adaptiveEnabled
-    ? 'Enough data — your maintenance estimate updates next time you open the app.'
-    : 'Enough data — turn on adaptive TDEE in Goals to learn your maintenance.'
+    ? 'Enough data. Your maintenance estimate updates next time you open the app.'
+    : 'Enough data. Turn on adaptive TDEE in Goals to learn your maintenance.'
 }
 
 export function ProgressScreen() {
@@ -73,9 +74,19 @@ export function ProgressScreen() {
   const trend = ewmaTrend(points).filter((p) => inRange(p.date)) // trend over all history, then windowed, so it's warmed up
   const raw = points.filter((p) => inRange(p.date))
   const stats = weeklyStats(allLog ?? [], today)
+  const latest = trend.at(-1)
 
   return (
     <div class="progress">
+
+      <div class="chart-head">
+        <h2>Weight</h2>
+        {latest && <p><strong>{round1(latest.weightLb)}</strong> lb trend</p>}
+      </div>
+      <Chips legend="Chart range" name="range" options={RANGES} value={range} onSelect={setRange} />
+      {weights && <WeightChart raw={raw} trend={trend} />}
+
+      <h2 class="log-weight">Log a weigh-in</h2>
       <form class="weight-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
         <label class="field">
           Weight (lb)
@@ -90,12 +101,10 @@ export function ProgressScreen() {
         {error !== null && <p role="alert" class="error">{error}</p>}
       </form>
 
-      <Chips legend="Chart range" name="range" options={RANGES} value={range} onSelect={setRange} />
-      {weights && <WeightChart raw={raw} trend={trend} />}
-
-      <section class="stats" aria-label="Last 7 days">
-        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : `${String(Math.round(stats.avgCalories))} kcal`}</span></div>
-        <div class="stat"><span class="stat-label">Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '—' : `${String(Math.round(stats.avgProtein))} g`}</span></div>
+      <h2 class="stats-title" id="stats-title">Last 7 days</h2>
+      <section class="stats" aria-labelledby="stats-title">
+        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '–' : `${String(Math.round(stats.avgCalories))} kcal`}</span></div>
+        <div class="stat"><span class="stat-label">Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '–' : `${String(Math.round(stats.avgProtein))} g`}</span></div>
         <div class="stat"><span class="stat-label">Days logged</span><span class="stat-value">{stats.daysLogged} / 7</span></div>
       </section>
       {weights && allLog && <p class="adaptive-status">{adaptiveStatus(profile, points, allLog, today)}</p>}

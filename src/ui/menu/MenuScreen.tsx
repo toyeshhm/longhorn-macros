@@ -55,8 +55,9 @@ function FoodRow({ item, badge, hints, onOpen }: { item: SearchItem; badge: stri
     <li>
       <button type="button" class="food-row" onClick={onOpen}>
         <span class="food-name">{item.name}</span>
+        <span class="food-kcal">{Math.round(item.nutrients.calories)} kcal</span>
         <span class="food-meta">
-          {Math.round(item.nutrients.calories)} kcal · {round1(item.nutrients.protein)}g protein
+          <span>{round1(item.nutrients.protein)} g protein</span>
           {hints.map((h) => <span key={h} class="tag">{h}</span>)}
           {badge !== null && <span class="badge">{badge}</span>}
         </span>
@@ -132,13 +133,15 @@ export function MenuScreen() {
 
   return (
     <div class="menu">
-      <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
-        placeholder="Search menu, history, custom foods" value={query}
-        onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
-      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}>+ Custom food</button>
+      <div class="menu-tools">
+        <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
+          placeholder="Search menu, history, custom foods" value={query}
+          onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
+        <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}>Add custom food</button>
+      </div>
 
       {stale && cachedAt !== null && (
-        <Banner tone="info">Showing menu saved {savedAgo(cachedAt, now)} — couldn't reach UT dining.</Banner>
+        <Banner tone="info">Couldn't reach UT Dining. Showing the menu saved {savedAgo(cachedAt, now)}.</Banner>
       )}
       {menu === null && error !== null && (
         <Banner tone="error">
@@ -147,7 +150,7 @@ export function MenuScreen() {
       )}
 
       {results !== null ? (
-        results.length === 0 ? <p class="muted">No matches for “{query.trim()}”.</p> : (
+        results.length === 0 ? <p class="empty">No matches for “{query.trim()}”.</p> : (
           <ul class="food-list" aria-label="Search results">
             {results.map((r) => (
               <FoodRow key={r.key} item={r} badge={sourceBadge(r)}
@@ -160,10 +163,14 @@ export function MenuScreen() {
         error === null && <p class="loading">Loading menu…</p>
       ) : (
         <>
-          <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
-          <Chips legend="Day" name="day" options={dates.map((d) => ({ value: d, label: dayLabel(d, today) }))} value={activeDay} onSelect={setDay} />
-          <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
-          {stations.length === 0 && <p class="muted">No menu posted for this hall and day.</p>}
+          <div class="menu-filters">
+            <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
+            <Chips legend="Day" name="day" options={dates.map((d) => ({ value: d, label: dayLabel(d, today) }))} value={activeDay} onSelect={setDay} />
+            {mealNames.length > 0 && (
+              <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
+            )}
+          </div>
+          {stations.length === 0 && <p class="empty">No menu posted for this hall and day.</p>}
           {stations.map((s) => (
             <section key={s.station} class="station">
               <h2>{s.station}</h2>

@@ -65,22 +65,23 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
   const where = [item.hall, item.station].filter((s): s is string => s !== null).join(' · ')
   return (
     <Sheet title={item.name} onClose={onClose}>
-      {where !== '' && <p class="muted">{where}</p>}
-      <p>Portion: {item.portion}</p>
-      <Stepper text={text} onText={setText} />
-      <label class="field">
-        Meal
-        <select value={meal} onChange={(ev) => { const v = ev.currentTarget.value; if (isMeal(v)) setMeal(v) }}>
-          {MEALS.map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
-        </select>
-      </label>
+      <p class="sheet-sub">{[where, `Serving size ${item.portion}`].filter((s) => s !== '').join(' · ')}</p>
+      <div class="sheet-controls">
+        <Stepper text={text} onText={setText} />
+        <label class="field">
+          Meal
+          <select value={meal} onChange={(ev) => { const v = ev.currentTarget.value; if (isMeal(v)) setMeal(v) }}>
+            {MEALS.map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
+          </select>
+        </label>
+      </div>
       <table class="nutrients">
         <caption>Nutrition{servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}</caption>
         <tbody>
           {NUTRIENT_KEYS.map((k) => (
             <tr key={k}>
               <th scope="row">{NUTRIENT_LABELS[k].label}</th>
-              <td>{servings === null ? '—' : `${String(k === 'calories' ? Math.round(scaled[k]) : round1(scaled[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
+              <td>{servings === null ? '–' : `${String(k === 'calories' ? Math.round(scaled[k]) : round1(scaled[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
             </tr>
           ))}
         </tbody>
@@ -91,7 +92,7 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
         </ul>
       )}
       {error !== null && <p role="alert" class="error">{error}</p>}
-      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>Add</button>
+      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>Add to {meal}</button>
     </Sheet>
   )
 }
