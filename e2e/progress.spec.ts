@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { addDays, localDateKey } from '../src/dates'
 
 test('weight log replaces same-day entry, chart dots, weekly stats, adaptive status', async ({ page }) => {

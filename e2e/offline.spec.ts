@@ -1,6 +1,8 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
+
+test.use({ allowFailedLoads: true })
 
 // Installed-PWA path: once the service worker controls the page, a cold offline reload still boots the app,
 // the menu falls back to its saved copy with an age banner, and edits made offline reach Supabase on reconnect.

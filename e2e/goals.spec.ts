@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 import { addDays, localDateKey } from '../src/dates'
@@ -97,4 +97,64 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText('kcal eaten of 2270')
   await expect(card).toHaveCount(0)
+})
+
+// Adaptive off → an eligible history changes nothing; turning it on applies on the next open; Dismiss keeps the new target.
+test('adaptive toggle gates the update; Dismiss hides the card and keeps it', async ({ page }) => {
+  const env = loadEnv('test', process.cwd(), 'VITE_')
+  const url = env.VITE_SUPABASE_URL
+  const key = env.VITE_SUPABASE_ANON_KEY
+  if (!url || !key) throw new Error('run `make db-env` first')
+  const email = `e2e-${crypto.randomUUID()}@example.test`
+  const password = crypto.randomUUID()
+  const client = createClient(url, key, { auth: { persistSession: false } })
+  const { error: signUpError } = await client.auth.signUp({ email, password })
+  expect(signUpError).toBeNull()
+  // Same profile and data as the test above: formula 2270 kcal; eligible adaptive → 2135.
+  const today = localDateKey(new Date())
+  const now = new Date().toISOString()
+  const { error: profileError } = await client.from('profile').insert({
+    sex: 'male', birth_year: 2006, height_in: 70, activity: 'moderate', goal: 'cut', rate_lb_per_week: 1,
+    override: null, adaptive_enabled: false, updated_at: now,
+  })
+  expect(profileError).toBeNull()
+  const perServing = { calories: 2500, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
+  const { error: logError } = await client.from('food_log').insert(Array.from({ length: 21 }, (_, i) => ({
+    id: crypto.randomUUID(), date: addDays(today, -i), meal: 'lunch', name: 'Seed', portion: '1 serving', servings: 1, per_serving: perServing, updated_at: now,
+  })))
+  expect(logError).toBeNull()
+  const { error: weightError } = await client.from('weights').insert(Array.from({ length: 11 }, (_, i) => ({
+    id: crypto.randomUUID(), date: addDays(today, -2 * i), weight_lb: 170, updated_at: now,
+  })))
+  expect(weightError).toBeNull()
+
+  await page.goto('/')
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Password').fill(password)
+  await page.getByRole('button', { name: 'Sign in' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  const calories = page.getByRole('region', { name: 'Calories' })
+  const card = page.getByRole('region', { name: 'Targets updated' })
+  await tabs.getByRole('button', { name: 'Today' }).click()
+  await expect(calories).toContainText('kcal eaten of 2270')
+  // Pull applies profile last, so a target means logs and weights are local too; reopen so the runner sees them.
+  await page.reload()
+  await tabs.getByRole('button', { name: 'Today' }).click()
+  await expect(calories).toContainText('kcal eaten of 2270')
+  await expect(card).toHaveCount(0)
+
+  await tabs.getByRole('button', { name: 'Goals' }).click()
+  const toggle = page.getByLabel(/Adaptive TDEE/)
+  await expect(toggle).not.toBeChecked()
+  await toggle.check()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
+  await expect(card).toHaveCount(0) // runs when the app opens, not on save
+
+  await page.reload()
+  await expect(card).toContainText('Targets updated 2270 → 2135 kcal')
+  await card.getByRole('button', { name: 'Dismiss' }).click()
+  await expect(card).toHaveCount(0)
+  await tabs.getByRole('button', { name: 'Today' }).click()
+  await expect(calories).toContainText('kcal eaten of 2135')
 })

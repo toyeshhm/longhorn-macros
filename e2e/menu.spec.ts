@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { localDateKey } from '../src/dates'
 import { fetchMenu } from '../src/menu/feed'
 import { currentMeal, groupByStation } from '../src/menu/select'
@@ -85,4 +85,71 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(logged).toContainText('Protein Shake')
   await expect(logged).toContainText('160 kcal')
+})
+
+// Hall choice survives a reload; day and meal chips pick what's shown (checked against the live feed).
+test('hall is remembered; day and meal chips switch the listing', async ({ page }) => {
+  const menu = await fetchMenu(fetch)
+  const day = menu.dates.at(-1)
+  if (day === undefined) throw new Error('UT feed has no dates')
+  const meals = (menu.days[day]?.find((h) => h.hall === 'JCL')?.meals ?? []).filter((m) => m.items.length > 0)
+
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+
+  const hall = page.getByRole('radiogroup', { name: 'Hall' })
+  await expect(hall.getByRole('radio', { name: 'J2' })).toBeChecked()
+  await hall.getByRole('radio', { name: 'JCL' }).check()
+  // Remounting Menu re-reads the saved hall; IndexedDB orders that read after the write, so the reload can't cut it off.
+  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  await expect(hall.getByRole('radio', { name: 'JCL' })).toBeChecked()
+  await page.reload()
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  await expect(hall.getByRole('radio', { name: 'JCL' })).toBeChecked()
+
+  const days = page.getByRole('radiogroup', { name: 'Day' }).getByRole('radio')
+  await expect(days).toHaveCount(menu.dates.length)
+  await days.last().check()
+  await expect(days.last()).toBeChecked()
+  const mealChips = page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio')
+  await expect(mealChips).toHaveCount(meals.length)
+  const last = meals.at(-1)
+  if (last === undefined) {
+    await expect(page.getByText('No menu posted for this hall and day.')).toBeVisible()
+    return
+  }
+  await page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio', { name: last.name, exact: true }).check()
+  const firstItem = groupByStation(last.items)[0]?.items[0]
+  await expect(page.locator('section.station button.food-row').first()).toContainText(firstItem?.name ?? '')
+})
+
+test.describe(() => {
+  test.use({ allowFailedLoads: true }) // the feed request fails offline on purpose
+
+  // No saved copy yet and UT unreachable: an error banner with Retry, which loads the menu once UT is reachable.
+  // Only the UT host is cut (setOffline would also take down the dev server and Supabase); nothing is faked, the
+  // request just fails like a dead dining-hall connection, and Retry hits the real feed.
+  test('feed unreachable with nothing cached shows Retry, which recovers', async ({ page, context }) => {
+    const feed = 'https://hf-foodpro.austin.utexas.edu/**'
+    await context.route(feed, (route) => route.abort('internetdisconnected'))
+    await page.goto('/')
+    await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+    await page.getByLabel('Password').fill(crypto.randomUUID())
+    await page.getByRole('button', { name: 'Create account' }).click()
+    const tabs = page.getByRole('navigation', { name: 'Main' })
+    await tabs.getByRole('button', { name: 'Menu' }).click()
+    const banner = page.getByRole('alert').filter({ hasText: "Couldn't load UT menu" })
+    await expect(banner).toBeVisible()
+    await expect(page.getByRole('radiogroup', { name: 'Hall' })).toHaveCount(0)
+
+    await context.unroute(feed)
+    await banner.getByRole('button', { name: 'Retry' }).click()
+    await expect(banner).toBeHidden()
+    await expect(page.getByRole('radiogroup', { name: 'Hall' })).toBeVisible()
+  })
 })

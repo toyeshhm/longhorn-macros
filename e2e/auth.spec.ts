@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 
 test('create account, stay signed in across reload, log out', async ({ page }) => {
   await page.goto('/')
@@ -23,10 +23,14 @@ test('create account, stay signed in across reload, log out', async ({ page }) =
   await expect(tabs).toBeHidden()
 })
 
-test('wrong password shows an alert', async ({ page }) => {
-  await page.goto('/')
-  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
-  await page.getByLabel('Password').fill('not-the-password')
-  await page.getByRole('button', { name: 'Sign in' }).click()
-  await expect(page.getByRole('alert')).toContainText(/invalid/i)
+test.describe(() => {
+  test.use({ allowFailedLoads: true }) // the 400 from the token endpoint is the point of this test
+
+  test('wrong password shows an alert', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+    await page.getByLabel('Password').fill('not-the-password')
+    await page.getByRole('button', { name: 'Sign in' }).click()
+    await expect(page.getByRole('alert')).toContainText(/invalid/i)
+  })
 })

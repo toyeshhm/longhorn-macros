@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from './fixtures'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
@@ -69,4 +69,46 @@ test('outbox queued while signed out is pushed after sign-in', async ({ page }) 
   const { data, error } = await client.from('weights').select('id, weight_lb').eq('id', weightId)
   expect(error).toBeNull()
   expect(data).toEqual([{ id: weightId, weight_lb: 181.5 }])
+})
+
+test.describe(() => {
+  test.use({ allowFailedLoads: true }) // the server's 400 for the bad row is the point of this test
+
+  // A row the server rejects (CHECK servings > 0) is surfaced in the header with its reason, not retried or dropped.
+  test('a rejected change shows in the header with its reason', async ({ page }) => {
+    await page.goto('/')
+    await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+    await page.getByLabel('Password').fill(crypto.randomUUID())
+    await page.getByRole('button', { name: 'Create account' }).click()
+    await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
+
+    await page.evaluate(async (id) => {
+      const name = (await indexedDB.databases()).map((d) => d.name).find((n) => n?.startsWith('lm-'))
+      if (name === undefined) throw new Error('no user database')
+      const db = await new Promise<IDBDatabase>((resolve, reject) => {
+        const r = indexedDB.open(name)
+        r.onsuccess = () => { resolve(r.result) }
+        r.onerror = () => { reject(new Error(String(r.error))) }
+      })
+      const tx = db.transaction(['food_log', 'outbox'], 'readwrite')
+      const perServing = { calories: 100, protein: 0, carbs: 0, fat: 0, fiber: 0, sugar: 0, sodium: 0 }
+      tx.objectStore('food_log').put({
+        id, date: '2026-01-15', meal: 'lunch', hall: null, station: null, name: 'Bad Row', recipeNumber: null, customFoodId: null,
+        portion: '1 serving', servings: 0, perServing, updatedAt: new Date().toISOString(), deletedAt: null,
+      })
+      tx.objectStore('outbox').add({ table: 'food_log', id, attempts: 0, failed: null })
+      await new Promise<void>((resolve, reject) => {
+        tx.oncomplete = () => { resolve() }
+        tx.onerror = () => { reject(new Error(String(tx.error))) }
+      })
+      db.close()
+      window.dispatchEvent(new Event('online')) // the engine syncs on `online`
+    }, crypto.randomUUID())
+
+    const rejected = page.getByRole('alert').filter({ hasText: '1 change was rejected' })
+    await expect(rejected).toBeVisible({ timeout: 10_000 }) // the banner re-reads the outbox on a 3 s tick
+    await rejected.getByText('Details').click()
+    await expect(rejected.getByRole('listitem')).toContainText(/^food_log: .*servings/)
+    await expect(page.getByRole('status').filter({ hasText: /waiting to sync/ })).toHaveCount(0)
+  })
 })
