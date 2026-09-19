@@ -22,6 +22,7 @@ export class SyncEngine {
   private retry: ReturnType<typeof setTimeout> | undefined
   private interval: ReturnType<typeof setInterval> | undefined
   private inflight: Promise<void> | undefined
+  private triggers = 0
 
   constructor(private readonly store: LocalStore, private readonly client: SupabaseClient, private readonly userId: string) {}
 
@@ -67,11 +68,20 @@ export class SyncEngine {
     return n
   }
 
-  // Overlapping triggers (online + interval + retry) share one cycle.
-  // ponytail: a trigger mid-cycle is absorbed; its changes go on the next trigger (<= 60s). Add a rerun flag if that lag matters.
+  // Overlapping triggers (online + interval + retry) share one run; a trigger that lands mid-cycle adds one more cycle,
+  // since that cycle may already have read the outbox (e.g. back online while an offline cycle is still unwinding).
   runOnce(): Promise<void> {
-    this.inflight ??= this.cycle().finally(() => { this.inflight = undefined })
+    this.triggers++
+    this.inflight ??= this.cycles().finally(() => { this.inflight = undefined })
     return this.inflight
+  }
+
+  private async cycles(): Promise<void> {
+    let seen: number
+    do {
+      seen = this.triggers
+      await this.cycle()
+    } while (this.triggers !== seen)
   }
 
   private async cycle(): Promise<void> {

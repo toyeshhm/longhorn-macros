@@ -149,3 +149,13 @@ test('a started engine schedules a backoff retry after a network failure', async
   expect(e.retrying).toBe(true)
   expect(await e.pending()).toEqual({ queued: 1, failed: 0 })
 })
+
+test('a trigger during a cycle runs one more cycle, so a write made mid-cycle is pushed', async () => {
+  const s = await LocalStore.open(dbName())
+  const e = engine(s, phone)
+  const a = e.runOnce() // its push has already read the (empty) outbox
+  await s.put('food_log', entry())
+  expect(e.runOnce()).toBe(a)
+  await a
+  expect(await e.pending()).toEqual({ queued: 0, failed: 0 })
+})
