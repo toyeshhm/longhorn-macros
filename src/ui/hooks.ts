@@ -31,9 +31,10 @@ export function useLive<T>(query: () => Promise<T>, deps: readonly unknown[]): T
 const menuLoads = new WeakMap<LocalStore, Promise<MenuState>>()
 const LOADING: MenuState = { menu: null, stale: false, error: null, cachedAt: null }
 
-export function useMenu(): MenuState {
+export function useMenu(): MenuState & { retry: () => void } {
   const { store } = useApp()
   const [state, setState] = useState<MenuState>(LOADING)
+  const [attempt, setAttempt] = useState(0)
   useEffect(() => {
     let alive = true
     let load = menuLoads.get(store)
@@ -46,8 +47,13 @@ export function useMenu(): MenuState {
       (e: unknown) => { log.error('ui.menu_load_failed', { error: String(e) }) },
     )
     return () => { alive = false }
-  }, [store])
-  return state
+  }, [store, attempt])
+  const retry = (): void => {
+    menuLoads.delete(store)
+    setState(LOADING)
+    setAttempt((a) => a + 1)
+  }
+  return { ...state, retry }
 }
 
 export function useProfile(): ProfileRow | null | undefined {

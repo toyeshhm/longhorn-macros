@@ -22,7 +22,7 @@ function keyFor(recipeNumber: string | null, customFoodId: string | null, name: 
   return `n:${name.toLowerCase()}|${portion}`
 }
 
-function fromMenuItem(item: MenuItem, hall: string): SearchItem {
+export function fromMenuItem(item: MenuItem, hall: string): SearchItem {
   return {
     key: `r:${item.recipeNumber}`,
     name: item.name,
@@ -36,7 +36,7 @@ function fromMenuItem(item: MenuItem, hall: string): SearchItem {
   }
 }
 
-function fromCustomFood(food: CustomFood): SearchItem {
+export function fromCustomFood(food: CustomFood): SearchItem {
   return {
     key: `c:${food.id}`,
     name: food.name,
