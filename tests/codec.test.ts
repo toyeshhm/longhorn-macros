@@ -37,6 +37,11 @@ const bad = (table: 'food_log' | 'profile', patch: Record<string, unknown>, fiel
   expect(() => fromRemote(table, { ...base, ...patch })).toThrow(`bad ${table} row: ${field}`)
 }
 
+test('rejects out-of-range weights', () => {
+  expect(() => fromRemote('weights', { ...toRemote('weights', weight), weight_lb: 49 })).toThrow('bad weights row: weight_lb')
+  expect(() => fromRemote('weights', { ...toRemote('weights', weight), weight_lb: 701 })).toThrow('bad weights row: weight_lb')
+})
+
 test('rejects a non-object row', () => {
   expect(() => fromRemote('weights', null)).toThrow('bad weights row: row')
   expect(() => fromRemote('custom_foods', [])).toThrow('bad custom_foods row: row')
@@ -54,6 +59,8 @@ test.each([
   [{ per_serving: null }, 'per_serving'],
   [{ per_serving: { ...per, sodium: undefined } }, 'per_serving.sodium'],
   [{ per_serving: { ...per, fat: -1 } }, 'per_serving.fat'],
+  [{ servings: 0 }, 'servings'],
+  [{ servings: 50.5 }, 'servings'],
 ])('food_log rejects %j', (patch, field) => { bad('food_log', patch, field) })
 
 test.each([
@@ -62,4 +69,11 @@ test.each([
   [{ override: [] }, 'override'],
   [{ override: { protein: 'x' } }, 'override.protein'],
   [{ tdee_updated_on: '2026-9-1' }, 'tdee_updated_on'],
+  [{ birth_year: -50000 }, 'birth_year'],
+  [{ birth_year: 2016 }, 'birth_year'],
+  [{ height_in: 47 }, 'height_in'],
+  [{ rate_lb_per_week: 2.5 }, 'rate_lb_per_week'],
+  [{ override: { fat: 10001 } }, 'override.fat'],
+  [{ tdee_estimate: -1 }, 'tdee_estimate'],
+  [{ tdee_previous: -1 }, 'tdee_previous'],
 ])('profile rejects %j', (patch, field) => { bad('profile', patch, field) })

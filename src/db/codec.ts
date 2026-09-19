@@ -14,7 +14,9 @@ function fields(table: TableName, rec: unknown) {
   const g = guards(`bad ${table} row: `)
   const o = g.obj(rec, 'row')
   const str = (f: string): string => g.str(o[f], f)
-  const num = (f: string): number => g.num(o[f], f)
+  // Bounds mirror the migration's CHECKs (defense in depth: rows are an untrusted boundary).
+  const inRange = (v: number, f: string, min: number, max: number): number => v >= min && v <= max ? v : g.fail(f)
+  const num = (f: string, min: number, max: number): number => inRange(g.num(o[f], f), f, min, max)
   const date = (f: string): string => {
     const s = str(f)
     if (!DATE_KEY.test(s)) g.fail(f)
@@ -38,16 +40,14 @@ function fields(table: TableName, rec: unknown) {
     const n = g.obj(o[f], f)
     const out = zeroNutrients()
     for (const k of NUTRIENT_KEYS) {
-      const v = g.num(n[k], `${f}.${k}`)
-      if (v < 0) g.fail(`${f}.${k}`)
-      out[k] = v
+      out[k] = inRange(g.num(n[k], `${f}.${k}`), `${f}.${k}`, 0, Infinity)
     }
     return out
   }
   const targets = (f: string): Partial<Targets> => {
     const t = g.obj(o[f], f)
     const out: Partial<Targets> = {}
-    for (const k of TARGET_KEYS) if (t[k] !== undefined) out[k] = g.num(t[k], `${f}.${k}`)
+    for (const k of TARGET_KEYS) if (t[k] !== undefined) out[k] = inRange(g.num(t[k], `${f}.${k}`), `${f}.${k}`, 0, 10000)
     return out
   }
   const meta = () => ({ id: str('id'), updatedAt: iso('updated_at'), deletedAt: nullable('deleted_at', iso) })
@@ -78,7 +78,7 @@ const decoders: { [K in TableName]: (rec: unknown) => Tables[K] } = {
     return {
       ...f.meta(), date: f.date('date'), meal: f.oneOf('meal', MEALS), hall: f.nullable('hall', f.str),
       station: f.nullable('station', f.str), name: f.str('name'), recipeNumber: f.nullable('recipe_number', f.str),
-      customFoodId: f.nullable('custom_food_id', f.str), portion: f.str('portion'), servings: f.num('servings'),
+      customFoodId: f.nullable('custom_food_id', f.str), portion: f.str('portion'), servings: f.num('servings', Number.MIN_VALUE, 50), // ponytail: MIN_VALUE = smallest double > 0, i.e. CHECK servings > 0
       perServing: f.nutrients('per_serving'),
     }
   },
@@ -88,16 +88,17 @@ const decoders: { [K in TableName]: (rec: unknown) => Tables[K] } = {
   },
   weights: (rec): WeightEntry => {
     const f = fields('weights', rec)
-    return { ...f.meta(), date: f.date('date'), weightLb: f.num('weight_lb') }
+    return { ...f.meta(), date: f.date('date'), weightLb: f.num('weight_lb', 50, 700) }
   },
   profile: (rec): ProfileRow => {
     const f = fields('profile', rec)
+    const kcal = (k: string): number => f.num(k, 0, Infinity)
     return {
-      ...f.meta(), sex: f.oneOf('sex', SEXES), birthYear: f.num('birth_year'), heightIn: f.num('height_in'),
-      activity: f.oneOf('activity', ACTIVITIES), goal: f.oneOf('goal', GOALS), rateLbPerWeek: f.num('rate_lb_per_week'),
+      ...f.meta(), sex: f.oneOf('sex', SEXES), birthYear: f.num('birth_year', 1900, 2015), heightIn: f.num('height_in', 48, 96),
+      activity: f.oneOf('activity', ACTIVITIES), goal: f.oneOf('goal', GOALS), rateLbPerWeek: f.num('rate_lb_per_week', 0, 2),
       override: f.nullable('override', f.targets), adaptiveEnabled: f.bool('adaptive_enabled'),
-      tdeeEstimate: f.nullable('tdee_estimate', f.num), tdeeUpdatedOn: f.nullable('tdee_updated_on', f.date),
-      tdeePrevious: f.nullable('tdee_previous', f.num),
+      tdeeEstimate: f.nullable('tdee_estimate', kcal), tdeeUpdatedOn: f.nullable('tdee_updated_on', f.date),
+      tdeePrevious: f.nullable('tdee_previous', kcal),
     }
   },
 }
