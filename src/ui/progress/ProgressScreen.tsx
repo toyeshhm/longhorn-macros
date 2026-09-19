@@ -32,7 +32,7 @@ function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonl
   }
   return profile?.adaptiveEnabled
     ? 'Enough data. Your maintenance estimate updates next time you open the app.'
-    : 'Enough data. In Goals, turn on "Learn my maintenance calories" to use it.'
+    : 'Enough data. Turn on adaptive TDEE in Goals to learn your maintenance.'
 }
 
 export function ProgressScreen() {

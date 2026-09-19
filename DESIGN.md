@@ -12,7 +12,7 @@ colors:
   ink: "oklch(0.22 0.012 49)"
   ink-quiet: "oklch(0.48 0.012 49)"
   hairline: "oklch(0.905 0.005 49)"
-  control-stroke: "oklch(0.62 0.01 49)"
+  control-stroke: "oklch(0.66 0.01 49)"
   over-red: "oklch(0.5 0.18 27)"
   over-red-wash: "oklch(0.955 0.025 27)"
   dark-burnt-orange: "oklch(0.72 0.15 52)"
@@ -25,7 +25,7 @@ colors:
   dark-ink: "oklch(0.95 0.004 49)"
   dark-ink-quiet: "oklch(0.74 0.01 49)"
   dark-hairline: "oklch(0.29 0.008 49)"
-  dark-control-stroke: "oklch(0.56 0.01 49)"
+  dark-control-stroke: "oklch(0.53 0.01 49)"
   dark-over-red: "oklch(0.76 0.14 25)"
   dark-over-red-wash: "oklch(0.26 0.05 25)"
 typography:
@@ -167,10 +167,10 @@ Neutrals carry a whisper (chroma 0.002 to 0.012) of the burnt-orange hue 49 so g
 - **Surface** (`oklch(1 0 0)`): sheets, inputs, the targets panel.
 - **Surface Recessed** (`oklch(0.955 0.004 49)`): the second neutral layer. Segmented-control tracks, info banners, notices, badges.
 - **Ink** (`oklch(0.22 0.012 49)`): all primary text and numbers. 16.6:1.
-- **Ink Quiet** (`oklch(0.48 0.012 49)`): labels, units, meta lines, station headers, helper text, the search placeholder. 6.3:1 on Tray White, 5.75:1 on Surface Recessed.
+- **Ink Quiet** (`oklch(0.48 0.012 49)`): labels, units, meta lines, station headers, placeholders. 6.3:1 on Tray White, 5.75:1 on Surface Recessed.
 - **Hairline** (`oklch(0.905 0.005 49)`): list rules, section dividers, empty bar tracks.
-- **Control Stroke** (`oklch(0.62 0.01 49)`): input and secondary-button borders and the selected-segment ring; 3.5:1 on Surface, 3.2:1 on Surface Recessed, so controls are identifiable (WCAG 1.4.11).
-- Dark counterparts: bg `oklch(0.17 0.006 49)`, surface `0.215`, recessed `0.255`, raised (selected segment) `0.36`, ink `0.95`, ink quiet `0.74` (8.3:1), hairline `0.29`, control stroke `0.56` (3.4:1 on recessed).
+- **Control Stroke** (`oklch(0.66 0.01 49)`): input and secondary-button borders, 3.1:1 against Surface so controls are identifiable (WCAG 1.4.11).
+- Dark counterparts: bg `oklch(0.17 0.006 49)`, surface `0.215`, recessed `0.255`, raised (selected segment) `0.36`, ink `0.95`, ink quiet `0.74` (8.3:1), hairline `0.29`, control stroke `0.53`.
 
 ### State
 - **Over Red** (`oklch(0.5 0.18 27)`; dark `oklch(0.76 0.14 25)`): the only alarm color. "kcal over" label, over-target bar fill, over macro values, rejected-sync banner text, destructive buttons, field errors. Always paired with words ("over", "rejected"), never color alone.
@@ -208,7 +208,7 @@ Flat by default. Depth comes from tone (Tray White page, Surface Recessed tracks
 
 ### Shadow Vocabulary
 - **Float** (`0 1px 2px oklch(0.22 0.012 49 / 0.08), 0 4px 16px oklch(0.22 0.012 49 / 0.06)`; dark uses black at 0.4 / 0.35): sheet and toast.
-- **Segment lift** (`0 0 0 1px control-stroke, 0 1px 2px oklch(0 0 0 / 0.08)`): the selected option in a segmented control. The ring is Control Stroke, not Hairline, so the selected segment's edge clears 3:1 against the recessed track in both themes (WCAG 1.4.11).
+- **Segment lift** (`0 0 0 1px hairline, 0 1px 2px oklch(0 0 0 / 0.08)`): the selected option in a segmented control.
 
 ### Z-index scale
 `--z-sticky: 10` (station headers, sheet header), `--z-nav: 20` (tab bar, status-bar strip), `--z-toast: 30`. Sheets use the native `<dialog>` top layer and need no z-index.
@@ -222,19 +222,17 @@ Ease-out-quart (`cubic-bezier(0.25, 1, 0.5, 1)`) only. 150ms for hover and selec
 - **Shape:** 10px radius (`rounded.md`); 44px min height, 48px for primary.
 - **Primary:** Burnt Orange fill, white 600 text. One per view: Add to lunch, Save food, Save weight, Save goals, Sign in, Save changes. Hover darkens to `oklch(0.52 0.15 49)`.
 - **Secondary:** Surface with Control Stroke border, Ink 500 text (Create account, Log out, day arrows). Hover fills Surface Recessed.
-- **Link:** no chrome, Burnt Orange Ink 600 text, underline on hover (Add custom food, Repeat a past meal, Browse the menu). Still 44px tall; a link inside running text takes `.inline-link` (-10px block margin) so the hit area grows without stretching the line.
-- **Hover:** every `:hover` rule lives in one `@media (hover: hover) and (pointer: fine)` block, so a tap on iOS never leaves a control looking half-active. Touch feedback is `:active`.
+- **Link:** no chrome, Burnt Orange Ink 600 text, underline on hover (Add custom food, Repeat a past meal, Browse the menu).
 - **Danger:** secondary shape with Over Red text (Delete entry).
 - **Labels:** always verb plus object ("Add to lunch", "Save goals", "Delete entry", "Undo change").
 
 ### Segmented control
 - **Style:** Surface Recessed track, 14px radius, 3px padding; options are 44px tall label-size text in Ink Quiet.
 - **Selected:** raised Surface (dark: `0.36` raised), Ink text at 600, segment lift shadow. Selection is shown by surface and weight, not by orange.
-- **Behavior:** native radio inputs underneath. Only for short, fixed option sets that always fit (Hall, Sex, Goal, chart range); longer sets (Menu day and meal) are native selects in one compact row.
+- **Behavior:** native radio inputs underneath; scrolls horizontally when options overflow (the day row).
 
 ### Lists
-- **Food row:** full-width button, 56px min height, name at body 500 with kcal right-aligned at label 600, meta line (protein, diet tags separated by middots, source badge) below in Ink Quiet. Rows are separated by hairlines; pressed state fills Surface Recessed. Today's log rows use the same layout (kcal in the right column, "1 × 4 oz" as meta) so they line up under the meal subtotal.
-- **Menu layout:** search with Add custom food beside it; then "Logged recently" (the last 4 distinct foods, one tap to re-log); then Hall segments and a Day / Meal select row; then stations. Search ranks logged and custom foods first, then today's menu, then other days, and names the day on anything not served today ("Kins · Tue").
+- **Food row:** full-width button, 56px min height, name at body 500 with kcal right-aligned at label 600, meta line (protein, diet tags separated by middots, source badge) below in Ink Quiet. Rows are separated by hairlines; pressed state fills Surface Recessed.
 - **Station header:** sticky, sentence case, label 600 in Ink Quiet on Tray White with a hairline under it.
 - **Meal group header (Today):** the same treatment with the group's kcal right-aligned.
 
@@ -248,7 +246,7 @@ Ease-out-quart (`cubic-bezier(0.25, 1, 0.5, 1)`) only. 150ms for hover and selec
 Native `<dialog>` bottom sheet, Surface, 20px top radius, scrim at 45% ink. Sticky header with the title and a 44px close button; the primary action sticks to the bottom. Food sheet: stepper and meal select side by side, then the nutrition table with calories as its emphasized first row.
 
 ### Today readout (signature)
-Hero number is calories left (or over), with "kcal left" in Ink Quiet beside it; a 10px bar in Burnt Orange (Over Red when over); then "536 kcal eaten of 2530". Macros read as what's left ("124.6 g left of 172 g", or "5 g over 25 g"). Protein is promoted: full width, body size, Ink value, 8px bar. Carbs and fat sit side by side below it, quieter (Ink Quiet labels, 4px bars). Order is always Protein, Carbs, Fat, on every screen. The readout renders only once targets have loaded, so loading never flashes the no-targets state. Micronutrients sit in a single ruled line.
+Hero number is calories left (or over), with "kcal left" in Ink Quiet beside it; a 10px bar in Burnt Orange (Over Red when over); then "536 kcal eaten of 2530". Macros follow as label/value rows over 6px bars. Micronutrients sit in a single ruled line.
 
 ### Navigation
 Fixed four-item tab bar, 56px plus safe-area inset, Surface with a top hairline. Labels only, label size 500 in Ink Quiet; current tab is Burnt Orange Ink at 650 with a 28 by 3px Burnt Orange indicator at the top edge.
@@ -257,8 +255,7 @@ Fixed four-item tab bar, 56px plus safe-area inset, Surface with a top hairline.
 - **Sync / stale banner:** Surface Recessed strip with an 8px Ink Quiet dot; rounded 10px when inside a screen.
 - **Rejected banner:** Over Red Wash with Over Red text and dot.
 - **Notice:** Surface Recessed, 10px radius, label size (no-targets, first-run, adaptive update card).
-- **Toast:** Ink pill (14px radius) above the tab bar, Tray White text, inline underlined Undo; rises 12px on entry. It renders inside a persistent `role=status` region, so screen readers announce it. Adding food says what's left ("Added to lunch · 1504 kcal left") and offers Undo. Toasts with Undo stay 10s and pause while hovered or focused.
-- **Forms:** errors sit under their field with `aria-invalid` and `aria-describedby`, and the first invalid field gets focus after a failed save. No numeric placeholders: a computed default shows as helper text ("Computed: 300"), and optional fields say "optional" in their label.
+- **Toast:** Ink pill (14px radius) above the tab bar, Tray White text, inline underlined Undo; rises 12px on entry.
 
 ### Chart
 Hand-drawn SVG. Trend is a 2.5px Burnt Orange line with round joins; weigh-ins are hollow 3.5px circles stroked Ink Quiet; gridlines are hairlines; axis labels are caption-size Ink Quiet. A visible key (Weigh-in, Trend) sits under the chart and the latest trend value is shown in the section header.

@@ -1,29 +1,26 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { daysBetween, localDateKey } from '../../dates'
-import { summarizeDay } from '../../daySummary'
-import type { LogEntry } from '../../db/types'
 import { log } from '../../log'
 import type { HallId } from '../../menu/feed'
 import { currentMeal, groupByStation, HALLS } from '../../menu/select'
 import { round1 } from '../../nutrition'
-import { buildIndex, fromCustomFood, fromMenuItem, recentItems, searchItems, type SearchItem } from '../../search'
+import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem } from '../../search'
 import { Banner } from '../components/Banner'
 import { Sheet } from '../components/Sheet'
-import { Toast, type ToastMessage } from '../components/Toast'
 import { useApp } from '../context'
-import { useLive, useMenu, useTargets } from '../hooks'
+import { useLive, useMenu } from '../hooks'
 import { CustomFoodForm } from './CustomFoodForm'
 import { FoodSheet } from './FoodSheet'
 
 // Row hint shows diet legends only; allergens are listed in the sheet.
 const DIET_HINTS: ReadonlyMap<string, string> = new Map([['Vegan', 'Vegan'], ['Vegetarian', 'Vegetarian'], ['Halal Friendly', 'Halal']])
-const RECENT_LIMIT = 4
+const TOAST_MS = 3000
 
-function dayLabel(key: string, today: string, format: Intl.DateTimeFormatOptions): string {
+function dayLabel(key: string, today: string): string {
   const offset = daysBetween(today, key)
   if (offset === 0) return 'Today'
   if (offset === 1) return 'Tomorrow'
-  return new Date(`${key}T12:00:00`).toLocaleDateString(undefined, format)
+  return new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' })
 }
 
 // Feed `last_cached` is "YYYY-MM-DD HH:MM:SS" in Austin local time, which is also the user's zone.
@@ -73,19 +70,15 @@ function dietHints(legends: readonly string[]): string[] {
   return legends.flatMap((l) => { const h = DIET_HINTS.get(l); return h === undefined ? [] : [h] })
 }
 
-// Menu items not served today name their day, so nobody logs Tuesday's special on Monday.
-function sourceBadge(item: SearchItem, today: string): string {
+function sourceBadge(item: SearchItem): string {
   if (item.source === 'custom') return 'Custom'
-  if (item.logged) return 'Logged before'
-  const hall = item.hall ?? 'Menu'
-  return item.servedOn === null || item.servedOn === today ? hall : `${hall} · ${dayLabel(item.servedOn, today, { weekday: 'short' })}`
+  if (item.source === 'history') return 'Logged before'
+  return item.hall ?? 'Menu'
 }
 
 export function MenuScreen() {
-  const { store, viewDate } = useApp()
+  const { store } = useApp()
   const { menu, stale, error, cachedAt, retry } = useMenu()
-  const dayEntries = useLive(() => store.logForDate(viewDate), [viewDate])
-  const targets = useTargets()
   const history = useLive(() => store.all('food_log'), [])
   const customFoods = useLive(() => store.all('custom_foods'), [])
   const [hall, setHall] = useState<HallId>('J2')
@@ -93,7 +86,7 @@ export function MenuScreen() {
   const [meal, setMeal] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [sheet, setSheet] = useState<{ kind: 'food'; item: SearchItem } | { kind: 'custom' } | null>(null)
-  const [toast, setToast] = useState<ToastMessage | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
 
   useEffect(() => {
     store.getMeta('lastHall').then(
@@ -102,13 +95,16 @@ export function MenuScreen() {
     )
   }, [store])
 
-  const now = new Date()
-  const today = localDateKey(now)
+  useEffect(() => {
+    if (toast === null) return
+    const t = setTimeout(() => { setToast(null) }, TOAST_MS)
+    return () => { clearTimeout(t) }
+  }, [toast])
+
   const index = useMemo(
-    () => buildIndex({ menu, history: history ?? [], customFoods: customFoods ?? [], today }),
-    [menu, history, customFoods, today],
+    () => buildIndex({ menu, history: history ?? [], customFoods: customFoods ?? [] }),
+    [menu, history, customFoods],
   )
-  const recent = useMemo(() => recentItems(history ?? [], RECENT_LIMIT), [history])
   const legendsByRecipe = useMemo(() => {
     const map = new Map<string, readonly string[]>()
     for (const halls of Object.values(menu?.days ?? {})) {
@@ -122,6 +118,8 @@ export function MenuScreen() {
     store.setMeta('lastHall', id).then(undefined, (e: unknown) => { log.error('ui.last_hall_write_failed', { error: String(e) }) })
   }
 
+  const now = new Date()
+  const today = localDateKey(now)
   const dates = menu?.dates ?? []
   const activeDay = day !== null && dates.includes(day) ? day : dates.includes(today) ? today : (dates[0] ?? null)
   const hallMenu = activeDay === null ? undefined : menu?.days[activeDay]?.find((h) => h.hall === hall)
@@ -129,34 +127,15 @@ export function MenuScreen() {
   const mealNames = meals.map((m) => m.name)
   const activeMeal = meal !== null && mealNames.includes(meal) ? meal : currentMeal(mealNames, now)
   const stations = groupByStation(meals.find((m) => m.name === activeMeal)?.items ?? [])
-  const results = query.trim() === '' ? null : searchItems(index, query, today)
+  const results = query.trim() === '' ? null : searchItems(index, query)
   const open = (item: SearchItem): void => { setSheet({ kind: 'food', item }) }
   const close = (): void => { setSheet(null) }
-  const hintsFor = (i: SearchItem): string[] => dietHints(i.recipeNumber === null ? [] : legendsByRecipe.get(i.recipeNumber) ?? [])
-
-  // The confirmation carries the number the user logs for, and an Undo for a mis-tap.
-  const added = (entry: LogEntry): void => {
-    setSheet(null)
-    const day = summarizeDay([...(dayEntries ?? []).filter((e) => e.id !== entry.id), entry], targets ?? null)
-    const left = day.remaining && Math.round(day.remaining.calories)
-    const tail = left === null ? '' : left < 0 ? ` · ${String(-left)} kcal over` : ` · ${String(left)} kcal left`
-    setToast({
-      text: `Added to ${entry.meal}${tail}`,
-      onUndo: () => {
-        setToast(null)
-        store.remove('food_log', entry.id).then(undefined, (e: unknown) => {
-          log.error('ui.food_log_undo_failed', { id: entry.id, error: String(e) })
-          setToast({ text: `Couldn't undo: ${String(e)}`, onUndo: null })
-        })
-      },
-    })
-  }
 
   return (
     <div class="menu">
       <div class="menu-tools">
         <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
-          placeholder="Search foods" value={query}
+          placeholder="Search menu, history, custom foods" value={query}
           onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
         <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}>Add custom food</button>
       </div>
@@ -174,57 +153,35 @@ export function MenuScreen() {
         results.length === 0 ? <p class="empty">No matches for “{query.trim()}”.</p> : (
           <ul class="food-list" aria-label="Search results">
             {results.map((r) => (
-              <FoodRow key={r.key} item={r} badge={sourceBadge(r, today)} hints={hintsFor(r)} onOpen={() => { open(r) }} />
+              <FoodRow key={r.key} item={r} badge={sourceBadge(r)}
+                hints={dietHints(r.recipeNumber === null ? [] : legendsByRecipe.get(r.recipeNumber) ?? [])}
+                onOpen={() => { open(r) }} />
             ))}
           </ul>
         )
+      ) : menu === null ? (
+        error === null && <p class="loading">Loading menu…</p>
       ) : (
         <>
-          {recent.length > 0 && (
-            <section class="recent" aria-labelledby="recent-title">
-              <h2 id="recent-title">Logged recently</h2>
+          <div class="menu-filters">
+            <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
+            <Chips legend="Day" name="day" options={dates.map((d) => ({ value: d, label: dayLabel(d, today) }))} value={activeDay} onSelect={setDay} />
+            {mealNames.length > 0 && (
+              <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
+            )}
+          </div>
+          {stations.length === 0 && <p class="empty">No menu posted for this hall and day.</p>}
+          {stations.map((s) => (
+            <section key={s.station} class="station">
+              <h2>{s.station}</h2>
               <ul class="food-list">
-                {recent.map((r) => <FoodRow key={r.key} item={r} badge={null} hints={hintsFor(r)} onOpen={() => { open(r) }} />)}
+                {s.items.map((i, n) => {
+                  const item = fromMenuItem(i, hall)
+                  return <FoodRow key={`${i.recipeNumber}-${String(n)}`} item={item} badge={null} hints={dietHints(i.legends)} onOpen={() => { open(item) }} />
+                })}
               </ul>
             </section>
-          )}
-          {menu === null ? (
-            error === null && <p class="loading">Loading menu…</p>
-          ) : (
-            <>
-              <div class="menu-filters">
-                <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
-                <div class="menu-when">
-                  <label>
-                    <span class="visually-hidden">Day</span>
-                    <select value={activeDay ?? ''} onChange={(ev) => { setDay(ev.currentTarget.value) }}>
-                      {dates.map((d) => <option key={d} value={d}>{dayLabel(d, today, { weekday: 'short', month: 'short', day: 'numeric' })}</option>)}
-                    </select>
-                  </label>
-                  {mealNames.length > 0 && (
-                    <label>
-                      <span class="visually-hidden">Meal</span>
-                      <select value={activeMeal ?? ''} onChange={(ev) => { setMeal(ev.currentTarget.value) }}>
-                        {mealNames.map((m) => <option key={m} value={m}>{m}</option>)}
-                      </select>
-                    </label>
-                  )}
-                </div>
-              </div>
-              {stations.length === 0 && <p class="empty">No menu posted for this hall and day.</p>}
-              {stations.map((s) => (
-                <section key={s.station} class="station">
-                  <h2>{s.station}</h2>
-                  <ul class="food-list">
-                    {s.items.map((i, n) => {
-                      const item = fromMenuItem(i, hall, activeDay ?? today)
-                      return <FoodRow key={`${i.recipeNumber}-${String(n)}`} item={item} badge={null} hints={dietHints(i.legends)} onOpen={() => { open(item) }} />
-                    })}
-                  </ul>
-                </section>
-              ))}
-            </>
-          )}
+          ))}
         </>
       )}
 
@@ -236,9 +193,9 @@ export function MenuScreen() {
       {sheet?.kind === 'food' && (
         <FoodSheet key={sheet.item.key} item={sheet.item}
           legends={sheet.item.recipeNumber === null ? [] : legendsByRecipe.get(sheet.item.recipeNumber) ?? []}
-          onClose={close} onAdded={added} />
+          onClose={close} onAdded={(m) => { setSheet(null); setToast(`Added to ${m}`) }} />
       )}
-      <Toast toast={toast} onDone={() => { setToast(null) }} />
+      {toast !== null && <div class="toast" role="status">{toast}</div>}
     </div>
   )
 }

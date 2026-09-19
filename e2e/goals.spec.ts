@@ -144,7 +144,7 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   await expect(card).toHaveCount(0)
 
   await tabs.getByRole('button', { name: 'Goals' }).click()
-  const toggle = page.getByLabel(/Learn my maintenance calories/)
+  const toggle = page.getByLabel(/Adaptive TDEE/)
   await expect(toggle).not.toBeChecked()
   await toggle.check()
   await page.getByRole('button', { name: 'Save goals' }).click()

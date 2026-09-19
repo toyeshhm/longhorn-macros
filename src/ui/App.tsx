@@ -115,7 +115,7 @@ function Tabs() {
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Today' && <TodayScreen onGo={setTab} />}
         {tab === 'Progress' && <ProgressScreen />}
-        {tab === 'Goals' && <GoalsScreen onGo={setTab} />}
+        {tab === 'Goals' && <GoalsScreen />}
       </main>
       <TabBar tab={tab} onSelect={setTab} />
     </>
