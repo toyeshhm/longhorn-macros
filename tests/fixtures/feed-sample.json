@@ -1,0 +1,1194 @@
+{
+ "last_cached": "2026-09-18 23:38:27",
+ "menuWindow": {
+  "startDate": "09/18/2026",
+  "endDate": "09/24/2026",
+  "dates": [
+   "09/18/2026"
+  ]
+ },
+ "data_object": {
+  "global_data": {
+   "menuDate": "09/18/2026",
+   "header": "",
+   "footer": "Note that menu offerings are subject to change. Please reference each individual dining venue for the most current offerings. ",
+   "homeLink": "",
+   "popupImage": {
+    "width": "640",
+    "height": "480",
+    "fitToWindow": "0"
+   },
+   "legendInfo": {
+    "BF": "Beef.png",
+    "BF_lbl": "Contains Beef",
+    "EG": "Eggs.png",
+    "EG_lbl": "Contains Egg",
+    "FSH": "Fish.png",
+    "FSH_lbl": "Contains Fish",
+    "MLK": "Milk.png",
+    "MLK_lbl": "Contains Milk",
+    "PNTS": "Peanuts.png",
+    "PNTS_lbl": "Contains Peanuts",
+    "PRK": "Pork.png",
+    "PRK_lbl": "Contains Pork",
+    "SFSH": "Shellfish.png",
+    "SFSH_lbl": "Contains Shellfish",
+    "SOY": "Soy.png",
+    "SOY_lbl": "Contains Soy",
+    "NTS": "Tree_Nuts.png",
+    "NTS_lbl": "Contains Tree Nuts",
+    "VGN": "Vegan.png",
+    "VGN_lbl": "Vegan",
+    "VGT": "Veggie.png",
+    "VGT_lbl": "Vegetarian",
+    "WHT": "Wheat.png",
+    "WHT_lbl": "Contains Wheat",
+    "HAL": "Halal.png",
+    "HAL_lbl": "Halal Friendly",
+    "SS": "Sesame.png",
+    "SS_lbl": "Contains Sesame Seeds"
+   }
+  },
+  "recipes_data": {
+   "111470": {
+    "number": "111470",
+    "name": "Southwest Roasted Chickpeas",
+    "category": "01",
+    "portionSize": "4",
+    "portionUnit": "oz",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "345.941",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "15.252",
+      "percent": "(38.75)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "1.802",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "446.826",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "42.061",
+      "percent": "(45.85)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "0.468",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "7.993",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "12.810",
+      "percent": "(15.41)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "94.907",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "2.799",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "271.072",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Garbanzo Beans (OrganicChickpeas,Water,Sea Salt), Diced Green Pepper, Diced Yellow Onion (Yellow Onion), Diced Red Onion (Red Onion), Canola & Extra Virgin Olive Oil Blend (Canola oil, virgin olive oil, beta-carotene (color) ), Canola & Extra Virgin Olive Oil Blend (Canola oil, virgin olive oil, beta-carotene (color) ), Ground Cumin, Chipotle Chile Spice (Chipotle Morita Chile Powder), Garlic Powder (Dehydrated Garlic), Kosher Salt (Salt, Yellow Prussiate of Soda.)"
+   },
+   "121096": {
+    "number": "121096",
+    "name": "Plant-based BBQ Mushrooms",
+    "category": "01",
+    "portionSize": "4",
+    "portionUnit": "oz",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "NTS",
+     "SOY",
+     "WHT",
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "346.077",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "19.551",
+      "percent": "(51.71)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "9.445",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "938.673",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "29.391",
+      "percent": "(33.35)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "14.198",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "8.208",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "11.929",
+      "percent": "(14.94)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "81.043",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "50.588",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "1.580",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "173.405",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Seasoned Meatless Mushroom (Mushroom (45%) (Naturally Occurring sulphites), Water, Coconut Oil, Soy Protein isolate (Non Gmo), Canola Oil (Non Gmo), tapioca Flour, Gluten Free Soy Sauce (Nongmo), Salt, Yeast Extract, White Pepper, mushroom Powder, Black Pepper May Contain: Wheat since this product is manufactured in a facility that processes other food products which may contain these ingredients.), Barbeque Sauce (High Fructose Corn Syrup, Vinegar, Tomato Puree (Water, Tomato Paste), Apple Cider Vinegar, Molasses, Modified Foodstarch, Salt, Contains less than 2% of Hickory Smoke Flavor, Mustard Flour, Dried Garlic, Spice, Dried Onions, Paprika, Caramel Color, Potassium Sorbate (to preserve freshness). ), Diced Yellow Onion (Yellow Onion), Water, Canola & Extra Virgin Olive Oil Blend (Canola oil, virgin olive oil, beta-carotene (color) ), Cilantro, Paprika (Paprika And Less Than 2% Silicon Dioxide To Prevent Caking.), Garlic Powder (Dehydrated Garlic)"
+   },
+   "177104": {
+    "number": "177104",
+    "name": "Garlic & Herb Grilled Eggplant",
+    "category": "01",
+    "portionSize": "3",
+    "portionUnit": "oz",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "73.273",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "4.587",
+      "percent": "(52.76)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "0.644",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "695.940",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "8.599",
+      "percent": "(42.44)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "2.645",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "3.347",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "0.882",
+      "percent": "( 4.80)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "7.448",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "0.310",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "130.190",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Sliced Eggplant Prep (Fresh Eggplant), Canola & Extra Virgin Olive Oil Blend (Canola oil, virgin olive oil, beta-carotene (color) ), Salt (Salt), Salt (Salt), Chopped Garlic (Garlic, Canola Oil (Canola Oil, Citric Acid)), Ground Black Pepper (Ground Black Pepper), Italian Seasoning (Blend of Whole Italian Herbs)"
+   },
+   "300041": {
+    "number": "300041",
+    "name": "Mini Cinnamon Roll",
+    "category": "03",
+    "portionSize": "1",
+    "portionUnit": "each",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "MLK",
+     "EG",
+     "SOY",
+     "VGT",
+     "WHT",
+     "SS"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "269.826",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "8.161",
+      "percent": "(28.11)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "3.299",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "14.528",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "274.306",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "42.005",
+      "percent": "(62.07)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "12.414",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "6.022",
+      "percent": "( 9.82)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "13.305",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "1.450",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "17.313",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Cinnamon Rolls (Enriched Unbleached Wheat Flour (Wheat Flour, Niacin, Iron as Ferrous Sulfate, Thiamine Mononitrate, Enzyme, Riboflavin, Folic Acid), Water, High Fructose Corn Syrup, Yeast, Sugar, Soybean Oil, Contains less than 2% of the following: Eggs, Maltodextrin, Salt, Cinnamon, Mono and Diglycerides, Modified Cornstarch, Sodium Stearoyl Lactylate, Datem, Rice Flour, Molasses, Cellulose Gel, Natural and Artificial Flavor, colored with (Caramel Color, Beta Carotene), Ascorbic Acid, Cellulose Gum, Enzyme. May Contain Milk, Soy and Sesame ), Cream Cheese Icing (Neufchatel Cheese (Pasteurized milk and cream, cheese culture, salt, guar gum, carob bean gum, xanthan gum. ), Powdered Sugar (Sugar, Cornstarch), Butter Blend (Vegetable Oil Blend (Palm Oil and Soybean Oil), Water, Butter (Cream, Salt), Contains less than 2% of Salt, Nonfat Dry Milk, Natural Artificial Flavors, Potassium Sorbate, Soy Lecithin, Vitamin A Palmitate Added, Beta Carotene (color))), Caramel Topping (Corn Syrup, High Fructose Corn Syrup, Sugar, Condensed Non-fat Milk, Heavy Whipping Cream, Water, Salt, Pectin, Artificial Flavor, Disodium Phosphate), Canola Pan Spray (Canola Oil, Canola Lecithin, Mono and Diglycerides, Natural Flavor, Propellan)"
+   },
+   "310109": {
+    "number": "310109",
+    "name": "Beans de Charro",
+    "category": "01",
+    "portionSize": "3",
+    "portionUnit": "oz",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "86.000",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "0.682",
+      "percent": "( 6.97)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "0.117",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "331.009",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "15.334",
+      "percent": "(67.21)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "0.097",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "0.774",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "5.341",
+      "percent": "(25.83)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "47.473",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "1.051",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "213.119",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Pinto Beans (Pinto Beans, Water, Salt, Calcium Chloride (firming agent), Calcium Disodium EDTA (promotes color retention)), Water, Pico De Gallo (Plum Roma Tomatoes, Diced Yellow Onion (Yellow Onion), Cilantro, Fresh Lemon Juice, Chopped Serrano Peppers (Fresh Serrano Peppers), Kosher Salt (Salt, Yellow Prussiate of Soda.)), Vegetable Base (Sauteed Vegetable Purees (Onion, Carrot, Celery, Red Bell Pepper), Yeast Extract, Salt, Sugar, Tomato Powder, Natural Flavors, Contains 2% Or Less Of The Following: Onion Juice Concentrate, Garlic Juice Concentrate, Shallot Juice, Spice, Burgundy Wine Solids, Concentrated Carrot Juice, and Dehydrated Carrots.), Cilantro, Chili Powder (Chili Pepper and Other Spices, Salt, Garlic Powder), Ground Cumin, Kosher Salt (Salt, Yellow Prussiate of Soda.)"
+   },
+   "450092": {
+    "number": "450092",
+    "name": "Vegan Pear Coffee Cake Muffin",
+    "category": "03",
+    "portionSize": "1",
+    "portionUnit": "each",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "WHT",
+     "SOY",
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "186.204",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "3.943",
+      "percent": "(20.05)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "0.464",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.008",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "182.442",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "33.404",
+      "percent": "(72.87)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "0.828",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "3.088",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.552",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "2.943",
+      "percent": "( 7.08)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.172",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "70.382",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "1.304",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "80.765",
+      "percent": ""
+     }
+    ],
+    "ingredients": "AP Flour (Enriched Bleached Wheat Flour (Bleached Flour, Niacin, Reduced Iron, Enzymes added for improved baking, Thiamine Mononitrate, Riboflavin, Folic Acid)), Soy Milk (Water, Organic Soybeans, Cane Sugar, Contains 1 Or Less Of: Gellan Gum, Locust Bean Gum, Natural Flavor, Riboflavin B2, Sea Salt, Tricalcium Phosphate, Vitamin A Palmitate, Vitamin B6, Vitamin B12, Vitamin D2, Vitamin E D-alpha Tocopheryl Acetate.), Granulated Sugar, Applesauce (Apples, Water, High Fructose Corn Syrup, Corn Syrup.), Pears Diced in Juice (Pears,water, pear juice concentrate.), AP Flour (Enriched Bleached Wheat Flour (Bleached Flour, Niacin, Reduced Iron, Enzymes added for improved baking, Thiamine Mononitrate, Riboflavin, Folic Acid)), Light Brown Sugar (Brown Sugar.), Canola Oil (Canola Oil, Citric Acid), Margarine Spread (Oil Blend (Palm, Soybean, Canola, and Olive Oils), Water, Contains less than 2% of Salt, Enzyme-Modified Soybean Lecithin, Natural & Artificial Flavor, Potassium Sorbate and Calcium Disodium EDTA (to preserve freshness), Lactic Acid, Vitamin A Palmitate, and Beta-Carotene Color), Baking Powder (Baking Soda, Corn Starch, Sodium Aluminum Sulfate, Calcium Sulfate, Monocalcium Phosphate), Imitation Vanilla Extract (Water, Caramel Color, Artificial Flavor, Citric Acid, Sodium Benzoate (preservative). ), Apple Cider Vinegar (Made from the Juice of Apples, Diluted with water to a uniform pickling and table strength of 5% (50 grains) acidity. ), Orange Extract (Ethyl alcohol, natural oil of orange, water.), Salt (Salt), Ground Cinnamon"
+   },
+   "999998": {
+    "number": "999998",
+    "name": "Blank Cals Item",
+    "category": "01",
+    "portionSize": "1",
+    "portionUnit": "ea",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "1.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "10.000",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "2.000",
+      "percent": ""
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "0.500",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "0.500",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "3.000",
+      "percent": ""
+     }
+    ],
+    "ingredients": ""
+   },
+   "083002": {
+    "number": "083002",
+    "name": "Plant-based Breakfast Patty",
+    "category": "01",
+    "portionSize": "2",
+    "portionUnit": "each",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "WHT",
+     "SOY",
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "199.298",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "9.965",
+      "percent": "(43.84)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "817.123",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "9.965",
+      "percent": "(18.81)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "3.986",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "1.993",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "1.993",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "17.937",
+      "percent": "(37.35)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "103.635",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "2.870",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "418.526",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Vegan Breakfast Sausage (Water, Textured Soy Protein Concentrate, Canola Oil, Vital Wheat Gluten, Soy Proteinisolate, Yeast Extract, 2% Or Less Of: Sugar, Methylcellulose, Salt, Potato Starch, Spices, Caramelcolor, Smoke Flavor, Onion Powder, Barley Malt Extract, Natural Flavors, Garlic Powder.contains: Soy, Wheat)"
+   },
+   "031003": {
+    "number": "031003",
+    "name": "Hot Hearty Oatmeal",
+    "category": "07",
+    "portionSize": "4",
+    "portionUnit": "oz",
+    "description": "",
+    "price": "",
+    "cartQty": "",
+    "image": null,
+    "legends": [
+     "WHT",
+     "VGN"
+    ],
+    "nutrients": [
+     {
+      "name": "Cals",
+      "unit": "kcal",
+      "value": "80.592",
+      "percent": ""
+     },
+     {
+      "name": "Fat-T",
+      "unit": "g",
+      "value": "1.612",
+      "percent": "(17.70)"
+     },
+     {
+      "name": "Fat-S",
+      "unit": "g",
+      "value": "0.269",
+      "percent": ""
+     },
+     {
+      "name": "TFA",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Chol",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Sod",
+      "unit": "mg",
+      "value": "90.071",
+      "percent": ""
+     },
+     {
+      "name": "Carb",
+      "unit": "g",
+      "value": "14.507",
+      "percent": "(68.34)"
+     },
+     {
+      "name": "Fiber",
+      "unit": "g",
+      "value": "2.149",
+      "percent": ""
+     },
+     {
+      "name": "Sugar",
+      "unit": "g",
+      "value": "0.537",
+      "percent": ""
+     },
+     {
+      "name": "SugAdd",
+      "unit": "g",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Prot",
+      "unit": "g",
+      "value": "2.686",
+      "percent": "(13.96)"
+     },
+     {
+      "name": "D-mcg",
+      "unit": "mcg",
+      "value": "",
+      "percent": ""
+     },
+     {
+      "name": "Calc",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     },
+     {
+      "name": "Iron",
+      "unit": "mg",
+      "value": "0.774",
+      "percent": ""
+     },
+     {
+      "name": "Potas",
+      "unit": "mg",
+      "value": "0.000",
+      "percent": ""
+     }
+    ],
+    "ingredients": "Water, Oatmeal (Oats), Salt (Salt)"
+   }
+  }
+ },
+ "days": {
+  "09/18/2026": {
+   "locations": [
+    {
+     "locationNum": "12",
+     "locationName": "J2 Dining",
+     "locationDates": [
+      {
+       "date": "09/18/2026",
+       "display": "Friday, September 18"
+      },
+      {
+       "date": "09/19/2026",
+       "display": "Saturday, September 19"
+      },
+      {
+       "date": "09/20/2026",
+       "display": "Sunday, September 20"
+      },
+      {
+       "date": "09/21/2026",
+       "display": "Monday, September 21"
+      },
+      {
+       "date": "09/22/2026",
+       "display": "Tuesday, September 22"
+      },
+      {
+       "date": "09/23/2026",
+       "display": "Wednesday, September 23"
+      },
+      {
+       "date": "09/24/2026",
+       "display": "Thursday, September 24"
+      }
+     ],
+     "meals": [
+      {
+       "mealName": "Breakfast",
+       "recipes": [
+        {
+         "number": "",
+         "name": "-- Breakfast Plant Based --",
+         "serv": ""
+        },
+        {
+         "number": "310109",
+         "name": "Beans de Charro",
+         "serv": "3"
+        },
+        {
+         "number": "177104",
+         "name": "Garlic & Herb Grilled Eggplant",
+         "serv": "3"
+        },
+        {
+         "number": "121096",
+         "name": "Plant-based BBQ Mushrooms",
+         "serv": "4"
+        },
+        {
+         "number": "083002",
+         "name": "Plant-based Breakfast Patty",
+         "serv": "2"
+        },
+        {
+         "number": "111470",
+         "name": "Southwest Roasted Chickpeas",
+         "serv": "4"
+        },
+        {
+         "number": "",
+         "name": "-- Breakfast Bakery --",
+         "serv": ""
+        },
+        {
+         "number": "300041",
+         "name": "Mini Cinnamon Roll",
+         "serv": "1"
+        },
+        {
+         "number": "450092",
+         "name": "Vegan Pear Coffee Cake Muffin",
+         "serv": "1"
+        },
+        {
+         "number": "999999",
+         "name": "Ghost Item",
+         "serv": "1"
+        },
+        {
+         "number": "999998",
+         "name": "Blank Cals Item",
+         "serv": "1"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "locationNum": "03",
+     "locationName": "Kins Dining",
+     "locationDates": [
+      {
+       "date": "09/18/2026",
+       "display": "Friday, September 18"
+      },
+      {
+       "date": "09/19/2026",
+       "display": "Saturday, September 19"
+      },
+      {
+       "date": "09/20/2026",
+       "display": "Sunday, September 20"
+      },
+      {
+       "date": "09/21/2026",
+       "display": "Monday, September 21"
+      },
+      {
+       "date": "09/22/2026",
+       "display": "Tuesday, September 22"
+      },
+      {
+       "date": "09/23/2026",
+       "display": "Wednesday, September 23"
+      },
+      {
+       "date": "09/24/2026",
+       "display": "Thursday, September 24"
+      }
+     ],
+     "meals": [
+      {
+       "mealName": "Breakfast",
+       "recipes": [
+        {
+         "number": "",
+         "name": "-- Breakfast Bakery --",
+         "serv": ""
+        },
+        {
+         "number": "300041",
+         "name": "Mini Cinnamon Roll",
+         "serv": "1"
+        },
+        {
+         "number": "450092",
+         "name": "Vegan Pear Coffee Cake Muffin",
+         "serv": "1"
+        },
+        {
+         "number": "",
+         "name": "-- Soup n Co. --",
+         "serv": ""
+        },
+        {
+         "number": "031003",
+         "name": "Hot Hearty Oatmeal",
+         "serv": "4"
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "locationNum": "12(a)",
+     "locationName": "JCL Dining",
+     "locationDates": [
+      {
+       "date": "09/18/2026",
+       "display": "Friday, September 18"
+      },
+      {
+       "date": "09/19/2026",
+       "display": "Saturday, September 19"
+      },
+      {
+       "date": "09/20/2026",
+       "display": "Sunday, September 20"
+      },
+      {
+       "date": "09/21/2026",
+       "display": "Monday, September 21"
+      },
+      {
+       "date": "09/22/2026",
+       "display": "Tuesday, September 22"
+      },
+      {
+       "date": "09/23/2026",
+       "display": "Wednesday, September 23"
+      },
+      {
+       "date": "09/24/2026",
+       "display": "Thursday, September 24"
+      }
+     ],
+     "meals": [
+      {
+       "mealName": "Breakfast",
+       "recipes": []
+      }
+     ]
+    },
+    {
+     "locationNum": "99",
+     "locationName": "Test Hall",
+     "meals": []
+    }
+   ]
+  }
+ }
+}
