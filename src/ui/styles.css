@@ -142,3 +142,16 @@ button.link { border: 0; background: none; color: var(--accent); padding: 0 4px;
 .meal-group h3 { display: flex; justify-content: space-between; margin: 16px 0 0; font-size: 1rem; }
 button.danger { color: var(--error); border-color: var(--error); }
 .toast button.link { color: inherit; text-decoration: underline; }
+.weight-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: end; }
+.weight-form .primary, .weight-form .error { grid-column: 1 / -1; }
+.weight-form input { width: 100%; min-width: 0; }
+.weight-chart { margin: 12px 0 0; }
+.weight-chart svg { display: block; width: 100%; height: auto; font-size: 10px; }
+.weight-chart .tick line { stroke: var(--border); }
+.weight-chart text { fill: var(--muted); }
+.weight-chart .trend { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.weight-chart .dot { fill: var(--surface); stroke: var(--text); stroke-width: 1.5; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 16px; }
+.stat { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+.stat-label { color: var(--muted); font-size: 0.85rem; }
+.stat-value { font-weight: 600; }

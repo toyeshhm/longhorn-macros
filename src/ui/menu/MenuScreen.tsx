@@ -34,7 +34,7 @@ function savedAgo(cachedAt: string, now: Date): string {
   return rtf.format(-Math.round(minutes / 1440), 'day')
 }
 
-function Chips<T extends string>({ legend, name, options, value, onSelect }: {
+export function Chips<T extends string>({ legend, name, options, value, onSelect }: {
   legend: string; name: string; options: readonly { value: T; label: string }[]; value: T | null; onSelect: (v: T) => void
 }) {
   return (

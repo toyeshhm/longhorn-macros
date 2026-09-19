@@ -10,6 +10,7 @@ import { AppContext, useApp } from './context'
 import { useProfile } from './hooks'
 import { Login } from './Login'
 import { MenuScreen } from './menu/MenuScreen'
+import { ProgressScreen } from './progress/ProgressScreen'
 import { TodayScreen } from './today/TodayScreen'
 
 interface Session { store: LocalStore; engine: SyncEngine; userId: string }
@@ -85,6 +86,7 @@ function Tabs() {
         <h1>{tab}</h1>
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Today' && <TodayScreen onGo={setTab} />}
+        {tab === 'Progress' && <ProgressScreen />}
         {tab === 'Goals' && <GoalsPlaceholder firstRun={profile === null} />}
       </main>
       <TabBar tab={tab} onSelect={setTab} />
