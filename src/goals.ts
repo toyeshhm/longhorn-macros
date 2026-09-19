@@ -40,7 +40,7 @@ export function formulaTdee(p: Profile, weightLb: number, year: number): number 
 }
 
 export function maintenance(p: Profile, weightLb: number, year: number): number {
-  return p.adaptiveEnabled && p.tdeeEstimate !== null ? p.tdeeEstimate : formulaTdee(p, weightLb, year)
+  return p.tdeeEstimate ?? formulaTdee(p, weightLb, year)
 }
 
 export function plannedDelta(p: Profile): number {

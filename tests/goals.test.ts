@@ -45,8 +45,11 @@ test('calorie floor male 1500 / female 1200', () => {
 
 test('adaptive estimate overrides formula in maintenance()', () => {
   expect(maintenance({ ...base, tdeeEstimate: 2000 }, 170, 2026)).toBe(2000)
-  // adaptive disabled: stale tdeeEstimate is ignored, formula tdee used instead (2770.4)
-  expect(maintenance({ ...base, adaptiveEnabled: false, tdeeEstimate: 2000 }, 170, 2026)).toBeCloseTo(2770.4, 1)
+  // adaptiveEnabled only gates whether Task 13's runner computes a *new* estimate;
+  // it doesn't gate consumption here — a previously-learned estimate still applies
+  // even after the toggle is turned off (spec: "tdee_estimate if adaptive has
+  // produced one, else formula TDEE" — no mention of the toggle at this layer).
+  expect(maintenance({ ...base, adaptiveEnabled: false, tdeeEstimate: 2000 }, 170, 2026)).toBe(2000)
 })
 
 test('override replaces only given fields', () => {
