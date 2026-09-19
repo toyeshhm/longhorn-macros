@@ -17,9 +17,16 @@ test('first-run profile → targets, manual override round trip, adaptive update
   // First run lands on Goals. Invalid input is reported inline, tied to its field.
   await expect(page.getByText('Welcome! Set up your profile')).toBeVisible()
   await page.getByLabel('Birth year').fill('1800')
+  await page.getByLabel('Feet').fill('3') // 36 in < 48
+  await page.getByText('Adjust targets manually').click()
+  await page.getByLabel('Calories (kcal)').fill('-5')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByLabel('Birth year')).toHaveAccessibleDescription('birth year must be between 1900 and 2015')
+  await expect(page.getByLabel('Feet')).toHaveAccessibleDescription('height must be between 48 and 96 inches')
+  await expect(page.getByLabel('Calories (kcal)')).toHaveAccessibleDescription('override calories must be between 0 and 10000')
   await expect(page.getByLabel('Current weight (lb)')).toHaveAccessibleDescription('weight must be between 50 and 700 lb')
+  await expect(page.getByRole('alert')).toHaveCount(0) // every message landed on a field, none fell through to the form alert
+  await page.getByLabel('Calories (kcal)').fill('') // blank override → details closes again (open tracks draft.override)
 
   await page.getByLabel('Male', { exact: true }).check()
   await page.getByLabel('Birth year').fill('2006')
