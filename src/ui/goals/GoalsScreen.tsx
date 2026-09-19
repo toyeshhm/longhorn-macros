@@ -9,16 +9,17 @@ import { log } from '../../log'
 import { supabase } from '../../supabase/client'
 import { useApp } from '../context'
 import { useLatestWeight, useProfile } from '../hooks'
+import { Swatch } from '../icons/Marks'
 import { Chips } from '../menu/MenuScreen'
 
 const SEX_OPTIONS = [{ value: 'male', label: 'Male' }, { value: 'female', label: 'Female' }] as const
 const GOAL_OPTIONS = [{ value: 'cut', label: 'Cut' }, { value: 'maintain', label: 'Maintain' }, { value: 'bulk', label: 'Bulk' }] as const
 const ACTIVITY_OPTIONS: readonly { value: Activity; label: string }[] = [
-  { value: 'sedentary', label: 'Sedentary — mostly sitting' },
-  { value: 'light', label: 'Light — walking to class daily' },
-  { value: 'moderate', label: 'Moderate — exercise 3–5×/wk' },
-  { value: 'active', label: 'Active — hard training 6–7×/wk' },
-  { value: 'very_active', label: 'Very active — athlete / 2-a-days' },
+  { value: 'sedentary', label: 'Sedentary: mostly sitting' },
+  { value: 'light', label: 'Light: walking to class daily' },
+  { value: 'moderate', label: 'Moderate: exercise 3–5×/wk' },
+  { value: 'active', label: 'Active: hard training 6–7×/wk' },
+  { value: 'very_active', label: 'Very active: athlete, 2-a-days' },
 ]
 const TARGET_FIELDS: readonly { key: keyof Targets; label: string }[] = [
   { key: 'calories', label: 'Calories (kcal)' }, { key: 'protein', label: 'Protein (g)' },
@@ -204,7 +205,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
         <label class="toggle">
           <input type="checkbox" checked={adaptiveEnabled} onChange={(ev) => { setAdaptiveEnabled(ev.currentTarget.checked) }} />
-          Adaptive TDEE — learn my maintenance from my weight trend
+          Adaptive TDEE: learn my maintenance from my weight trend
         </label>
 
         {errors.form !== undefined && <p role="alert" class="error">{errors.form}</p>}
@@ -214,15 +215,16 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
       {live ? (
         <section class="goal-panel" aria-label="Your targets">
+          <h2>Your daily targets</h2>
           <dl>
             <dt>BMR</dt><dd>{Math.round(bmr(draft, live.weightLb, year))} kcal</dd>
             <dt>Formula TDEE</dt><dd>{Math.round(formulaTdee(draft, live.weightLb, year))} kcal</dd>
             <dt>Maintenance used</dt>
             <dd>{Math.round(maintenance(draft, live.weightLb, year))} kcal{draft.tdeeEstimate !== null && ' (learned from your data)'}</dd>
-            <dt>Calories</dt><dd>{live.targets.calories} kcal</dd>
-            <dt>Protein</dt><dd>{live.targets.protein} g</dd>
-            <dt>Fat</dt><dd>{live.targets.fat} g</dd>
-            <dt>Carbs</dt><dd>{live.targets.carbs} g</dd>
+            <dt class="target">Calories</dt><dd class="target">{live.targets.calories} kcal</dd>
+            <dt class="target"><Swatch ink="protein" />Protein</dt><dd class="target">{live.targets.protein} g</dd>
+            <dt class="target"><Swatch ink="fat" />Fat</dt><dd class="target">{live.targets.fat} g</dd>
+            <dt class="target"><Swatch ink="carbs" />Carbs</dt><dd class="target">{live.targets.carbs} g</dd>
           </dl>
         </section>
       ) : (

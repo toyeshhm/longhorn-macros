@@ -8,6 +8,7 @@ import { defaultMealFor, parseServings } from '../../servings'
 import { Sheet } from '../components/Sheet'
 import { Stepper } from '../components/Stepper'
 import { useApp } from '../context'
+import { Swatch } from '../icons/Marks'
 
 const NUTRIENT_LABELS: Readonly<Record<keyof Nutrients, { label: string; unit: string }>> = {
   calories: { label: 'Calories', unit: 'kcal' },
@@ -65,8 +66,8 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
   const where = [item.hall, item.station].filter((s): s is string => s !== null).join(' · ')
   return (
     <Sheet title={item.name} onClose={onClose}>
-      {where !== '' && <p class="muted">{where}</p>}
-      <p>Portion: {item.portion}</p>
+      {where !== '' && <p class="where">{where}</p>}
+      <p class="portion">Portion: {item.portion}</p>
       <Stepper text={text} onText={setText} />
       <label class="field">
         Meal
@@ -78,8 +79,8 @@ export function FoodSheet({ item, legends, onClose, onAdded }: {
         <caption>Nutrition{servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}</caption>
         <tbody>
           {NUTRIENT_KEYS.map((k) => (
-            <tr key={k}>
-              <th scope="row">{NUTRIENT_LABELS[k].label}</th>
+            <tr key={k} class={k === 'calories' ? 'kcal-row' : undefined}>
+              <th scope="row">{(k === 'protein' || k === 'carbs' || k === 'fat') && <Swatch ink={k} />}{NUTRIENT_LABELS[k].label}</th>
               <td>{servings === null ? '—' : `${String(k === 'calories' ? Math.round(scaled[k]) : round1(scaled[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
             </tr>
           ))}

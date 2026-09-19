@@ -37,7 +37,7 @@ test('sign up, set goal, log online and offline, rows reach Supabase and a secon
   await page.getByLabel('Feet').fill('5')
   await page.getByLabel('Inches').fill('5')
   await page.getByLabel('Current weight (lb)').fill('140')
-  await page.getByLabel('Activity').selectOption({ label: 'Moderate — exercise 3–5×/wk' })
+  await page.getByLabel('Activity').selectOption({ label: 'Moderate: exercise 3–5×/wk' })
   await page.getByLabel('Bulk').check()
   await page.getByLabel('Pace').selectOption({ label: 'gain 0.5 lb/week' })
   await page.getByRole('button', { name: 'Save', exact: true }).click()

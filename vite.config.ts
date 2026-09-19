@@ -7,14 +7,14 @@ export default defineConfig({
     preact(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png'],
+      includeAssets: ['favicon.ico', 'apple-touch-icon-180x180.png', 'fonts/*.woff2'],
       manifest: {
         name: 'Longhorn Macros',
         short_name: 'Macros',
         start_url: '/',
         display: 'standalone',
-        theme_color: '#BF5700',
-        background_color: '#111111',
+        theme_color: '#F7F3EA',
+        background_color: '#F7F3EA',
         icons: [
           { src: 'pwa-192x192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512x512.png', sizes: '512x512', type: 'image/png' },

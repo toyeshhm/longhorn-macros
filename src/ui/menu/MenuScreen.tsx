@@ -8,6 +8,8 @@ import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem 
 import { Banner } from '../components/Banner'
 import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
+import { UtensilsDoodle } from '../icons/Doodles'
+import { Swatch } from '../icons/Marks'
 import { useLive, useMenu } from '../hooks'
 import { CustomFoodForm } from './CustomFoodForm'
 import { FoodSheet } from './FoodSheet'
@@ -56,7 +58,8 @@ function FoodRow({ item, badge, hints, onOpen }: { item: SearchItem; badge: stri
       <button type="button" class="food-row" onClick={onOpen}>
         <span class="food-name">{item.name}</span>
         <span class="food-meta">
-          {Math.round(item.nutrients.calories)} kcal · {round1(item.nutrients.protein)}g protein
+          <span class="meta-kcal">{Math.round(item.nutrients.calories)} kcal</span>
+          <span class="meta-protein"><Swatch ink="protein" />{round1(item.nutrients.protein)}g protein</span>
           {hints.map((h) => <span key={h} class="tag">{h}</span>)}
           {badge !== null && <span class="badge">{badge}</span>}
         </span>
@@ -138,7 +141,7 @@ export function MenuScreen() {
       <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}>+ Custom food</button>
 
       {stale && cachedAt !== null && (
-        <Banner tone="info">Showing menu saved {savedAgo(cachedAt, now)} — couldn't reach UT dining.</Banner>
+        <Banner tone="info">Showing the menu saved {savedAgo(cachedAt, now)}. Couldn't reach UT dining.</Banner>
       )}
       {menu === null && error !== null && (
         <Banner tone="error">
@@ -147,7 +150,7 @@ export function MenuScreen() {
       )}
 
       {results !== null ? (
-        results.length === 0 ? <p class="muted">No matches for “{query.trim()}”.</p> : (
+        results.length === 0 ? <div class="empty"><UtensilsDoodle /><p>No matches for “{query.trim()}”.</p></div> : (
           <ul class="food-list" aria-label="Search results">
             {results.map((r) => (
               <FoodRow key={r.key} item={r} badge={sourceBadge(r)}
@@ -163,7 +166,7 @@ export function MenuScreen() {
           <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
           <Chips legend="Day" name="day" options={dates.map((d) => ({ value: d, label: dayLabel(d, today) }))} value={activeDay} onSelect={setDay} />
           <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
-          {stations.length === 0 && <p class="muted">No menu posted for this hall and day.</p>}
+          {stations.length === 0 && <div class="empty"><UtensilsDoodle /><p>No menu posted for this hall and day.</p></div>}
           {stations.map((s) => (
             <section key={s.station} class="station">
               <h2>{s.station}</h2>

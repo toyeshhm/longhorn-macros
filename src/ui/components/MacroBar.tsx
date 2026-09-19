@@ -1,18 +1,17 @@
 import { round1 } from '../../nutrition'
+import { Swatch, type Ink } from '../icons/Marks'
+import { InkBar } from './InkBar'
 
-// Progress bar for one quantity vs its target. With no (or zero) target it shows the eaten amount only.
-export function MacroBar({ label, eaten, target, unit }: { label: string; eaten: number; target: number | null; unit: string }) {
+// Progress bar for one macro vs its target, printed in that macro's ink. With no (or zero) target it shows the eaten amount only.
+export function MacroBar({ ink, label, eaten, target, unit }: { ink: Ink; label: string; eaten: number; target: number | null; unit: string }) {
   const over = target !== null && eaten > target
-  const text = target === null ? `${String(round1(eaten))} ${unit}` : `${String(round1(eaten))} ${unit} / ${String(round1(target))} ${unit}`
+  const amount = `${String(round1(eaten))} ${unit}`
+  const text = target === null ? amount : `${amount} / ${String(round1(target))} ${unit}`
   return (
     <div class={`macro${over ? ' over' : ''}`}>
-      <div class="macro-head"><span>{label}</span><span>{text}{over && ' (over)'}</span></div>
-      {target !== null && target > 0 && (
-        <div class="bar" role="progressbar" aria-label={label} aria-valuemin={0} aria-valuemax={target}
-          aria-valuenow={Math.min(eaten, target)} aria-valuetext={text}>
-          <div class="bar-fill" style={{ width: `${String(Math.min(100, (eaten / target) * 100))}%` }} />
-        </div>
-      )}
+      <span class="macro-name"><Swatch ink={ink} />{label}</span>
+      {target !== null && target > 0 ? <InkBar ink={ink} eaten={eaten} target={target} label={label} valueText={text} /> : <span />}
+      <span class="macro-num"><strong>{amount}</strong>{target !== null && ` / ${String(round1(target))} ${unit}`}{over && <span class="over-tag"> (over)</span>}</span>
     </div>
   )
 }

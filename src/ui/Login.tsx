@@ -1,6 +1,7 @@
 import { useState } from 'preact/hooks'
 import { log } from '../log'
 import { supabase } from '../supabase/client'
+import { BowlDoodle } from './icons/Doodles'
 
 export function Login() {
   const [email, setEmail] = useState('')
@@ -25,7 +26,11 @@ export function Login() {
 
   return (
     <main class="login">
-      <h1>Longhorn Macros</h1>
+      <header class="login-mast">
+        <BowlDoodle class="doodle-lg" />
+        <h1><span>Longhorn</span> <span>Macros</span></h1>
+        <p>A food log for J2, JCL and Kins. Calories and protein left, at a glance.</p>
+      </header>
       <form onSubmit={(ev) => { ev.preventDefault(); void submit(false) }}>
         <label>
           Email

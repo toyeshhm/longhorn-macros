@@ -59,7 +59,7 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(shake).toBeHidden()
   await expect(eaten).toHaveText('570')
   await expect(macros).toContainText('Protein70 g')
-  await expect(logged).toContainText('2 × 1 serving · 320 kcal')
+  await expect(logged.getByRole('button', { name: /E2E Shake/ })).toContainText('2 × 1 serving320 kcal')
 
   // Delete → Undo restores.
   await logged.getByRole('button', { name: /E2E Bar/ }).click()
@@ -136,7 +136,8 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   const calories = page.getByRole('region', { name: 'Calories' })
   const macros = page.getByRole('region', { name: 'Macros' })
   await expect(calories).toContainText('160 kcal eaten of 300')
-  await expect(calories.locator('.left')).toHaveText('140 left')
+  await expect(calories.locator('.hero-label')).toHaveText('calories left today')
+  await expect(calories.locator('.big')).toHaveText('140')
   await expect(page.getByRole('button', { name: 'Set up your goals' })).toHaveCount(0)
   const calBar = page.getByRole('progressbar', { name: 'Calories eaten' })
   await expect(calBar).toHaveAttribute('aria-valuenow', '160')
@@ -157,6 +158,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await shake.getByRole('textbox', { name: 'Servings' }).fill('2')
   await shake.getByRole('button', { name: 'Save' }).click()
   await expect(shake).toBeHidden()
+  await expect(calories.locator('.hero-label')).toHaveText('target passed today')
   await expect(calories.locator('p.over')).toHaveText('20 over')
   await expect(calories.locator('.bar-fill.over')).toHaveCount(1)
   await expect(calBar).toHaveAttribute('aria-valuenow', '300')

@@ -1,5 +1,6 @@
 import type { ComponentChildren } from 'preact'
 import { useEffect, useId, useRef } from 'preact/hooks'
+import { CloseMark } from '../icons/Marks'
 
 // Native modal <dialog>: showModal() makes the page inert (focus trap) and Esc fires `close`.
 export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
@@ -17,7 +18,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       <div class="sheet-body">
         <header class="sheet-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" aria-label="Close" onClick={() => { ref.current?.close() }}>✕</button>
+          <button type="button" class="icon-btn" aria-label="Close" onClick={() => { ref.current?.close() }}><CloseMark /></button>
         </header>
         {children}
       </div>

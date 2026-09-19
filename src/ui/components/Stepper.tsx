@@ -1,5 +1,6 @@
 import { useId } from 'preact/hooks'
 import { parseServings, stepServings } from '../../servings'
+import { MinusMark, PlusMark } from '../icons/Marks'
 
 // Controlled by the raw text so an in-progress entry ("1 1/") isn't overwritten; parent reads parseServings(text).
 export function Stepper({ text, onText }: { text: string; onText: (text: string) => void }) {
@@ -11,11 +12,11 @@ export function Stepper({ text, onText }: { text: string; onText: (text: string)
     <div class="stepper">
       <label for={id}>Servings</label>
       <div class="stepper-row">
-        <button type="button" aria-label="Decrease servings" onClick={() => { step(-1) }}>−</button>
+        <button type="button" class="icon-btn" aria-label="Decrease servings" onClick={() => { step(-1) }}><MinusMark /></button>
         <input id={id} inputMode="decimal" autocomplete="off" value={text}
           aria-invalid={value === null} aria-describedby={value === null ? errorId : undefined}
           onInput={(ev) => { onText(ev.currentTarget.value) }} />
-        <button type="button" aria-label="Increase servings" onClick={() => { step(1) }}>+</button>
+        <button type="button" class="icon-btn" aria-label="Increase servings" onClick={() => { step(1) }}><PlusMark /></button>
       </div>
       {value === null && <p id={errorId} class="error">Enter servings above 0 and up to 50 (e.g. 1.5 or 1 1/2).</p>}
     </div>

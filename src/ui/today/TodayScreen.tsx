@@ -4,15 +4,19 @@ import { summarizeDay } from '../../daySummary'
 import type { LogEntry } from '../../db/types'
 import { log } from '../../log'
 import { round1 } from '../../nutrition'
+import { InkBar } from '../components/InkBar'
 import { MacroBar } from '../components/MacroBar'
 import type { Tab } from '../components/TabBar'
 import { useApp } from '../context'
 import { useLive, useTargets } from '../hooks'
+import { BowlDoodle } from '../icons/Doodles'
+import { ArrowMark } from '../icons/Marks'
 import { capitalize } from '../menu/FoodSheet'
 import { EntrySheet } from './EntrySheet'
 import { RepeatMeal } from './RepeatMeal'
 
 const UNDO_MS = 5000
+const n = (v: number): string => v.toLocaleString('en-US')
 const TOAST_MS = 3000
 
 function dateLabel(key: string, today: string): string {
@@ -54,51 +58,54 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   return (
     <div class="today">
       <header class="date-nav">
-        <button type="button" aria-label="Previous day" onClick={() => { setViewDate(addDays(viewDate, -1)) }}>‹</button>
+        <button type="button" class="icon-btn" aria-label="Previous day" onClick={() => { setViewDate(addDays(viewDate, -1)) }}><ArrowMark dir="prev" /></button>
         <h2>{dateLabel(viewDate, today)}</h2>
-        <button type="button" aria-label="Next day" onClick={() => { setViewDate(addDays(viewDate, 1)) }}>›</button>
-        {viewDate !== today && <button type="button" onClick={() => { setViewDate(today) }}>Today</button>}
+        <button type="button" class="icon-btn" aria-label="Next day" onClick={() => { setViewDate(addDays(viewDate, 1)) }}><ArrowMark dir="next" /></button>
+        {viewDate !== today && <button type="button" class="stamp" onClick={() => { setViewDate(today) }}>Today</button>}
       </header>
 
       <section class="calories" aria-label="Calories">
-        <p><span class="big">{eaten}</span> kcal eaten{targets && ` of ${String(targets.calories)}`}</p>
-        {left !== null && (
-          <p class={left < 0 ? 'over' : 'left'}>{left < 0 ? `${String(-left)} over` : `${String(left)} left`}</p>
-        )}
+        <p class="hero-label">{left === null ? 'calories eaten' : left < 0 ? 'target passed' : 'calories left'}{viewDate === today ? ' today' : ''}</p>
+        <p class={`hero-num${left !== null && left < 0 ? ' over' : ''}`}>
+          <svg class="swipe" viewBox="0 0 190 72" preserveAspectRatio="none" aria-hidden="true">
+            <path d="M6.2 12.4C44 9.8 104 9.4 184.6 7.2 186.4 9.6 185 20 184.2 34 183.4 48 185.6 57.4 183 63.6 132 64.8 64 65.2 4.4 68.2 2.4 65.4 4.6 52 4 38.6 3.6 26 2.8 17.6 6.2 12.4Z" />
+            <path class="swipe-streak" d="M5.4 14.2C58 12.4 120 11 184.8 9.6L184 18.4C122 19.8 58 21.6 4.8 23.6Z" />
+          </svg>
+          <span class="big" data-ink={n(left === null ? eaten : Math.abs(left))}>{n(left === null ? eaten : Math.abs(left))}</span>
+          {left !== null && left < 0 && <span class="over-word"> over</span>}
+        </p>
+        {targets && <p class="eaten"><strong>{n(eaten)}</strong> kcal eaten of <strong>{n(targets.calories)}</strong></p>}
         {targets && (
-          <div class="bar" role="progressbar" aria-label="Calories eaten" aria-valuemin={0} aria-valuemax={targets.calories}
-            aria-valuenow={Math.min(eaten, targets.calories)} aria-valuetext={`${String(eaten)} of ${String(targets.calories)} kcal`}>
-            <div class={`bar-fill${left !== null && left < 0 ? ' over' : ''}`} style={{ width: `${String(Math.min(100, (eaten / targets.calories) * 100))}%` }} />
-          </div>
+          <InkBar ink="calories" eaten={eaten} target={targets.calories} label="Calories eaten"
+            valueText={`${String(eaten)} of ${String(targets.calories)} kcal`} />
         )}
       </section>
       {!targets && (
-        <p class="notice">No daily targets yet. <button type="button" class="link" onClick={() => { onGo('Goals') }}>Set up your goals</button></p>
+        <p class="notice">No daily targets yet, so there's nothing to count down from. <button type="button" class="link" onClick={() => { onGo('Goals') }}>Set up your goals</button></p>
       )}
 
       <section class="macros" aria-label="Macros">
-        <MacroBar label="Protein" eaten={s.total.protein} target={targets?.protein ?? null} unit="g" />
-        <MacroBar label="Carbs" eaten={s.total.carbs} target={targets?.carbs ?? null} unit="g" />
-        <MacroBar label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
+        <MacroBar ink="protein" label="Protein" eaten={s.total.protein} target={targets?.protein ?? null} unit="g" />
+        <MacroBar ink="carbs" label="Carbs" eaten={s.total.carbs} target={targets?.carbs ?? null} unit="g" />
+        <MacroBar ink="fat" label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
       </section>
       <p class="micros" aria-label="Micronutrients">
         Fiber {round1(s.total.fiber)} g · Sugar {round1(s.total.sugar)} g · Sodium {Math.round(s.total.sodium)} mg
       </p>
 
-      <button type="button" class="link" onClick={() => { setSheet({ kind: 'repeat' }) }}>Repeat a past meal</button>
-      {entries && s.byMeal.length === 0 && (
-        <p class="muted">Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
-      )}
-      <section aria-label="Logged foods">
+      <section aria-label="Logged foods" class="logged">
         {s.byMeal.map((g) => (
           <section key={g.meal} class="meal-group">
-            <h3><span>{capitalize(g.meal)}</span><span>{Math.round(g.calories)} kcal</span></h3>
+            <h3><span>{capitalize(g.meal)}</span><span class="meal-kcal">{Math.round(g.calories)} kcal</span></h3>
             <ul class="food-list">
               {g.entries.map((e) => (
                 <li key={e.id}>
-                  <button type="button" class="food-row" onClick={() => { setSheet({ kind: 'entry', entry: e }) }}>
-                    <span class="food-name">{e.name}</span>
-                    <span class="food-meta">{e.servings} × {e.portion} · {Math.round(e.perServing.calories * e.servings)} kcal</span>
+                  <button type="button" class="food-row entry-row" onClick={() => { setSheet({ kind: 'entry', entry: e }) }}>
+                    <span class="food-main">
+                      <span class="food-name">{e.name}</span>
+                      <span class="food-meta">{e.servings} × {e.portion}</span>
+                    </span>
+                    <span class="food-kcal">{Math.round(e.perServing.calories * e.servings)} kcal</span>
                   </button>
                 </li>
               ))}
@@ -106,6 +113,13 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
           </section>
         ))}
       </section>
+      {entries && s.byMeal.length === 0 && (
+        <div class="empty">
+          <BowlDoodle class="doodle-md" />
+          <p>Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
+        </div>
+      )}
+      <button type="button" class="link repeat" onClick={() => { setSheet({ kind: 'repeat' }) }}>Repeat a past meal</button>
 
       {sheet?.kind === 'entry' && (
         <EntrySheet key={sheet.entry.id} entry={sheet.entry} onClose={() => { setSheet(null) }}

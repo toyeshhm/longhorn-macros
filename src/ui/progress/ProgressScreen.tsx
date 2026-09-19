@@ -7,6 +7,7 @@ import type { LogEntry, ProfileRow } from '../../db/types'
 import { log } from '../../log'
 import { useApp } from '../context'
 import { useLive, useProfile } from '../hooks'
+import { Swatch } from '../icons/Marks'
 import { Chips } from '../menu/MenuScreen'
 import { WeightChart } from './WeightChart'
 
@@ -30,8 +31,8 @@ function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonl
     return `Needs ${parts.join(' and ')}`
   }
   return profile?.adaptiveEnabled
-    ? 'Enough data — your maintenance estimate updates next time you open the app.'
-    : 'Enough data — turn on adaptive TDEE in Goals to learn your maintenance.'
+    ? 'Enough data. Your maintenance estimate updates next time you open the app.'
+    : 'Enough data. Turn on adaptive TDEE in Goals to learn your maintenance.'
 }
 
 export function ProgressScreen() {
@@ -94,9 +95,9 @@ export function ProgressScreen() {
       {weights && <WeightChart raw={raw} trend={trend} />}
 
       <section class="stats" aria-label="Last 7 days">
-        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : `${String(Math.round(stats.avgCalories))} kcal`}</span></div>
-        <div class="stat"><span class="stat-label">Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '—' : `${String(Math.round(stats.avgProtein))} g`}</span></div>
-        <div class="stat"><span class="stat-label">Days logged</span><span class="stat-value">{stats.daysLogged} / 7</span></div>
+        <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : <>{Math.round(stats.avgCalories)}<small> kcal</small></>}</span></div>
+        <div class="stat"><span class="stat-label"><Swatch ink="protein" />Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '—' : <>{Math.round(stats.avgProtein)}<small> g</small></>}</span></div>
+        <div class="stat"><span class="stat-label">Days logged</span><span class="stat-value">{stats.daysLogged}<small> / 7</small></span></div>
       </section>
       {weights && allLog && <p class="adaptive-status">{adaptiveStatus(profile, points, allLog, today)}</p>}
     </div>
