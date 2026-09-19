@@ -109,7 +109,8 @@ function Tabs() {
   return (
     <>
       <SyncBanner />
-      <main class="screen">
+      {/* tabindex=-1: somewhere for focus to land when the element that had it is removed (deleting a logged food). */}
+      <main class="screen" tabIndex={-1}>
         {/* Today leads with its date line; its title stays for screen readers only. */}
         <h1 class={tab === 'Today' ? 'visually-hidden' : 'masthead'}>{tab}</h1>
         {tab === 'Menu' && <MenuScreen />}

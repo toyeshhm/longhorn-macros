@@ -8,7 +8,19 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
   const titleId = useId()
   useEffect(() => {
     const dialog = ref.current
+    // Read the opener before showModal(), which moves focus into the sheet. The dialog is unmounted on close (and on
+    // Add/Save, which never call close()), so the browser's own focus restore doesn't always land; do it ourselves.
+    const opener = document.activeElement
     if (dialog && !dialog.open) dialog.showModal()
+    return () => {
+      // Removing an open dialog drops focus on <body> after this cleanup runs, so claim it back next tick, and only
+      // if nothing else has taken it in the meantime (deleting an entry hands focus to Undo instead).
+      setTimeout(() => {
+        if (document.activeElement !== document.body) return
+        const back = opener instanceof HTMLElement && opener.isConnected ? opener : document.querySelector('main.screen')
+        if (back instanceof HTMLElement) back.focus()
+      }, 0)
+    }
   }, [])
   return (
     <dialog ref={ref} class="sheet" role="dialog" aria-modal="true" aria-labelledby={titleId}

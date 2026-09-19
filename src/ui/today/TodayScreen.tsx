@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { addDays, daysBetween, localDateKey } from '../../dates'
 import { summarizeDay } from '../../daySummary'
 import type { LogEntry } from '../../db/types'
@@ -16,7 +16,7 @@ import { capitalize } from '../menu/FoodSheet'
 import { EntrySheet } from './EntrySheet'
 import { RepeatMeal } from './RepeatMeal'
 
-const UNDO_MS = 5000
+const UNDO_MS = 10_000 // long enough to find and press Undo with a screen reader or one thumb, not only to see it flash by
 const TOAST_MS = 3000
 
 function dateLabel(key: string, today: string): string {
@@ -36,14 +36,24 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   const [sheet, setSheet] = useState<{ kind: 'entry'; entry: LogEntry } | { kind: 'repeat' } | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
 
+  // A delete takes the focused row with it, so focus moves to Undo; when the toast goes it hands focus to the
+  // screen rather than leaving it on <body>.
+  const undoRef = useRef<HTMLButtonElement>(null)
+  const dropToast = (): void => {
+    const held = undoRef.current !== null && undoRef.current === document.activeElement
+    setToast(null)
+    if (held) document.querySelector<HTMLElement>('main.screen')?.focus()
+  }
+
   useEffect(() => {
     if (toast === null) return
-    const t = setTimeout(() => { setToast(null) }, toast.kind === 'deleted' ? UNDO_MS : TOAST_MS)
+    if (toast.kind === 'deleted') undoRef.current?.focus()
+    const t = setTimeout(dropToast, toast.kind === 'deleted' ? UNDO_MS : TOAST_MS)
     return () => { clearTimeout(t) }
   }, [toast])
 
   const undo = (entry: LogEntry): void => {
-    setToast(null)
+    dropToast()
     store.put('food_log', { ...entry, deletedAt: null }).then(undefined, (e: unknown) => {
       log.error('ui.food_log_undo_failed', { id: entry.id, error: String(e) })
       setToast({ kind: 'info', text: `Couldn't undo: ${String(e)}` })
@@ -128,7 +138,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
       {toast !== null && (
         <div class="toast" role="status">
           {toast.kind === 'info' ? toast.text : (
-            <>Deleted {toast.entry.name} <button type="button" class="link" onClick={() => { undo(toast.entry) }}>Undo</button></>
+            <>Deleted {toast.entry.name} <button ref={undoRef} type="button" class="link" onClick={() => { undo(toast.entry) }}>Undo</button></>
           )}
         </div>
       )}

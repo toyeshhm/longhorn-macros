@@ -17,6 +17,9 @@ const MIN_LB = 50
 const MAX_LB = 700
 const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
+// The message is shown at the field it is about (aria-describedby), not as one message at the foot of the form.
+interface Invalid { field: 'weight' | 'date' | 'form'; message: string }
+
 function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonly WeightPoint[], allLog: readonly LogEntry[], today: string): string {
   if (profile?.tdeeEstimate != null && profile.tdeeUpdatedOn !== null) {
     const on = new Date(`${profile.tdeeUpdatedOn}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
@@ -46,16 +49,16 @@ export function ProgressScreen() {
   const [range, setRange] = useState<(typeof RANGES)[number]['value']>('30')
   const [weight, setWeight] = useState('')
   const [date, setDate] = useState(today)
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<Invalid | null>(null)
   const [busy, setBusy] = useState(false)
 
   const save = async (): Promise<void> => {
     const lb = Number(weight.trim())
     if (weight.trim() === '' || !Number.isFinite(lb) || lb < MIN_LB || lb > MAX_LB) {
-      setError(`Weight must be between ${String(MIN_LB)} and ${String(MAX_LB)} lb.`)
+      setError({ field: 'weight', message: `Weight must be between ${String(MIN_LB)} and ${String(MAX_LB)} lb.` })
       return
     }
-    if (!DATE_KEY.test(date) || date > today) { setError('Pick a date on or before today.'); return }
+    if (!DATE_KEY.test(date) || date > today) { setError({ field: 'date', message: 'Pick a date on or before today.' }); return }
     setBusy(true)
     setError(null)
     try {
@@ -65,7 +68,7 @@ export function ProgressScreen() {
       setWeight('')
     } catch (e) {
       log.error('ui.weight_put_failed', { date, error: String(e) })
-      setError(`Couldn't save: ${String(e)}`)
+      setError({ field: 'form', message: `Couldn't save: ${String(e)}` })
     }
     setBusy(false)
   }
@@ -81,15 +84,18 @@ export function ProgressScreen() {
       <form class="weight-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
         <label class="field">
           Weight (lb)
-          <input type="number" inputMode="decimal" min={MIN_LB} max={MAX_LB} step="any" required value={weight}
+          <input type="number" inputMode="decimal" enterKeyHint="done" min={MIN_LB} max={MAX_LB} step="any" required value={weight}
+            aria-invalid={error?.field === 'weight'} aria-describedby={error?.field === 'weight' ? 'weight-err' : undefined}
             onInput={(ev) => { setWeight(ev.currentTarget.value) }} />
         </label>
         <label class="field">
           Date
-          <input type="date" max={today} required value={date} onInput={(ev) => { setDate(ev.currentTarget.value) }} />
+          <input type="date" max={today} required value={date}
+            aria-invalid={error?.field === 'date'} aria-describedby={error?.field === 'date' ? 'weight-err' : undefined}
+            onInput={(ev) => { setDate(ev.currentTarget.value) }} />
         </label>
+        {error !== null && <p id="weight-err" role="alert" class="error">{error.message}</p>}
         <button type="submit" class="primary" disabled={busy}>Save weight</button>
-        {error !== null && <p role="alert" class="error">{error}</p>}
       </form>
 
       <Chips legend="Chart range" name="range" options={RANGES} value={range} onSelect={setRange} />

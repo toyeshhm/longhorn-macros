@@ -53,11 +53,19 @@ function errorKey(message: string): ErrorKey {
 export function GoalsScreen() {
   const profile = useProfile()
   const weight = useLatestWeight()
+  // The first save turns `profile` from null into a row, which remounts the form (its key changes) and would wipe a
+  // "Saved" message held inside it, so the message lives out here where it survives that swap and can be announced.
+  const [status, setStatus] = useState<string | null>(null)
   if (profile === undefined || weight === undefined) return <p class="loading">Loading…</p>
-  return <GoalsForm key={profile === null ? 'new' : 'existing'} profile={profile} latestWeightLb={weight?.weightLb ?? null} />
+  return (
+    <GoalsForm key={profile === null ? 'new' : 'existing'} profile={profile} latestWeightLb={weight?.weightLb ?? null}
+      status={status} setStatus={setStatus} />
+  )
 }
 
-function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; latestWeightLb: number | null }) {
+function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
+  profile: ProfileRow | null; latestWeightLb: number | null; status: string | null; setStatus: (s: string | null) => void
+}) {
   const { store, userId } = useApp()
   const firstRun = profile === null
   const [sex, setSex] = useState<Sex>(profile?.sex ?? 'male')
@@ -75,7 +83,6 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
   })
   const [adaptiveEnabled, setAdaptiveEnabled] = useState(profile?.adaptiveEnabled ?? true)
   const [errors, setErrors] = useState<Partial<Record<ErrorKey, string>>>({})
-  const [status, setStatus] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
   const override: Partial<Targets> = {}
@@ -123,7 +130,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
 
   const err = (k: ErrorKey) => {
     const m = errors[k]
-    return m === undefined ? null : <p id={`goals-err-${k}`} class="error">{m}</p>
+    return m === undefined ? null : <p id={`goals-err-${k}`} role="alert" class="error">{m}</p>
   }
   const describedBy = (k: ErrorKey): string | undefined => (errors[k] === undefined ? undefined : `goals-err-${k}`)
   const year = new Date().getFullYear()
@@ -179,7 +186,7 @@ function GoalsForm({ profile, latestWeightLb }: { profile: ProfileRow | null; la
         }} />
         <label class="field">
           Pace
-          <select value={String(rate)} aria-describedby={describedBy('rate')} onChange={(ev) => { setRate(Number(ev.currentTarget.value)) }}>
+          <select value={String(rate)} aria-invalid={errors.rate !== undefined} aria-describedby={describedBy('rate')} onChange={(ev) => { setRate(Number(ev.currentTarget.value)) }}>
             {RATE_OPTIONS[goal].map((r) => <option key={r} value={String(r)}>{paceLabel(goal, r)}</option>)}
           </select>
         </label>
