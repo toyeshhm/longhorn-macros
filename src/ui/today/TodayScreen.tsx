@@ -90,7 +90,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         <MacroBar ink="fat" label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
       </section>
       <p class="micros" aria-label="Micronutrients">
-        Fiber {round1(s.total.fiber)} g · Sugar {round1(s.total.sugar)} g · Sodium {n(s.total.sodium)} mg
+        Fiber&nbsp;{round1(s.total.fiber)}&nbsp;g · Sugar&nbsp;{round1(s.total.sugar)}&nbsp;g · Sodium&nbsp;{n(s.total.sodium)}&nbsp;mg
       </p>
 
       <section aria-label="Logged foods" class="logged">
