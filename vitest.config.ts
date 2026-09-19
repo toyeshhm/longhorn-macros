@@ -1,3 +1,4 @@
+import { loadEnv } from 'vite'
 import { defineConfig } from 'vitest/config'
 import { playwright } from '@vitest/browser-playwright'
 
@@ -16,6 +17,7 @@ export default defineConfig({
         test: {
           name: 'browser',
           include: ['tests/browser/**/*.test.ts'],
+          env: loadEnv('test', process.cwd(), ''),
           browser: {
             enabled: true,
             headless: true,
