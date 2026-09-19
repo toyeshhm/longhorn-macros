@@ -2,23 +2,13 @@ import { useState } from 'preact/hooks'
 import { localDateKey } from '../../dates'
 import { MEALS, type Meal } from '../../db/types'
 import { log } from '../../log'
-import { NUTRIENT_KEYS, round1, scaleNutrients, type Nutrients } from '../../nutrition'
+import { scaleNutrients } from '../../nutrition'
 import type { SearchItem } from '../../search'
 import { defaultMealFor, parseServings } from '../../servings'
+import { NutrientTable } from '../components/NutrientTable'
 import { Sheet } from '../components/Sheet'
 import { Stepper } from '../components/Stepper'
 import { useApp } from '../context'
-import { Swatch } from '../icons/Marks'
-
-const NUTRIENT_LABELS: Readonly<Record<keyof Nutrients, { label: string; unit: string }>> = {
-  calories: { label: 'Calories', unit: 'kcal' },
-  protein: { label: 'Protein', unit: 'g' },
-  carbs: { label: 'Carbs', unit: 'g' },
-  fat: { label: 'Fat', unit: 'g' },
-  fiber: { label: 'Fiber', unit: 'g' },
-  sugar: { label: 'Sugar', unit: 'g' },
-  sodium: { label: 'Sodium', unit: 'mg' },
-}
 
 export function isMeal(v: string): v is Meal {
   return MEALS.some((m) => m === v)
@@ -84,17 +74,9 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
       <p class="portion">Portion: {item.portion}</p>
       <Stepper text={text} onText={setText} />
       <MealSelect meal={meal} onMeal={setMeal} />
-      <table class="nutrients">
-        <caption>Nutrition{servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}</caption>
-        <tbody>
-          {NUTRIENT_KEYS.map((k) => (
-            <tr key={k} class={k === 'calories' ? 'kcal-row' : undefined}>
-              <th scope="row">{(k === 'protein' || k === 'carbs' || k === 'fat') && <Swatch ink={k} />}{NUTRIENT_LABELS[k].label}</th>
-              <td>{servings === null ? '—' : `${String(k === 'calories' ? Math.round(scaled[k]) : round1(scaled[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <NutrientTable
+        caption={`Nutrition${servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}`}
+        columns={[{ head: null, values: servings === null ? null : scaled }]} />
       {legends.length > 0 && (
         <ul class="legends" aria-label="Allergens and diet">
           {legends.map((l) => <li key={l}>{l}</li>)}

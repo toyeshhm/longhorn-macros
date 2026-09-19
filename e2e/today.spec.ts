@@ -49,9 +49,30 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(page.locator('.micros')).toHaveText('Fiber 5 g · Sugar 15 g · Sodium 350 mg')
   await expect(logged.getByRole('heading', { name: 'Lunch' })).toContainText('410 kcal')
 
-  // Edit servings → totals update.
+  // Tapping an entry shows the food's detail: source, portion, meal, per-serving and scaled macros.
   await logged.getByRole('button', { name: /E2E Shake/ }).click()
   const shake = page.getByRole('dialog', { name: 'E2E Shake' })
+  const nutrients = shake.locator('table.nutrients')
+  await expect(shake).toContainText('Custom food')
+  await expect(shake).toContainText('Portion: 1 serving')
+  await expect(shake.getByLabel('Meal')).toHaveValue('lunch')
+  await expect(shake).toContainText('These are the numbers saved with this entry on ')
+  await expect(nutrients.locator('caption')).toHaveText('Nutrition for 1 serving')
+  await expect(nutrients).toContainText('Calories160 kcal160 kcal')
+  await expect(nutrients).toContainText('Protein30 g30 g')
+  await expect(nutrients).toContainText('Sodium200 mg200 mg')
+
+  // Editing servings rescales the Total column live, leaving Per serving alone.
+  await shake.getByRole('textbox', { name: 'Servings' }).fill('3')
+  await expect(nutrients.locator('caption')).toHaveText('Nutrition for 3 servings')
+  await expect(nutrients).toContainText('Calories480 kcal160 kcal')
+  await expect(nutrients).toContainText('Carbs15 g5 g')
+  await expect(nutrients).toContainText('Fat6 g2 g')
+  await shake.getByRole('textbox', { name: 'Servings' }).fill('0')
+  await expect(nutrients).toContainText('Calories—160 kcal')
+
+  // Edit servings → totals update.
+  await shake.getByRole('textbox', { name: 'Servings' }).fill('1')
   await shake.getByRole('button', { name: 'Increase servings' }).click()
   await expect(shake.getByRole('textbox', { name: 'Servings' })).toHaveValue('1.5')
   await shake.getByRole('textbox', { name: 'Servings' }).fill('2')
