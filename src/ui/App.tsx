@@ -110,8 +110,7 @@ function Tabs() {
     <>
       <SyncBanner />
       <main class="screen">
-        {/* Today's date header doubles as its title, so the tab name is only announced. */}
-        <h1 class={tab === 'Today' ? 'visually-hidden' : undefined}>{tab}</h1>
+        <h1>{tab}</h1>
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Today' && <TodayScreen onGo={setTab} />}
         {tab === 'Progress' && <ProgressScreen />}

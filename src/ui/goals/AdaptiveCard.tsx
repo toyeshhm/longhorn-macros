@@ -38,8 +38,8 @@ export async function runAdaptive(store: LocalStore, engine: SyncEngine, userId:
 export function AdaptiveCard({ update, onUndo, onDismiss }: { update: AdaptiveUpdate; onUndo: () => void; onDismiss: () => void }) {
   return (
     <section class="adaptive-card notice" aria-label="Targets updated" aria-live="polite">
-      <p>Targets updated {update.from} → {update.to} kcal because {update.reason}.</p>
-      <button type="button" onClick={onUndo}>Undo change</button>
+      <p>Targets updated {update.from} → {update.to} kcal — {update.reason}</p>
+      <button type="button" onClick={onUndo}>Undo</button>
       <button type="button" class="link" onClick={onDismiss}>Dismiss</button>
     </section>
   )

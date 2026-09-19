@@ -49,7 +49,7 @@ export function RepeatMeal({ onClose, onAdded }: { onClose: () => void; onAdded:
         </select>
       </label>
       {items.length === 0 ? <p class="muted">Nothing logged for that meal.</p> : (
-        <ul class="copy-list" aria-label="Items to copy">
+        <ul aria-label="Items to copy">
           {items.map((e) => <li key={e.id}>{e.name} · {e.servings} × {e.portion}</li>)}
         </ul>
       )}

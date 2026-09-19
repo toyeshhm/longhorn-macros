@@ -15,12 +15,12 @@ test('first-run profile → targets, manual override round trip, adaptive update
   const panel = page.getByRole('region', { name: 'Your targets' })
 
   // First run lands on Goals. Invalid input is reported inline, tied to its field.
-  await expect(page.getByText('Set up your profile and first weigh-in')).toBeVisible()
+  await expect(page.getByText('Welcome! Set up your profile')).toBeVisible()
   await page.getByLabel('Birth year').fill('1800')
   await page.getByLabel('Feet').fill('3') // 36 in < 48
   await page.getByText('Adjust targets manually').click()
   await page.getByLabel('Calories (kcal)').fill('-5')
-  await page.getByRole('button', { name: 'Save goals' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByLabel('Birth year')).toHaveAccessibleDescription('birth year must be between 1900 and 2015')
   await expect(page.getByLabel('Feet')).toHaveAccessibleDescription('height must be between 48 and 96 inches')
   await expect(page.getByLabel('Calories (kcal)')).toHaveAccessibleDescription('override calories must be between 0 and 10000')
@@ -33,24 +33,24 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await page.getByLabel('Feet').fill('5')
   await page.getByLabel('Inches').fill('10')
   await page.getByLabel('Current weight (lb)').fill('170')
-  await page.getByLabel('Activity').selectOption({ label: 'Moderate: exercise 3–5×/wk' })
+  await page.getByLabel('Activity').selectOption({ label: 'Moderate — exercise 3–5×/wk' })
   await page.getByLabel('Cut').check()
   await page.getByLabel('Pace').selectOption({ label: 'lose 1 lb/week' })
   for (const t of ['Calories2270 kcal', 'Protein170 g', 'Fat63 g', 'Carbs256 g']) await expect(panel).toContainText(t)
-  await page.getByRole('button', { name: 'Save goals' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByLabel('Current weight (lb)')).toHaveCount(0) // saved: no longer first run
-  await expect(page.getByText('Set up your profile and first weigh-in')).toHaveCount(0)
+  await expect(page.getByText('Welcome! Set up your profile')).toHaveCount(0)
 
   // Override calories → Today uses it; clearing restores the computed target.
   await page.getByText('Adjust targets manually').click()
   await page.getByLabel('Calories (kcal)').fill('2000')
-  await page.getByRole('button', { name: 'Save goals' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText('kcal eaten of 2000')
   await tabs.getByRole('button', { name: 'Goals' }).click()
   await page.getByLabel('Calories (kcal)').fill('')
-  await page.getByRole('button', { name: 'Save goals' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText('kcal eaten of 2270')
@@ -80,7 +80,7 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await page.reload()
   // previous = formula 2770.4; estimate = 2500 (flat trend); blend → 2635 maintenance → 2135 target on a 1 lb/wk cut.
   const card = page.getByRole('region', { name: 'Targets updated' })
-  await expect(card).toContainText("Targets updated 2270 → 2135 kcal because you're losing slower than planned.")
+  await expect(card).toContainText("Targets updated 2270 → 2135 kcal — you're losing slower than planned")
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText('kcal eaten of 2135')
   await tabs.getByRole('button', { name: 'Goals' }).click()
@@ -147,7 +147,7 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   const toggle = page.getByLabel(/Adaptive TDEE/)
   await expect(toggle).not.toBeChecked()
   await toggle.check()
-  await page.getByRole('button', { name: 'Save goals' }).click()
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await expect(card).toHaveCount(0) // runs when the app opens, not on save
 

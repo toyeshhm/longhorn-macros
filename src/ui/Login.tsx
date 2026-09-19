@@ -25,16 +25,14 @@ export function Login() {
 
   return (
     <main class="login">
-      <img class="mark" src="/logo.svg" alt="" width={44} height={44} />
       <h1>Longhorn Macros</h1>
-      <p class="lede">Log UT dining meals against your daily targets.</p>
       <form onSubmit={(ev) => { ev.preventDefault(); void submit(false) }}>
-        <label class="field">
+        <label>
           Email
           <input type="email" autocomplete="email" required value={email}
             onInput={(ev) => { setEmail(ev.currentTarget.value) }} />
         </label>
-        <label class="field">
+        <label>
           Password
           <input type="password" autocomplete={creating ? 'new-password' : 'current-password'} required minLength={6}
             value={password} onInput={(ev) => { setPassword(ev.currentTarget.value) }} />

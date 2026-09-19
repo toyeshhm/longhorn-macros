@@ -4,11 +4,11 @@ import { round1 } from '../../nutrition'
 
 const W = 340
 const H = 200
-const PAD = 40
+const PAD = 32
 
 // Hand-rolled SVG: raw weigh-ins as dots, EWMA trend as a line. Screen readers get <title> + a hidden table.
 export function WeightChart({ raw, trend }: { raw: readonly WeightPoint[]; trend: readonly WeightPoint[] }) {
-  if (raw.length === 0) return <p class="empty">No weigh-ins in this range yet.</p>
+  if (raw.length === 0) return <p class="muted">No weigh-ins in this range yet.</p>
   const geo = chartGeometry(raw, trend, W, H, PAD)
   const sorted = [...raw].sort((a, b) => a.date.localeCompare(b.date))
   const trendByDate = new Map(trend.map((p) => [p.date, p.weightLb]))
@@ -34,10 +34,6 @@ export function WeightChart({ raw, trend }: { raw: readonly WeightPoint[]; trend
           return <circle key={pt} class="dot" cx={cx} cy={cy} r={3.5} />
         })}
       </svg>
-      <figcaption class="chart-key" aria-hidden="true">
-        <span><i class="key-dot" />Weigh-in</span>
-        <span><i class="key-line" />Trend</span>
-      </figcaption>
       <table class="visually-hidden">
         <caption>Weigh-ins</caption>
         <thead><tr><th scope="col">Date</th><th scope="col">Weight (lb)</th><th scope="col">Trend (lb)</th></tr></thead>

@@ -36,16 +36,12 @@ export function EntrySheet({ entry, onClose, onDeleted }: { entry: LogEntry; onC
 
   return (
     <Sheet title={entry.name} onClose={onClose}>
-      <p class="sheet-sub">Serving size {entry.portion}</p>
-      <div class="sheet-controls">
-        <Stepper text={text} onText={setText} />
-        <p class="entry-kcal"><strong>{servings === null ? '–' : Math.round(entry.perServing.calories * servings)}</strong> kcal</p>
-      </div>
+      <p>Portion: {entry.portion}</p>
+      <Stepper text={text} onText={setText} />
+      <p>{servings === null ? '—' : Math.round(entry.perServing.calories * servings)} kcal</p>
       {error !== null && <p role="alert" class="error">{error}</p>}
-      <div class="actions">
-        <button type="button" class="danger" disabled={busy} onClick={() => { void remove() }}>Delete entry</button>
-        <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void save() }}>Save changes</button>
-      </div>
+      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void save() }}>Save</button>
+      <button type="button" class="danger" disabled={busy} onClick={() => { void remove() }}>Delete</button>
     </Sheet>
   )
 }

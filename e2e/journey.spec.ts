@@ -31,17 +31,17 @@ test('sign up, set goal, log online and offline, rows reach Supabase and a secon
   const tabs = page.getByRole('navigation', { name: 'Main' })
 
   // Profile + goal.
-  await expect(page.getByText('Set up your profile and first weigh-in')).toBeVisible()
+  await expect(page.getByText('Welcome! Set up your profile')).toBeVisible()
   await page.getByLabel('Female', { exact: true }).check()
   await page.getByLabel('Birth year').fill('2005')
   await page.getByLabel('Feet').fill('5')
   await page.getByLabel('Inches').fill('5')
   await page.getByLabel('Current weight (lb)').fill('140')
-  await page.getByLabel('Activity').selectOption({ label: 'Moderate: exercise 3–5×/wk' })
+  await page.getByLabel('Activity').selectOption({ label: 'Moderate — exercise 3–5×/wk' })
   await page.getByLabel('Bulk').check()
   await page.getByLabel('Pace').selectOption({ label: 'gain 0.5 lb/week' })
-  await page.getByRole('button', { name: 'Save goals' }).click()
-  await expect(page.getByText('Set up your profile and first weigh-in')).toHaveCount(0)
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Welcome! Set up your profile')).toHaveCount(0)
 
   // Online add.
   await tabs.getByRole('button', { name: 'Menu' }).click()

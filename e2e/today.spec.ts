@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js'
 import { loadEnv } from 'vite'
 
 async function createCustomFood(page: Page, name: string, values: Record<string, string>): Promise<void> {
-  await page.getByRole('button', { name: 'Add custom food' }).click()
+  await page.getByRole('button', { name: '+ Custom food' }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill(name)
   for (const [label, v] of Object.entries(values)) await form.getByLabel(label).fill(v)
@@ -39,7 +39,7 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   // Totals equal the sum of both items.
   await goToday()
   const calories = page.getByRole('region', { name: 'Calories' })
-  const eaten = calories.locator('.eaten')
+  const eaten = calories.locator('.big')
   const macros = page.getByRole('region', { name: 'Macros' })
   const logged = page.getByRole('region', { name: 'Logged foods' })
   await expect(eaten).toHaveText('410')
@@ -136,7 +136,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   const calories = page.getByRole('region', { name: 'Calories' })
   const macros = page.getByRole('region', { name: 'Macros' })
   await expect(calories).toContainText('160 kcal eaten of 300')
-  await expect(calories.locator('.left')).toHaveText('140 kcal left')
+  await expect(calories.locator('.left')).toHaveText('140 left')
   await expect(page.getByRole('button', { name: 'Set up your goals' })).toHaveCount(0)
   const calBar = page.getByRole('progressbar', { name: 'Calories eaten' })
   await expect(calBar).toHaveAttribute('aria-valuenow', '160')
@@ -157,7 +157,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await shake.getByRole('textbox', { name: 'Servings' }).fill('2')
   await shake.getByRole('button', { name: 'Save' }).click()
   await expect(shake).toBeHidden()
-  await expect(calories.locator('p.over')).toHaveText('20 kcal over')
+  await expect(calories.locator('p.over')).toHaveText('20 over')
   await expect(calories.locator('.bar-fill.over')).toHaveCount(1)
   await expect(calBar).toHaveAttribute('aria-valuenow', '300')
   await expect(calBar).toHaveAttribute('aria-valuetext', '320 of 300 kcal')

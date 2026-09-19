@@ -17,7 +17,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
       <div class="sheet-body">
         <header class="sheet-head">
           <h2 id={titleId}>{title}</h2>
-          <button type="button" aria-label="Close" onClick={() => { ref.current?.close() }}><svg width="14" height="14" viewBox="0 0 14 14" aria-hidden="true"><path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" /></svg></button>
+          <button type="button" aria-label="Close" onClick={() => { ref.current?.close() }}>✕</button>
         </header>
         {children}
       </div>

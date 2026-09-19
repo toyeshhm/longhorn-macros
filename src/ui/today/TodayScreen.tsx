@@ -15,12 +15,6 @@ import { RepeatMeal } from './RepeatMeal'
 const UNDO_MS = 5000
 const TOAST_MS = 3000
 
-const RELATIVE: ReadonlySet<string> = new Set(['Today', 'Yesterday', 'Tomorrow'])
-
-function fullDate(key: string): string {
-  return new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
-}
-
 function dateLabel(key: string, today: string): string {
   const offset = daysBetween(today, key)
   if (offset === 0) return 'Today'
@@ -53,7 +47,6 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   }
 
   const today = localDateKey(new Date())
-  const label = dateLabel(viewDate, today)
   const s = summarizeDay(entries ?? [], targets)
   const eaten = Math.round(s.total.calories)
   const left = s.remaining && Math.round(s.remaining.calories)
@@ -61,22 +54,16 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   return (
     <div class="today">
       <header class="date-nav">
-        <div class="date-title">
-          <h2>{label}</h2>
-          {RELATIVE.has(label) && <p class="date-full">{fullDate(viewDate)}</p>}
-        </div>
-        {viewDate !== today && <button type="button" class="jump" onClick={() => { setViewDate(today) }}>Go to today</button>}
         <button type="button" aria-label="Previous day" onClick={() => { setViewDate(addDays(viewDate, -1)) }}>‹</button>
+        <h2>{dateLabel(viewDate, today)}</h2>
         <button type="button" aria-label="Next day" onClick={() => { setViewDate(addDays(viewDate, 1)) }}>›</button>
+        {viewDate !== today && <button type="button" onClick={() => { setViewDate(today) }}>Today</button>}
       </header>
 
       <section class="calories" aria-label="Calories">
-        {left === null ? (
-          <p class="readout"><span class="big eaten">{eaten}</span>{' '}<span class="unit">kcal eaten</span></p>
-        ) : (
-          <p class={`readout ${left < 0 ? 'over' : 'left'}`}>
-            <span class="big">{Math.abs(left)}</span>{' '}<span class="unit">{left < 0 ? 'kcal over' : 'kcal left'}</span>
-          </p>
+        <p><span class="big">{eaten}</span> kcal eaten{targets && ` of ${String(targets.calories)}`}</p>
+        {left !== null && (
+          <p class={left < 0 ? 'over' : 'left'}>{left < 0 ? `${String(-left)} over` : `${String(left)} left`}</p>
         )}
         {targets && (
           <div class="bar" role="progressbar" aria-label="Calories eaten" aria-valuemin={0} aria-valuemax={targets.calories}
@@ -84,7 +71,6 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
             <div class={`bar-fill${left !== null && left < 0 ? ' over' : ''}`} style={{ width: `${String(Math.min(100, (eaten / targets.calories) * 100))}%` }} />
           </div>
         )}
-        {targets && <p class="sub"><span class="eaten">{eaten}</span> kcal eaten of {targets.calories}</p>}
       </section>
       {!targets && (
         <p class="notice">No daily targets yet. <button type="button" class="link" onClick={() => { onGo('Goals') }}>Set up your goals</button></p>
@@ -99,14 +85,11 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         Fiber {round1(s.total.fiber)} g · Sugar {round1(s.total.sugar)} g · Sodium {Math.round(s.total.sodium)} mg
       </p>
 
+      <button type="button" class="link" onClick={() => { setSheet({ kind: 'repeat' }) }}>Repeat a past meal</button>
+      {entries && s.byMeal.length === 0 && (
+        <p class="muted">Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
+      )}
       <section aria-label="Logged foods">
-        <div class="log-head">
-          <h2>Log</h2>
-          <button type="button" class="link" onClick={() => { setSheet({ kind: 'repeat' }) }}>Repeat a past meal</button>
-        </div>
-        {entries && s.byMeal.length === 0 && (
-          <p class="empty">Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
-        )}
         {s.byMeal.map((g) => (
           <section key={g.meal} class="meal-group">
             <h3><span>{capitalize(g.meal)}</span><span>{Math.round(g.calories)} kcal</span></h3>

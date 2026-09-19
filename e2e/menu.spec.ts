@@ -61,7 +61,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await search.fill('')
 
   // Custom food: save opens its sheet; Esc closes; it is then searchable and addable.
-  await page.getByRole('button', { name: 'Add custom food' }).click()
+  await page.getByRole('button', { name: '+ Custom food' }).click()
   const form = page.getByRole('dialog', { name: 'Custom food' })
   await form.getByLabel('Name').fill('Protein Shake')
   await form.getByLabel('Calories (kcal)').fill('160')
