@@ -1,0 +1,22 @@
+const KEY = /^(\d{4})-(\d{2})-(\d{2})$/
+function parts(key: string): [number, number, number] {
+  const m = KEY.exec(key)
+  if (!m) throw new Error(`invalid date key: ${key}`)
+  return [Number(m[1]), Number(m[2]), Number(m[3])]
+}
+const pad = (n: number): string => String(n).padStart(2, '0')
+export function localDateKey(d: Date): string { return `${String(d.getFullYear())}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` }
+function utcNoon(key: string): number { const [y, m, d] = parts(key); return Date.UTC(y, m - 1, d, 12) }
+export function addDays(key: string, n: number): string {
+  const t = new Date(utcNoon(key) + n * 86_400_000)
+  return `${String(t.getUTCFullYear())}-${pad(t.getUTCMonth() + 1)}-${pad(t.getUTCDate())}`
+}
+export function daysBetween(a: string, b: string): number { return Math.round((utcNoon(b) - utcNoon(a)) / 86_400_000) }
+export function feedDateToKey(s: string): string {
+  const m = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(s)
+  if (!m) throw new Error(`invalid feed date: ${s}`)
+  const month = Number(m[1])
+  const day = Number(m[2])
+  const year = Number(m[3])
+  return `${String(year)}-${pad(month)}-${pad(day)}`
+}
