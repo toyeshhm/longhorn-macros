@@ -1,4 +1,5 @@
 import { feedDateToKey } from '../dates'
+import { guards } from '../guard'
 import { log } from '../log'
 import { zeroNutrients, type Nutrients } from '../nutrition'
 
@@ -30,23 +31,8 @@ const NUTRIENT_NAME_TO_KEY: Readonly<Record<string, keyof Nutrients>> = {
   Cals: 'calories', Prot: 'protein', Carb: 'carbs', 'Fat-T': 'fat', Fiber: 'fiber', Sugar: 'sugar', Sod: 'sodium',
 }
 
-function fail(path: string): never { throw new Error(`UT menu feed format changed: ${path}`) }
+const { obj, arr, str } = guards('UT menu feed format changed: ')
 
-function isPlainObject(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null && !Array.isArray(v)
-}
-function obj(v: unknown, path: string): Record<string, unknown> {
-  if (!isPlainObject(v)) fail(path)
-  return v
-}
-function arr(v: unknown, path: string): unknown[] {
-  if (!Array.isArray(v)) fail(path)
-  return v
-}
-function str(v: unknown, path: string): string {
-  if (typeof v !== 'string') fail(path)
-  return v
-}
 function num(v: unknown): number | null {
   if (typeof v !== 'string') return null
   const n = parseFloat(v)
