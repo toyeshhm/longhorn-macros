@@ -155,3 +155,14 @@ button.danger { color: var(--error); border-color: var(--error); }
 .stat { display: flex; flex-direction: column; gap: 4px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
 .stat-label { color: var(--muted); font-size: 0.85rem; }
 .stat-value { font-weight: 600; }
+.goals-form { display: flex; flex-direction: column; gap: 12px; }
+.goals-form .height { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 0; padding: 0; border: 0; }
+.goals-form .height legend { color: var(--muted); padding: 0; margin-bottom: 4px; }
+.goals-form input, .goals-form select { width: 100%; min-width: 0; }
+.goals-form .toggle { display: flex; gap: 8px; align-items: center; }
+.goals-form .toggle input { width: auto; }
+.goal-panel dl { display: grid; grid-template-columns: auto 1fr; gap: 6px 16px; margin: 16px 0; font-variant-numeric: tabular-nums; }
+.goal-panel dt { color: var(--muted); }
+.goal-panel dd { margin: 0; text-align: end; }
+.adaptive-card { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin: 8px 16px 0; }
+.adaptive-card p { margin: 0; flex: 1 1 100%; }

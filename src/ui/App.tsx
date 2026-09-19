@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks'
+import { undoAdaptive } from '../adaptiveRun'
 import { localDateKey } from '../dates'
 import { log } from '../log'
 import { supabase } from '../supabase/client'
@@ -6,7 +7,9 @@ import { SyncEngine } from '../sync/engine'
 import { LocalStore } from '../sync/store'
 import { SyncBanner } from './components/Banner'
 import { TabBar, type Tab } from './components/TabBar'
-import { AppContext, useApp } from './context'
+import { AppContext } from './context'
+import { AdaptiveCard, runAdaptive, type AdaptiveUpdate } from './goals/AdaptiveCard'
+import { GoalsScreen } from './goals/GoalsScreen'
 import { useProfile } from './hooks'
 import { Login } from './Login'
 import { MenuScreen } from './menu/MenuScreen'
@@ -67,8 +70,32 @@ export function App() {
 
 function Shell({ session }: { session: Session }) {
   const [viewDate, setViewDate] = useState(() => localDateKey(new Date()))
+  const [adaptive, setAdaptive] = useState<AdaptiveUpdate | null>(null)
+  const { store, engine, userId } = session
+
+  // Adaptive TDEE runner: once per open (per signed-in session).
+  useEffect(() => {
+    let alive = true
+    runAdaptive(store, engine, userId, localDateKey(new Date())).then(
+      (u) => { if (alive) setAdaptive(u) },
+      (e: unknown) => { log.error('adaptive.run_failed', { userId, error: String(e) }) },
+    )
+    return () => { alive = false }
+  }, [store, engine, userId])
+
+  const undo = async (): Promise<void> => {
+    setAdaptive(null)
+    const p = await store.get('profile', userId)
+    if (p) await store.put('profile', undoAdaptive(p))
+  }
+
   return (
     <AppContext.Provider value={{ ...session, viewDate, setViewDate }}>
+      {adaptive && (
+        <AdaptiveCard update={adaptive} onDismiss={() => { setAdaptive(null) }} onUndo={() => {
+          undo().then(undefined, (e: unknown) => { log.error('adaptive.undo_failed', { userId, error: String(e) }) })
+        }} />
+      )}
       <Tabs />
     </AppContext.Provider>
   )
@@ -87,25 +114,9 @@ function Tabs() {
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Today' && <TodayScreen onGo={setTab} />}
         {tab === 'Progress' && <ProgressScreen />}
-        {tab === 'Goals' && <GoalsPlaceholder firstRun={profile === null} />}
+        {tab === 'Goals' && <GoalsScreen />}
       </main>
       <TabBar tab={tab} onSelect={setTab} />
-    </>
-  )
-}
-
-// ponytail: stand-in until the Goals screen lands (Task 13); carries the first-run notice and logout.
-function GoalsPlaceholder({ firstRun }: { firstRun: boolean }) {
-  const { userId } = useApp()
-  return (
-    <>
-      {firstRun && <p class="notice">Welcome! Set up your profile and first weigh-in to get daily targets.</p>}
-      <button type="button" onClick={() => {
-        supabase.auth.signOut().then(
-          ({ error }) => { if (error) log.warn('auth.sign_out_failed', { userId, reason: error.message }) },
-          (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },
-        )
-      }}>Log out</button>
     </>
   )
 }
