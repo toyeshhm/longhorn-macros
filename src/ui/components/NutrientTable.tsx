@@ -34,7 +34,7 @@ export function NutrientTable({ caption, columns }: { caption: string; columns: 
       <tbody>
         {NUTRIENT_KEYS.map((k) => (
           <tr key={k} class={k === 'calories' ? 'kcal-row' : undefined}>
-            <th scope="row">{(k === 'protein' || k === 'carbs' || k === 'fat') && <Swatch ink={k} />}{t.t(NUTRIENT_LABELS[k].label)}</th>
+            <th scope="row">{(k === 'calories' || k === 'protein' || k === 'carbs' || k === 'fat') && <Swatch ink={k} />}{t.t(NUTRIENT_LABELS[k].label)}</th>
             {/* kcal and mg are whole-unit figures and go through t.n(), so the sheet prints the same string as the
                 row the user tapped; t.d() and its one decimal are for the gram macros only. */}
             {columns.map((c, i) => (

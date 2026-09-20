@@ -177,7 +177,7 @@ export function MenuScreen() {
 
       {results !== null ? (
         results.length === 0 ? <div class="empty"><UtensilsDoodle /><p>{t.t('menu.noMatches', { query: query.trim() })}</p></div> : (
-          <ul class="food-list" aria-label={t.t('menu.searchResults')}>
+          <ul class="food-list" role="list" aria-label={t.t('menu.searchResults')}>
             {results.map((r) => (
               <FoodRow key={r.key} item={r} badge={sourceBadge(r, t)}
                 hints={dietHints(r.recipeNumber === null ? [] : legends.get(r.recipeNumber) ?? [])}
@@ -208,7 +208,7 @@ export function MenuScreen() {
           {stations.map((s) => (
             <section key={s.station} class="station">
               <h2>{s.station}</h2>
-              <ul class="food-list">
+              <ul class="food-list" role="list">
                 {s.items.map((i, n) => {
                   const item = fromMenuItem(i, hall)
                   return <FoodRow key={`${i.recipeNumber}-${String(n)}`} item={item} badge={null} hints={dietHints(i.legends)} onOpen={() => { open(item) }} />

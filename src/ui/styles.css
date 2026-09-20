@@ -163,6 +163,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .plate-wash { fill-opacity: calc(0.82 * var(--plate-k)); }
 .plate-line { stroke: var(--orange); mix-blend-mode: var(--blend); }
 .swatch { width: 16px; height: 12px; margin-right: 6px; vertical-align: -1px; flex: none; }
+.ink-calories .ink-fill { fill: var(--orange); }
 .ink-protein .ink-fill { fill: var(--blue); }
 .ink-carbs .ink-fill { fill: var(--teal); }
 .ink-fat .ink-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: 1.2; }
@@ -325,7 +326,8 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 
 /* Bottom sheet: a fresh sheet of the same stock slid over an ink wash. */
 .sheet {
-  width: 100%; max-width: 560px; max-height: 90dvh; overflow: hidden;
+  /* 92dvh, not 90: at 320x568 the fat row printed 9px past the fold at 90. */
+  width: 100%; max-width: 560px; max-height: 92dvh; overflow: hidden;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
   /* Same grain as the page layer on either press: --veil is 1 minus the page's grain opacity. */
   background: linear-gradient(rgb(var(--paper-rgb) / var(--veil)), rgb(var(--paper-rgb) / var(--veil))), var(--mark-grain) repeat, var(--paper); color: var(--ink);
@@ -339,8 +341,8 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
    notch and the home indicator in both orientations. */
 .sheet-body {
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
-  padding: 10px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
-  display: flex; flex-direction: column; gap: 10px;
+  padding: 8px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
+  display: flex; flex-direction: column; gap: 8px;
 }
 /* The Add/Save plate is printed outside the scrollport, not stuck to the bottom of it: with the on-screen keyboard
    up a sticky plate sat on top of the Meal select and, at 320px, the whole servings stepper. A footer cannot. */
@@ -361,18 +363,25 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet p { margin: 0; }
 /* Hall, source and portion set as one run of meta, not three stacked paragraphs each costing a sheet gap: the
    nutrition label has to begin above the fold on a 390px phone, and those three lines were most of what pushed
-   it under. The hairline between them is decoration — the paragraphs still separate the runs for a screen reader. */
-.sheet-meta { display: flex; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-top: -4px; font-size: 0.9rem; color: var(--ink-soft); }
-.sheet-meta p + p { border-left: 1px solid var(--ink-soft); padding-left: 10px; }
+   it under. The divider between them is a glyph in the flow, not a border on the box: a `border-left` came with
+   the run when it wrapped — which it does at 320px in Spanish — and printed as a stray tick hanging in the
+   gutter with nothing to its left, reading as a misprint rather than as a divider. */
+.sheet-meta { margin-top: -4px; font-size: 0.9rem; line-height: 1.4; color: var(--ink-soft); }
+.sheet-meta p { display: inline; }
+.sheet-meta p + p::before { content: '·'; margin: 0 8px; }
 .sheet-meta .portion { font-weight: 700; color: var(--ink); }
 .field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; color: var(--ink); }
 .field, .stepper label { font-size: 0.875rem; }
 .stepper label { font-weight: 700; }
 /* Servings and Meal share one line. At 320px, or once the reader's text grows, Meal drops under the stepper
-   rather than squeezing the select down to its chevron. */
+   rather than squeezing the select down to its chevron. `8rem` is what makes that true rather than documented:
+   the stepper is 168px and a 320px page is a 288px line, so a 6.5rem (104px) basis still fitted beside it and
+   left the select 58px of text track — "Breakfast" is 86px and "Almuerzo" 77px, so the meal the entry is filed
+   under printed as "Breakf". At 8rem the line breaks at 320px and still shares at 375px and up. */
 .sheet-controls { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; }
 .sheet-controls .stepper { flex: 0 0 auto; }
-.sheet-controls .field { flex: 1 1 6.5rem; min-width: 0; }
+.sheet-controls .field { flex: 1 1 8rem; min-width: 0; }
+.sheet-controls select { min-inline-size: 8rem; }
 .stepper-row { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
 .stepper-row input { width: 4em; text-align: center; font-weight: 700; }
 .stepper-row .icon-btn { border: 1.5px solid var(--ink); border-radius: var(--wobble); background: var(--paper-raised); }

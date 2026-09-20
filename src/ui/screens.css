@@ -108,6 +108,9 @@
 .section-nav {
   display: flex; gap: 8px; min-inline-size: 0; overflow-x: auto; overscroll-behavior-x: contain;
   margin: 0 -16px 2px; padding: 4px 24px 8px 16px; scrollbar-width: thin;
+  /* The selected stamp is scrolled into view on every render; these are the gutters it lands inside, so it sits
+     where the row's own padding puts it rather than flush against the edge with no paper to its side. */
+  scroll-padding-inline: 16px 24px;
 }
 .section-nav [role='tab'] {
   min-height: 44px; padding: 0 14px; border: 1.5px solid var(--ink); border-radius: var(--wobble);
@@ -140,7 +143,9 @@
 .badge-mark { width: 48px; height: 48px; overflow: visible; flex: none; }
 .badge-title { margin: 4px 0 0; font-weight: 700; color: var(--ink-deep); overflow-wrap: anywhere; }
 .badge-desc { margin: 0; font-size: 0.85rem; color: var(--ink-soft); }
-.badge-state { margin: 3px 0 0; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
+/* `margin-top: auto` sets the date or the count on the card's foot like a date stamp: the grid stretches every
+   row to its tallest description, and top-packed cards printed up to 41% of a short one as blank paper. */
+.badge-state { margin: auto 0 0; padding-top: 3px; font-size: 0.8rem; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink); }
 
 /* The label track is capped rather than max-content: the Spanish label is two thirds longer than the English one
    and squeezed the address into a quarter of a 320px page, breaking it over five lines mid-token. */

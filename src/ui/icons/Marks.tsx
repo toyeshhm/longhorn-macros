@@ -45,9 +45,11 @@ export function MinusMark() {
   )
 }
 
-export type Ink = 'protein' | 'carbs' | 'fat'
+// Calories is one of the four inks, so it carries a swatch like the other three: the Macro Ink Rule names the
+// nutrient table among the places calories prints orange, and the one enlarged row was the one with no ink.
+export type Ink = 'calories' | 'protein' | 'carbs' | 'fat'
 
-// A thumb-smudge of ink next to a macro's name. Color is never the only cue: the name always sits beside it.
+// A thumb-smudge of ink next to a nutrient's name. Color is never the only cue: the name always sits beside it.
 export function Swatch({ ink }: { ink: Ink }) {
   return (
     <svg class={`swatch ink-${ink}`} viewBox="0 0 16 12" aria-hidden="true">

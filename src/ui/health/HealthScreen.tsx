@@ -79,7 +79,7 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
       <section aria-labelledby="h-macros">
         <h2 id="h-macros">{t.t('health.macroBalance')}</h2>
         {nothingRead ? <p class="health-line">{t.t('health.macroEmpty')}</p> : (
-        <ul class="reads">
+        <ul class="reads" role="list">
           {report.macros.map((m) => (
             <li key={m.key}>
               <p class="read-head">
@@ -99,7 +99,7 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
             different block, so they carry the same day count rather than leaving the reader to go and find it. */}
         {!nothingRead && <p class="health-cover">{report.adherence.coverage}</p>}
         {nothingRead ? <p class="health-line">{t.t('health.qualityEmpty')}</p> : (
-        <ul class="reads">
+        <ul class="reads" role="list">
           {report.signals.map((s) => (
             <li key={s.id}>
               <p class="read-head"><span class="signal-name">{s.label}</span><span class="read-aside">{s.fact}</span></p>
@@ -122,7 +122,7 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
             <p>{t.t(nothingToSuggest(menu === null && error === null, menu === null && error !== null, availableItems(menu, hours, now, today, t).length > 0))}</p>
           </div>
         ) : (
-          <ul class="food-list" aria-label={t.t('health.suggested')}>
+          <ul class="food-list" role="list" aria-label={t.t('health.suggested')}>
             {picks.map((p) => (
               <li key={p.item.key}>
                 <button type="button" class="food-row" onClick={() => { open(p) }}>

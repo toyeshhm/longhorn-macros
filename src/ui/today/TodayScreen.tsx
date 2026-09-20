@@ -122,7 +122,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         {s.byMeal.map((g) => (
           <section key={g.meal} class="meal-group">
             <h3><span>{t.t(`meal.${g.meal}`)}</span><span class="meal-kcal">{t.n(g.calories)} {t.t('unit.kcal')}</span></h3>
-            <ul class="food-list">
+            <ul class="food-list" role="list">
               {g.entries.map((e) => (
                 <li key={e.id}>
                   <button type="button" class="food-row entry-row" onClick={() => { setSheet(e) }}>

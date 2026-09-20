@@ -10,7 +10,7 @@ import { zeroNutrients, type Nutrients } from '../src/nutrition'
 
 const t = translator('en')
 const TODAY = '2026-09-30'
-const targets: Targets = { calories: 2000, protein: 150, carbs: 200, fat: 60 }
+const TARGETS: Targets = { calories: 2000, protein: 150, carbs: 200, fat: 60 }
 
 const nutrients = (over: Partial<Nutrients>): Nutrients => ({ ...zeroNutrients(), ...over })
 
@@ -31,8 +31,16 @@ const profileRow = (over: Partial<ProfileRow> = {}): ProfileRow => ({
   updatedAt: '', deletedAt: null, ...over,
 })
 
+/**
+ * Targets are no longer handed in: they are read back off the profile and the weigh-ins, per day. Pinning all
+ * four with an override is how a test says "these targets, on every day" without the Mifflin arithmetic; the
+ * per-day reading itself is what the last describe block is about.
+ */
+const onTargets = (over: Partial<ProfileRow> = {}): Partial<BadgeInput> =>
+  ({ profile: profileRow({ override: TARGETS, ...over }), weights: [weighIn('2026-08-01')] })
+
 const run = (over: Partial<BadgeInput> = {}): Achievements =>
-  achievements({ entries: [], weights: [], profile: null, targets: null, today: TODAY, t, ...over })
+  achievements({ entries: [], weights: [], profile: null, today: TODAY, t, ...over })
 
 function badge(result: Achievements, id: BadgeId): Badge {
   const found = result.badges.find((b) => b.id === id)
@@ -42,6 +50,10 @@ function badge(result: Achievements, id: BadgeId): Badge {
 
 /** A day's worth of rows: one lunch carrying the whole day's nutrients. */
 const day = (date: string, over: Partial<Nutrients>): LogEntry => entry({ date, perServing: nutrients(over) })
+
+/** The same day logged whole — the three meals the cut stamp asks for, with lunch carrying the nutrients. */
+const wholeDay = (date: string, over: Partial<Nutrients>): LogEntry[] =>
+  [entry({ date, meal: 'breakfast' }), day(date, over), entry({ date, meal: 'dinner' })]
 
 describe('a brand-new account', () => {
   test('prints every badge unearned, with progress, and nothing missing', () => {
@@ -83,6 +95,10 @@ describe('the first stamps', () => {
     expect(result.earned).toBe(1)
     expect(result.summary).toBe('1 of 16 earned')
     expect(badge(result, 'sevenDays').progressLabel).toBe('1 of 7')
+  })
+
+  test('a stamp printed in an earlier year says which year, because the long haul outlives a semester', () => {
+    expect(badge(run({ entries: [entry({ date: '2025-11-08' })] }), 'firstFood').earnedLabel).toBe('Earned 11/8/2025')
   })
 
   test('a food typed in by hand earns the off-menu stamp; one off the menu does not', () => {
@@ -176,20 +192,20 @@ describe('the target badges', () => {
   test('the protein target met on a day earns one stamp, and on five days the other', () => {
     const entries = ['2026-09-01', '2026-09-02', '2026-09-03', '2026-09-04', '2026-09-05']
       .map((d) => day(d, { calories: 2000, protein: 160 }))
-    const one = run({ entries: entries.slice(0, 2), targets })
+    const one = run({ entries: entries.slice(0, 2), ...onTargets() })
     expect(badge(one, 'proteinDay').earnedOn).toBe('2026-09-01')
     expect(badge(one, 'proteinFive').progressLabel).toBe('2 of 5')
 
-    const five = run({ entries, targets })
+    const five = run({ entries, ...onTargets() })
     expect(badge(five, 'proteinFive').earnedOn).toBe('2026-09-05')
     // Short of the target is not a hit, and it costs nothing that was already earned.
-    expect(badge(run({ entries: [day('2026-09-01', { protein: 100 })], targets }), 'proteinDay').earned).toBe(false)
+    expect(badge(run({ entries: [day('2026-09-01', { calories: 2000, protein: 100 })], ...onTargets() }), 'proteinDay').earned).toBe(false)
   })
 
   test('all four inks within the band on one day earn the full register, and part of the way reads as part of the way', () => {
-    const near = run({ entries: [day('2026-09-02', { calories: 1900, protein: 145, carbs: 140, fat: 20 })], targets })
+    const near = run({ entries: [day('2026-09-02', { calories: 1900, protein: 145, carbs: 140, fat: 20 })], ...onTargets() })
     expect(badge(near, 'fullRegister').progress).toEqual({ have: 2, need: 4 })
-    const onRegister = run({ entries: [day('2026-09-02', { calories: 2050, protein: 143, carbs: 210, fat: 57 })], targets })
+    const onRegister = run({ entries: [day('2026-09-02', { calories: 2050, protein: 143, carbs: 210, fat: 57 })], ...onTargets() })
     expect(badge(onRegister, 'fullRegister').earnedOn).toBe('2026-09-02')
   })
 
@@ -204,15 +220,34 @@ describe('the target badges', () => {
   })
 
   test('the cut stamp is for landing on the plan, never for eating less, and only while cutting', () => {
-    const onPlan = day('2026-09-02', { calories: 1900 })
-    const cutting = { entries: [onPlan], targets, profile: profileRow({ goal: 'cut', rateLbPerWeek: 1 }) }
-    expect(badge(run(cutting), 'onPlanCut').earnedOn).toBe('2026-09-02')
+    const cutting = onTargets({ goal: 'cut', rateLbPerWeek: 1 })
+    const onPlan = wholeDay('2026-09-02', { calories: 1900 })
+    expect(badge(run({ ...cutting, entries: onPlan }), 'onPlanCut').earnedOn).toBe('2026-09-02')
     // Far under target earns nothing: the badge would otherwise pay for skipping meals.
-    expect(badge(run({ ...cutting, entries: [day('2026-09-02', { calories: 1200 })] }), 'onPlanCut').earned).toBe(false)
-    // Over target is not on plan either, and neither is a day on any other goal.
-    expect(badge(run({ ...cutting, entries: [day('2026-09-02', { calories: 2400 })] }), 'onPlanCut').earned).toBe(false)
-    expect(badge(run({ entries: [onPlan], targets, profile: profileRow({ goal: 'maintain' }) }), 'onPlanCut').earned).toBe(false)
-    expect(badge(run({ entries: [onPlan], targets }), 'onPlanCut').earned).toBe(false)
+    expect(badge(run({ ...cutting, entries: wholeDay('2026-09-02', { calories: 1200 }) }), 'onPlanCut').earned).toBe(false)
+    // Over target is not on plan either.
+    expect(badge(run({ ...cutting, entries: wholeDay('2026-09-02', { calories: 2400 }) }), 'onPlanCut').earned).toBe(false)
+    // Nor is a day that landed in the band with its dinner eaten and never written down, which is the one thing
+    // the badge's own sentence claims did not happen.
+    expect(badge(run({ ...cutting, entries: onPlan.slice(0, 2) }), 'onPlanCut').earned).toBe(false)
+    // Nor a day on any other goal, nor one with no targets to land on.
+    expect(badge(run({ ...onTargets({ goal: 'maintain' }), entries: onPlan }), 'onPlanCut').earned).toBe(false)
+    expect(badge(run({ entries: onPlan, profile: profileRow({ goal: 'cut' }) }), 'onPlanCut').earned).toBe(false)
+  })
+
+  test('a target of zero, and a day that logged no calories, hand out nothing', () => {
+    // Every override the Goals form will take set to 0: a day of water then sits inside every band at once.
+    const zeroed = { profile: profileRow({ override: { calories: 0, protein: 0, carbs: 0, fat: 0 } }), weights: [weighIn('2026-08-01')] }
+    const water = run({ ...zeroed, entries: [day('2026-09-02', { calories: 0 })] })
+    for (const id of ['proteinDay', 'proteinFive', 'fullRegister', 'onPlanCut'] as const) {
+      expect(badge(water, id).earned, id).toBe(false)
+    }
+    // A real day against a protein target of 0 is still not a protein day: it is met by eating no protein at all.
+    const fed = run({ ...zeroed, entries: [day('2026-09-02', { calories: 1800, protein: 0, carbs: 0, fat: 0 })] })
+    expect(badge(fed, 'proteinDay').earned).toBe(false)
+    // The band never closes to nothing, though: 0 g of carbs against a target of 0 is landing on it, not missing
+    // it by a hair, so the full register is reachable rather than stuck at "3 of 4" forever.
+    expect(badge(fed, 'fullRegister').progress).toEqual({ have: 3, need: 4 })
   })
 })
 
@@ -232,6 +267,46 @@ describe('the scale and the learned target', () => {
   })
 })
 
+describe('the targets as they stood that day', () => {
+  // Every target badge used to be re-judged against the reader's *current* targets, and the commonest way to
+  // move those is to step on the scale after a gain. These are the cases that used to un-print a stamp.
+  const cutter = (over: Partial<ProfileRow> = {}): ProfileRow => profileRow({ goal: 'cut', rateLbPerWeek: 1, ...over })
+
+  test('weighing in heavier later does not take back the protein stamp', () => {
+    const light = [weighIn('2026-09-01', { weightLb: 150 })]
+    const logged = [day('2026-09-02', { calories: 2000, protein: 155 })]
+    const then = run({ entries: logged, weights: light, profile: cutter() })
+    expect(badge(then, 'proteinDay').earnedOn).toBe('2026-09-02')
+    // 200 lb on a cut is a 200 g target today. The day is still judged on the 150 it was logged against.
+    const heavier = run({ entries: logged, weights: [...light, weighIn('2026-09-20', { weightLb: 200 })], profile: cutter() })
+    expect(badge(heavier, 'proteinDay').earnedOn).toBe('2026-09-02')
+  })
+
+  test('a day logged before the first weigh-in is judged on that first one', () => {
+    const result = run({
+      entries: [day('2026-08-20', { calories: 2000, protein: 155 })],
+      weights: [weighIn('2026-09-01', { weightLb: 150 })], profile: cutter(),
+    })
+    expect(badge(result, 'proteinDay').earnedOn).toBe('2026-08-20')
+  })
+
+  test('a day before the last adaptive run is judged on the estimate that run replaced', () => {
+    // 2200 kcal maintenance less the 500 the cut plans for is a 1700 target; the run moved it to 2100.
+    const profile = cutter({ tdeeEstimate: 2600, tdeePrevious: 2200, tdeeUpdatedOn: '2026-09-10' })
+    const result = run({
+      entries: [...wholeDay('2026-09-05', { calories: 1650 }), ...wholeDay('2026-09-15', { calories: 1650 })],
+      weights: [weighIn('2026-09-01', { weightLb: 150 })], profile,
+    })
+    // Only the earlier day landed on plan: 1650 is under the newer target's 90% floor of 1890.
+    expect(badge(result, 'onPlanCut').earnedOn).toBe('2026-09-05')
+  })
+
+  test('a profile with nothing on the scale has no targets to judge a day against', () => {
+    const result = run({ entries: [day('2026-09-02', { calories: 2000, protein: 155 })], profile: cutter() })
+    for (const id of ['proteinDay', 'fullRegister', 'onPlanCut'] as const) expect(badge(result, id).earned, id).toBe(false)
+  })
+})
+
 describe('the sheet as a whole', () => {
   test('a well-used account earns the early stamps and still has the long haul to go', () => {
     const entries = [
@@ -240,7 +315,7 @@ describe('the sheet as a whole', () => {
       entry({ date: '2026-09-01', meal: 'dinner', hall: 'Kins', name: 'Salmon', perServing: nutrients({ calories: 800, protein: 70, fiber: 16 }) }),
       entry({ date: '2026-09-02', meal: 'lunch', customFoodId: 'c1', hall: null, name: 'Migas Taco', perServing: nutrients({ calories: 500, protein: 20 }) }),
     ]
-    const result = run({ entries, weights: [weighIn('2026-09-01')], targets, profile: profileRow() })
+    const result = run({ entries, weights: [weighIn('2026-09-01')], profile: profileRow() })
     const earned = result.badges.filter((b) => b.earned).map((b) => b.id)
     expect(earned).toEqual(['firstFood', 'threeMeals', 'ownFood', 'firstWeighIn', 'proteinDay', 'fiberDay', 'threeHalls'])
     expect(result.summary).toBe('7 of 16 earned')
@@ -251,7 +326,7 @@ describe('the sheet as a whole', () => {
   test('every line is the reader’s language, figures and dates included', () => {
     const spanish = translator('es')
     const result = achievements({
-      entries: [entry({ date: '2026-09-14' })], weights: [], profile: null, targets: null, today: TODAY, t: spanish,
+      entries: [entry({ date: '2026-09-14' })], weights: [], profile: null, today: TODAY, t: spanish,
     })
     expect(result.summary).toBe('1 de 16 conseguidas')
     expect(badge(result, 'firstFood').title).toBe('Primera tirada')

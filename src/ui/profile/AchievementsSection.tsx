@@ -1,7 +1,7 @@
 import { achievements } from '../../achievements'
 import { localDateKey } from '../../dates'
 import { useApp } from '../context'
-import { useLive, useProfile, useTargets } from '../hooks'
+import { useLive, useProfile } from '../hooks'
 import { useT } from '../i18n'
 import { BadgeMark } from '../icons/Badges'
 
@@ -14,18 +14,17 @@ export function AchievementsSection() {
   const entries = useLive(() => store.all('food_log'), [])
   const weights = useLive(() => store.all('weights'), [])
   const profile = useProfile()
-  const targets = useTargets()
 
   // Until the log has been read, "nothing earned yet" would be a lie rather than an empty sheet.
   if (entries === undefined || weights === undefined || profile === undefined) {
     return <p class="loading">{t.t('common.loading')}</p>
   }
-  const { summary, badges } = achievements({ entries, weights, profile, targets, today: localDateKey(new Date()), t })
+  const { summary, badges } = achievements({ entries, weights, profile, today: localDateKey(new Date()), t })
   return (
     <>
       <p class="badge-count">{summary}</p>
       <p class="muted">{t.t('badge.note')}</p>
-      <ul class="badge-grid">
+      <ul class="badge-grid" role="list">
         {badges.map((b) => (
           // Earned is never ink alone: the state line under every stamp says the date or the count in words.
           <li key={b.id} class={b.earned ? 'badge-card' : 'badge-card unearned'}>

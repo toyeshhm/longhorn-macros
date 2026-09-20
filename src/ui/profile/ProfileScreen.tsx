@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { LOCALES, type Key, type Locale } from '../../i18n'
 import { log } from '../../log'
 import type { ThemeChoice } from '../../theme'
@@ -95,6 +95,14 @@ export function ProfileScreen() {
   const opened = useRef<Section | null>(null)
   const row = useRef<HTMLDivElement>(null)
 
+  // The row scrolls sideways, and a remembered page sits past its right edge: coming back to the tab (Tracker,
+  // then Profile) painted the Data panel under six stamps scrolled to 0 with none of them lit — no "you are here"
+  // at all. Every render, not a dependency list: `scrollIntoView` with `nearest` is a no-op once the stamp is in
+  // view, and `auto` behaviour needs no reduced-motion case.
+  useEffect(() => {
+    row.current?.querySelector('[role="tab"][aria-selected="true"]')?.scrollIntoView({ inline: 'nearest', block: 'nearest', behavior: 'auto' })
+  })
+
   // Which page opens is a decision about the reader's profile, so it waits for the read rather than opening on
   // Achievements for a frame and then jumping to Goals under the thumb.
   if (profile === undefined) return <p class="loading">{t.t('common.loading')}</p>
@@ -125,14 +133,20 @@ export function ProfileScreen() {
     <div class="profile">
       <div class="section-nav" role="tablist" aria-label={t.t('profile.sections')} ref={row}>
         {SECTIONS.map((section, i) => (
-          <button key={section} type="button" role="tab" id={`tab-${section}`} aria-controls={`panel-${section}`}
+          // Only the selected panel is rendered, so only the selected stamp may point at one: `aria-controls` on
+          // the other five named an id that is not in the document, and "move to controlled element" landed nowhere.
+          <button key={section} type="button" role="tab" id={`tab-${section}`}
+            aria-controls={section === current ? `panel-${section}` : undefined}
             aria-selected={section === current} tabIndex={section === current ? 0 : -1}
             onKeyDown={(e) => { onKeyDown(e, i) }} onClick={() => { select(section) }}>
             {t.t(SECTION_KEY[section])}
           </button>
         ))}
       </div>
-      <div class="section-panel" role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`} tabIndex={0}>
+      {/* Focusable only on the one page with nothing to focus. Everywhere else the panel is a form or a button and
+          a tab stop on its wrapper costs a keyboard reader a stop that reads the whole page back at them. */}
+      <div class="section-panel" role="tabpanel" id={`panel-${current}`} aria-labelledby={`tab-${current}`}
+        tabIndex={current === 'achievements' ? 0 : undefined}>
         {/* The page's own heading, for heading navigation: the stamp above already says it on screen. */}
         <h2 class="visually-hidden">{t.t(SECTION_KEY[current])}</h2>
         <Panel section={current} />

@@ -79,14 +79,21 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
         <Stepper text={text} onText={setText} />
         <MealSelect meal={meal} onMeal={setMeal} />
       </div>
+      {/* The same label as the entry sheet, second column and all: past one serving the Menu printed the scaled
+          totals with no way to see the per-serving figures, while the same food opened from the Tracker showed both. */}
       <NutrientTable
         caption={servings !== null && servings !== 1
           ? t.t('food.nutritionFor', { servings: formatServings(servings) })
           : t.t('food.nutrition')}
-        columns={[{ head: null, values: servings === null ? null : scaled }]} />
+        columns={servings === 1
+          ? [{ head: null, values: item.nutrients }]
+          : [
+            { head: t.t('entry.total'), values: servings === null ? null : scaled },
+            { head: t.t('entry.perServing'), values: item.nutrients },
+          ]} />
       {/* UT's own legends, printed as UT publishes them: these are its labels, not the app's words. */}
       {legends.length > 0 && (
-        <ul class="legends" aria-label={t.t('food.legends')}>
+        <ul class="legends" role="list" aria-label={t.t('food.legends')}>
           {legends.map((l) => <li key={l}>{l}</li>)}
         </ul>
       )}
