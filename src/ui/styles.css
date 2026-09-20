@@ -282,8 +282,11 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 
 /* Bottom sheet: a fresh sheet of the same stock slid over an ink wash. */
 .sheet {
-  /* 92dvh, not 90: at 320x568 the fat row printed 9px past the fold at 90. */
-  width: 100%; max-width: 560px; max-height: 92dvh; overflow: hidden;
+  /* 92%, not 90: at 320x568 the fat row printed 9px past the fold at 90. Three caps, weakest first: vh is
+     the floor every engine understands, svh is the toolbars-visible height, dvh the live one. An engine that
+     mismeasures dvh — iOS in standalone does — falls back to a cap that is merely conservative, not broken. */
+  width: 100%; max-width: 560px; overflow: hidden;
+  max-height: 92vh; max-height: 92svh; max-height: 92dvh;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
   /* Same grain as the page layer on either press: --veil is 1 minus the page's grain opacity. */
   background: linear-gradient(rgb(var(--paper-rgb) / var(--veil)), rgb(var(--paper-rgb) / var(--veil))), var(--mark-grain) repeat, var(--paper); color: var(--ink);
@@ -295,8 +298,12 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet::backdrop { background: var(--wash); }
 /* The sheet is in the top layer, so it does not inherit the body's safe-area padding: keep its own clear of the
    notch and the home indicator in both orientations. */
+/* `flex: 0 1 auto`, never `flex: 1`: the body's height comes from its own content and only shrinks when the
+   sheet hits its cap. With `flex: 1 1 0%` the basis is zero, so anywhere the dialog's own height resolves
+   oddly — iOS standalone, where the owner caught it — the body collapses to a sliver above the Add plate
+   and the food's numbers are simply gone. Content-sized is the same layout everywhere else and cannot collapse. */
 .sheet-body {
-  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  flex: 0 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   padding: 8px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
   display: flex; flex-direction: column; gap: 8px;
 }
