@@ -1,5 +1,6 @@
 import { expect, test } from './fixtures'
 import { localDateKey } from '../src/dates'
+import { translator } from '../src/i18n'
 import { dayText, fetchHours, parseHours } from '../src/menu/hours'
 import { THEME_COLOR } from '../src/theme'
 
@@ -49,7 +50,7 @@ test('Profile: the week table prints every hall and day from the live UT hours f
   }
   // Saturday of the J2 week, straight from the feed.
   const saturday = hours.J2[5] ?? null
-  await expect(tables.first().getByRole('row').nth(5)).toContainText(dayText(saturday))
+  await expect(tables.first().getByRole('row').nth(5)).toContainText(dayText(saturday, translator('en')))
 })
 
 test('Profile: the log exports as one JSON file', async ({ page }) => {

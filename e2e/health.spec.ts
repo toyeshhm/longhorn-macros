@@ -1,7 +1,8 @@
 import type { Page } from '@playwright/test'
 import { createClient } from '@supabase/supabase-js'
 import { addDays, localDateKey } from '../src/dates'
-import { type Gap, pickFoods } from '../src/health'
+import { type Gap, pickFoods as pickFoodsIn, type Pick } from '../src/health'
+import { translator } from '../src/i18n'
 import { fetchMenu } from '../src/menu/feed'
 import { HOURS_URL, parseHours, type Hours } from '../src/menu/hours'
 import { SUPABASE_ANON_KEY, SUPABASE_URL } from '../tests/helpers/supabase'
@@ -36,7 +37,7 @@ async function signUp(page: Page): Promise<void> {
 // Same inputs as the screen, so the expected list is the module's own ranking rather than a pinned menu.
 async function expectedPicks(gap: Gap | null, flags: { sodiumHigh: boolean; fiberLow: boolean }) {
   const now = new Date()
-  const picks = pickFoods({ menu: await fetchMenu(fetch), hours: HOURS, now, today: localDateKey(now), gap, ...flags })
+  const picks: Pick[] = pickFoodsIn({ menu: await fetchMenu(fetch), hours: HOURS, now, today: localDateKey(now), gap, ...flags, t: translator('en') })
   if (picks.length === 0) throw new Error('UT posts nothing at J2 for the current service; cannot check suggestions')
   return picks
 }

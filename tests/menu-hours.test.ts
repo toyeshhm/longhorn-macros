@@ -1,8 +1,19 @@
 import { describe, expect, test } from 'vitest'
+import { translator } from '../src/i18n'
 import {
-  dayIndex, dayText, formatTime, hallStatus, hoursLine, parseDay, parseHours, statusText, UNKNOWN_HOURS,
-  type Week,
+  dayIndex, dayText as dayTextIn, formatTime as formatTimeIn, hallStatus as hallStatusIn,
+  hoursLine as hoursLineIn, parseDay, parseHours, statusText as statusTextIn, UNKNOWN_HOURS,
+  type DayHours, type Status, type Week,
 } from '../src/menu/hours'
+
+// These read in English here; the Spanish wording and its 24-hour clock are asserted in tests/i18n.test.ts.
+const t = translator('en')
+const dayText = (day: DayHours): string => dayTextIn(day, t)
+const formatTime = (minutes: number): string => formatTimeIn(minutes, t)
+const hallStatus = (week: Week, now: Date): Status => hallStatusIn(week, now, t)
+const statusText = (s: Status): string => statusTextIn(s, t)
+const hoursLine = (week: Week, now: Date, offset: number): { head: string; detail: string | null } =>
+  hoursLineIn(week, now, offset, t)
 
 const body = (halls: string): string =>
   `const diningHours = {"Fall 2026 Semester (08/24/26 - 12/15/26)": {\n"Dining Halls": {${halls}},\n"Restaurants": {}}};`

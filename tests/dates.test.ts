@@ -1,5 +1,9 @@
 import { expect, test } from 'vitest'
-import { addDays, dateLabel, daysBetween, feedDateToKey, localDateKey } from '../src/dates'
+import { addDays, dateLabel as dateLabelIn, daysBetween, feedDateToKey, localDateKey } from '../src/dates'
+import { translator } from '../src/i18n'
+
+// The English chip; the Spanish one (19/9 sáb) is asserted in tests/i18n.test.ts.
+const dateLabel = (key: string): { date: string; weekday: string; full: string } => dateLabelIn(key, translator('en'))
 test('localDateKey uses local calendar date', () => { expect(localDateKey(new Date(2026, 8, 18, 23, 59))).toBe('2026-09-18') })
 test('addDays crosses month/year and DST boundaries', () => {
   expect(addDays('2026-12-31', 1)).toBe('2027-01-01')

@@ -2,12 +2,14 @@ import type { ComponentChildren } from 'preact'
 import { useEffect, useState } from 'preact/hooks'
 import { useApp } from '../context'
 import { useLive } from '../hooks'
+import { useT } from '../i18n'
 
 export function Banner({ tone, children }: { tone: 'info' | 'error'; children: ComponentChildren }) {
   return <div class={`banner ${tone}`} role={tone === 'error' ? 'alert' : 'status'}>{children}</div>
 }
 
 export function SyncBanner() {
+  const t = useT()
   const { store, engine } = useApp()
   // Push outcomes (acks, backoff) don't emit store changes, so also re-check on connectivity events and a slow tick.
   // ponytail: 3s poll of one small IndexedDB store; switch to an engine event if it ever shows up in a profile.
@@ -32,12 +34,14 @@ export function SyncBanner() {
     <>
       {/* Mounted from the first paint and empty while everything is synced: a polite region that appears together
           with its text is unreliably announced (VoiceOver drops it). `.banner:empty` takes no room on the page. */}
-      <Banner tone="info">{s?.waiting === true && <>{s.queued} {s.queued === 1 ? 'change' : 'changes'} waiting to sync</>}</Banner>
+      <Banner tone="info">
+        {s?.waiting === true && t.t(s.queued === 1 ? 'sync.waiting.one' : 'sync.waiting.other', { count: t.n(s.queued) })}
+      </Banner>
       {s !== undefined && s.failed > 0 && (
         <Banner tone="error">
-          {s.failed} {s.failed === 1 ? 'change was' : 'changes were'} rejected
+          {t.t(s.failed === 1 ? 'sync.rejected.one' : 'sync.rejected.other', { count: t.n(s.failed) })}
           <details>
-            <summary>Details</summary>
+            <summary>{t.t('common.details')}</summary>
             <ul>{s.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
           </details>
         </Banner>

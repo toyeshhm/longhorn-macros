@@ -65,21 +65,27 @@ test('carbs never negative', () => {
   expect(computeTargets(p, 100, 2026)).toEqual({ calories: 1200, protein: 400, fat: 33, carbs: 0 })
 })
 
-test('validateProfile reports each bad field', () => {
+// The module names the bad field and stops there: the sentence is written on the screen, in the reader's
+// language. It used to return English prose that the form then parsed back to find the field.
+test('validateProfile names each bad field and says nothing about wording', () => {
+  const fields = (p: Profile): string[] => validateProfile(p).map((e) => e.field)
   expect(validateProfile(base)).toEqual([])
 
-  expect(validateProfile({ ...base, birthYear: 1899 })).toContain('birth year must be between 1900 and 2015')
-  expect(validateProfile({ ...base, birthYear: 2016 })).toContain('birth year must be between 1900 and 2015')
-  expect(validateProfile({ ...base, birthYear: Number.POSITIVE_INFINITY })).toContain('birth year must be between 1900 and 2015')
+  expect(fields({ ...base, birthYear: 1899 })).toEqual(['birthYear'])
+  expect(fields({ ...base, birthYear: 2016 })).toEqual(['birthYear'])
+  expect(fields({ ...base, birthYear: Number.POSITIVE_INFINITY })).toEqual(['birthYear'])
 
-  expect(validateProfile({ ...base, heightIn: 47 })).toContain('height must be between 48 and 96 inches')
-  expect(validateProfile({ ...base, heightIn: 97 })).toContain('height must be between 48 and 96 inches')
+  expect(fields({ ...base, heightIn: 47 })).toEqual(['height'])
+  expect(fields({ ...base, heightIn: 97 })).toEqual(['height'])
 
-  expect(validateProfile({ ...base, rateLbPerWeek: 3 })).toContain('rate must be one of 0.5, 1, 1.5, 2 lb/week for cut')
+  expect(fields({ ...base, rateLbPerWeek: 3 })).toEqual(['rate'])
 
-  const badOverride = validateProfile({ ...base, override: { protein: Number.NaN, fat: -5, carbs: 20_000, calories: 500 } })
-  expect(badOverride).toContain('override protein must be between 0 and 10000')
-  expect(badOverride).toContain('override fat must be between 0 and 10000')
-  expect(badOverride).toContain('override carbs must be between 0 and 10000')
-  expect(badOverride).not.toContain('override calories must be between 0 and 10000')
+  // A field left out of the override is not validated; one inside the range passes.
+  expect(fields({ ...base, override: { protein: Number.NaN, fat: -5, carbs: 20_000, calories: 500 } }))
+    .toEqual(['protein', 'carbs', 'fat'])
+  expect(fields({ ...base, override: { calories: 500 } })).toEqual([])
+
+  // Every bad field is reported at once, in the order the form prints them.
+  expect(fields({ ...base, birthYear: 0, heightIn: 0, rateLbPerWeek: 9, override: { fat: -1 } }))
+    .toEqual(['birthYear', 'height', 'rate', 'fat'])
 })

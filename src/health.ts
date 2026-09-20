@@ -3,16 +3,19 @@ import { summarizeDay } from './daySummary'
 import type { LogEntry } from './db/types'
 import type { Targets } from './goals'
 import type { HallId, Menu } from './menu/feed'
+import type { Key, T } from './i18n'
 import { formatTime, hallStatus, UNKNOWN_HOURS, type Hours, type Week } from './menu/hours'
 import { currentMeal, HALLS } from './menu/select'
-import { round1, scaleNutrients, sumNutrients, type Nutrients } from './nutrition'
+import { scaleNutrients, sumNutrients, type Nutrients } from './nutrition'
 import { fromMenuItem, type SearchItem } from './search'
-import { n } from './ui/format'
 
 /**
  * Every judgement the Health screen makes: how the last seven days went, what UT's own numbers say about the
  * quality of what was eaten, and which of today's items best close what is left. The screen prints what these
  * functions return and decides nothing itself.
+ *
+ * Nothing here writes English. Every sentence is a dictionary key filled through the `T` the caller hands in, so
+ * the judgements are the same in both languages and the wording lives in one place.
  *
  * Two rules run through all of it. A day with nothing logged is absent, never a zero, so an average is always over
  * the days that exist and every figure says how many that was. And nothing is invented: the only diet signals here
@@ -34,7 +37,9 @@ const HEAVY_OF = 1.1
 
 export type MacroKey = 'protein' | 'carbs' | 'fat'
 export const MACRO_KEYS: readonly MacroKey[] = ['protein', 'carbs', 'fat']
-const MACRO_LABEL: Readonly<Record<MacroKey, string>> = { protein: 'Protein', carbs: 'Carbs', fat: 'Fat' }
+const MACRO_LABEL_KEY: Readonly<Record<MacroKey, Key>> = { protein: 'nutrient.protein', carbs: 'nutrient.carbs', fat: 'nutrient.fat' }
+/** The same three words lower-case, for the middle of a suggestion's reason rather than the head of a row. */
+const MACRO_LOWER_KEY: Readonly<Record<MacroKey, Key>> = { protein: 'macro.lower.protein', carbs: 'macro.lower.carbs', fat: 'macro.lower.fat' }
 const KCAL_PER_G: Readonly<Record<MacroKey, number>> = { protein: 4, carbs: 4, fat: 9 }
 
 export interface DayTotal { readonly date: string; readonly nutrients: Nutrients }
@@ -66,24 +71,29 @@ export interface Adherence {
   readonly headline: string
 }
 
-export function adherence(days: readonly DayTotal[], targets: Targets | null): Adherence {
+export function adherence(days: readonly DayTotal[], targets: Targets | null, t: T): Adherence {
   const daysLogged = days.length
   const target = targets?.calories ?? null
-  const coverage = `${String(daysLogged)} of ${String(WINDOW_DAYS)} days logged`
+  const coverage = t.t('health.coverage', { logged: daysLogged, window: WINDOW_DAYS })
   const base = { daysLogged, windowDays: WINDOW_DAYS, target, coverage }
   if (daysLogged === 0) {
-    return { ...base, avgCalories: null, trend: 'unknown', headline: 'Nothing logged in the last 7 days, so there is no average to read yet.' }
+    return { ...base, avgCalories: null, trend: 'unknown', headline: t.t('health.adherence.none') }
   }
   const avgCalories = days.reduce((sum, d) => sum + d.nutrients.calories, 0) / daysLogged
   // Never "a day" when only some days were logged: the average is over those days and the sentence says which.
-  const per = daysLogged < WINDOW_DAYS ? `on the ${String(daysLogged)} ${daysLogged === 1 ? 'day' : 'days'} you logged` : 'a day'
+  const per = daysLogged < WINDOW_DAYS
+    ? t.t(daysLogged === 1 ? 'health.per.one' : 'health.per.other', { days: daysLogged })
+    : t.t('health.per.aDay')
+  const avg = t.n(avgCalories)
   if (target === null) {
-    return { ...base, avgCalories, trend: 'unknown', headline: `Averaging ${n(avgCalories)} kcal ${per}. No calorie target set yet.` }
+    return { ...base, avgCalories, trend: 'unknown', headline: t.t('health.adherence.noTarget', { avg, per }) }
   }
   const delta = avgCalories - target
   const trend = Math.abs(delta) <= target * ON_BAND ? 'on' : delta < 0 ? 'under' : 'over'
-  const tail = trend === 'on' ? 'On target.' : `About ${n(Math.abs(delta))} ${trend}.`
-  return { ...base, avgCalories, trend, headline: `Averaging ${n(avgCalories)} kcal ${per} against ${n(target)}. ${tail}` }
+  const tail = trend === 'on'
+    ? t.t('health.adherence.onTarget')
+    : t.t(`health.adherence.${trend}`, { delta: t.n(Math.abs(delta)) })
+  return { ...base, avgCalories, trend, headline: t.t('health.adherence.headline', { avg, per, target: t.n(target), tail }) }
 }
 
 // ----------------------------------------------------------------------------------------------- macro balance
@@ -107,34 +117,35 @@ function sharePct(grams: number, key: MacroKey, calories: number): number | null
   return calories <= 0 ? null : (grams * KCAL_PER_G[key] * 100) / calories
 }
 
-function macroRead(key: MacroKey, days: readonly DayTotal[], targets: Targets | null): MacroRead {
-  const label = MACRO_LABEL[key]
+function macroRead(key: MacroKey, days: readonly DayTotal[], targets: Targets | null, t: T): MacroRead {
+  const label = t.t(MACRO_LABEL_KEY[key])
   const targetGrams = targets?.[key] ?? null
   if (days.length === 0) {
-    return { key, label, avgGrams: null, targetGrams, daysShort: 0, daysHeavy: 0, verdict: 'unknown', share: 'No days logged', note: 'Nothing logged in the last 7 days.' }
+    return { key, label, avgGrams: null, targetGrams, daysShort: 0, daysHeavy: 0, verdict: 'unknown', share: t.t('health.macro.noDays'), note: t.t('health.nothing7') }
   }
   const avgGrams = days.reduce((sum, d) => sum + d.nutrients[key], 0) / days.length
   const avgCalories = days.reduce((sum, d) => sum + d.nutrients.calories, 0) / days.length
   const eatenShare = sharePct(avgGrams, key, avgCalories)
-  const eaten = eatenShare === null ? 'No calories logged' : `${String(round1(eatenShare))}% of calories`
+  const eaten = eatenShare === null ? t.t('health.macro.noCalories') : t.t('health.macro.shareEaten', { share: t.d(eatenShare) })
   if (targets === null) {
-    return { key, label, avgGrams, targetGrams, daysShort: 0, daysHeavy: 0, verdict: 'unknown', share: eaten, note: `Averaging ${String(round1(avgGrams))} g a day. No target to compare against yet.` }
+    return { key, label, avgGrams, targetGrams, daysShort: 0, daysHeavy: 0, verdict: 'unknown', share: eaten, note: t.t('health.macro.noTarget', { avg: t.d(avgGrams) }) }
   }
   const targetShare = sharePct(targets[key], key, targets.calories)
-  const share = targetShare === null ? eaten : `${eaten} · target ${String(round1(targetShare))}%`
+  const share = targetShare === null ? eaten : t.t('health.macro.shareWithTarget', { eaten, share: t.d(targetShare) })
   const goal = targets[key]
   const daysShort = days.filter((d) => d.nutrients[key] < goal * SHORT_OF).length
   const daysHeavy = days.filter((d) => d.nutrients[key] > goal * HEAVY_OF).length
-  const against = `averaging ${String(round1(avgGrams))} g against ${String(goal)} g`
-  const most = (count: number): string => `on ${String(count)} of ${String(days.length)} logged ${days.length === 1 ? 'day' : 'days'}`
+  const against = t.t('health.macro.against', { avg: t.d(avgGrams), goal: t.n(goal) })
+  const most = (count: number): string =>
+    t.t(days.length === 1 ? 'health.macro.most.one' : 'health.macro.most.other', { count, days: days.length })
   // Most of the logged days on one side of the band is a pattern worth naming; anything else is just the week.
-  if (daysShort * 2 > days.length) return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'short', share, note: `Short ${most(daysShort)}, ${against}.` }
-  if (daysHeavy * 2 > days.length) return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'heavy', share, note: `Heavy ${most(daysHeavy)}, ${against}.` }
-  return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'steady', share, note: `Steady, ${against}.` }
+  if (daysShort * 2 > days.length) return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'short', share, note: t.t('health.macro.short', { most: most(daysShort), against }) }
+  if (daysHeavy * 2 > days.length) return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'heavy', share, note: t.t('health.macro.heavy', { most: most(daysHeavy), against }) }
+  return { key, label, avgGrams, targetGrams, daysShort, daysHeavy, verdict: 'steady', share, note: t.t('health.macro.steady', { against }) }
 }
 
-export function macroReads(days: readonly DayTotal[], targets: Targets | null): MacroRead[] {
-  return MACRO_KEYS.map((key) => macroRead(key, days, targets))
+export function macroReads(days: readonly DayTotal[], targets: Targets | null, t: T): MacroRead[] {
+  return MACRO_KEYS.map((key) => macroRead(key, days, targets, t))
 }
 
 // --------------------------------------------------------------------------------------------- diet quality
@@ -175,14 +186,14 @@ export function plantShare(live: readonly LogEntry[], legends: ReadonlyMap<strin
   return { plantKcal, knownKcal, totalKcal }
 }
 
-export function qualitySignals(days: readonly DayTotal[], plants: PlantShare): Signal[] {
-  const nothing = 'Nothing logged in the last 7 days.'
+export function qualitySignals(days: readonly DayTotal[], plants: PlantShare, t: T): Signal[] {
+  const nothing = t.t('health.nothing7')
   if (days.length === 0) {
     return [
-      { id: 'fiber', label: 'Fiber', fact: nothing, note: null, flag: 'unknown' },
-      { id: 'sodium', label: 'Sodium', fact: nothing, note: null, flag: 'unknown' },
-      { id: 'sugar', label: 'Sugar', fact: nothing, note: null, flag: 'unknown' },
-      { id: 'plants', label: 'Plant-based', fact: nothing, note: null, flag: 'unknown' },
+      { id: 'fiber', label: t.t('nutrient.fiber'), fact: nothing, note: null, flag: 'unknown' },
+      { id: 'sodium', label: t.t('nutrient.sodium'), fact: nothing, note: null, flag: 'unknown' },
+      { id: 'sugar', label: t.t('nutrient.sugar'), fact: nothing, note: null, flag: 'unknown' },
+      { id: 'plants', label: t.t('health.signal.plants'), fact: nothing, note: null, flag: 'unknown' },
     ]
   }
   const total = sumNutrients(days.map((d) => d.nutrients))
@@ -193,27 +204,33 @@ export function qualitySignals(days: readonly DayTotal[], plants: PlantShare): S
   const coverage = plants.totalKcal <= 0 ? 0 : (plants.knownKcal * 100) / plants.totalKcal
   return [
     {
-      id: 'fiber', label: 'Fiber',
-      fact: perThousand === null ? 'No calories logged, so fiber has nothing to scale against.' : `${String(round1(perThousand))} g per 1,000 kcal, against the ${String(FIBER_PER_1000_KCAL)} g mark.`,
+      id: 'fiber', label: t.t('nutrient.fiber'),
+      fact: perThousand === null
+        ? t.t('health.signal.fiberNoCalories')
+        : t.t('health.signal.fiber', { value: t.d(perThousand), mark: t.n(FIBER_PER_1000_KCAL) }),
       note: null,
       flag: perThousand === null ? 'unknown' : perThousand < FIBER_PER_1000_KCAL ? 'low' : 'none',
     },
     {
-      id: 'sodium', label: 'Sodium',
-      fact: `${n(avgSodium)} mg a day, against the ${n(SODIUM_LIMIT_MG)} mg mark.`,
+      id: 'sodium', label: t.t('nutrient.sodium'),
+      fact: t.t('health.signal.sodium', { value: t.n(avgSodium), mark: t.n(SODIUM_LIMIT_MG) }),
       note: null,
       flag: avgSodium > SODIUM_LIMIT_MG ? 'high' : 'none',
     },
     {
-      id: 'sugar', label: 'Sugar',
-      fact: sugarShare === null ? 'No calories logged, so sugar has nothing to scale against.' : `${String(round1(sugarShare))}% of calories, against the ${String(SUGAR_SHARE_LIMIT_PCT)}% mark for added sugar.`,
-      note: 'UT publishes total sugar only, so this counts the sugar in fruit and milk too.',
+      id: 'sugar', label: t.t('nutrient.sugar'),
+      fact: sugarShare === null
+        ? t.t('health.signal.sugarNoCalories')
+        : t.t('health.signal.sugar', { value: t.d(sugarShare), mark: t.n(SUGAR_SHARE_LIMIT_PCT) }),
+      note: t.t('health.signal.sugarNote'),
       flag: sugarShare === null ? 'unknown' : sugarShare > SUGAR_SHARE_LIMIT_PCT ? 'high' : 'none',
     },
     {
-      id: 'plants', label: 'Plant-based',
-      fact: plantPct === null ? 'Nothing logged in the last 7 days carried a UT label.' : `${String(round1(plantPct))}% of labelled calories came from items UT calls Vegan or Vegetarian.`,
-      note: plantPct === null ? null : `Read from ${String(round1(coverage))}% of the week's calories; custom and off-menu foods carry no UT label.`,
+      id: 'plants', label: t.t('health.signal.plants'),
+      fact: plantPct === null
+        ? t.t('health.signal.plantsNone')
+        : t.t('health.signal.plantsFact', { value: t.d(plantPct) }),
+      note: plantPct === null ? null : t.t('health.signal.plantsNote', { coverage: t.d(coverage) }),
       flag: plantPct === null ? 'unknown' : 'none',
     },
   ]
@@ -231,19 +248,27 @@ export interface TodayRead {
   readonly line: string
 }
 
-export function todayRead(entries: readonly LogEntry[], targets: Targets | null, today: string): TodayRead {
+export function todayRead(entries: readonly LogEntry[], targets: Targets | null, today: string, t: T): TodayRead {
   const s = summarizeDay(entries.filter((e) => e.date === today), targets)
   const logged = s.byMeal.length > 0
   if (targets === null || s.remaining === null) {
-    return { eaten: s.total, gap: null, logged, line: logged ? `${n(s.total.calories)} kcal and ${String(round1(s.total.protein))} g of protein logged today. No targets set yet.` : 'Nothing logged today, and no targets set yet.' }
+    const line = logged
+      ? t.t('health.today.loggedNoTargets', { calories: t.n(s.total.calories), protein: t.d(s.total.protein) })
+      : t.t('health.today.emptyNoTargets')
+    return { eaten: s.total, gap: null, logged, line }
   }
   const gap: Gap = { remaining: s.remaining, targets }
   if (!logged) {
-    return { eaten: s.total, gap, logged, line: `Nothing logged today. ${n(targets.calories)} kcal and ${String(targets.protein)} g of protein to go.` }
+    const line = t.t('health.today.emptyWithTargets', { calories: t.n(targets.calories), protein: t.n(targets.protein) })
+    return { eaten: s.total, gap, logged, line }
   }
   const left = gap.remaining.calories
-  const tail = left < 0 ? `${n(-left)} over` : `${n(left)} left`
-  return { eaten: s.total, gap, logged, line: `${n(s.total.calories)} of ${n(targets.calories)} kcal today, ${tail}. Protein ${String(round1(s.total.protein))} of ${String(targets.protein)} g.` }
+  const tail = left < 0 ? t.t('health.today.over', { amount: t.n(-left) }) : t.t('health.today.left', { amount: t.n(left) })
+  const line = t.t('health.today.line', {
+    eaten: t.n(s.total.calories), target: t.n(targets.calories), tail,
+    protein: t.d(s.total.protein), proteinTarget: t.n(targets.protein),
+  })
+  return { eaten: s.total, gap, logged, line }
 }
 
 // ---------------------------------------------------------------------------------------------- the report
@@ -262,16 +287,18 @@ export function healthReport(input: {
   targets: Targets | null
   today: string
   legends: ReadonlyMap<string, readonly string[]>
+  t: T
 }): HealthReport {
+  const { t } = input
   const from = addDays(input.today, -(WINDOW_DAYS - 1))
   const live = input.entries.filter((e) => e.deletedAt === null && e.date >= from && e.date <= input.today)
   const days = dailyTotals(live)
-  const signals = qualitySignals(days, plantShare(live, input.legends))
+  const signals = qualitySignals(days, plantShare(live, input.legends), t)
   return {
-    adherence: adherence(days, input.targets),
-    macros: macroReads(days, input.targets),
+    adherence: adherence(days, input.targets, t),
+    macros: macroReads(days, input.targets, t),
     signals,
-    today: todayRead(input.entries, input.targets, input.today),
+    today: todayRead(input.entries, input.targets, input.today, t),
     sodiumHigh: signals.some((s) => s.id === 'sodium' && s.flag === 'high'),
     fiberLow: signals.some((s) => s.id === 'fiber' && s.flag === 'low'),
   }
@@ -295,24 +322,25 @@ export interface Pick extends Candidate {
 }
 
 /** Which service to draw from, and how to say when it is served. `null` when the hall is done for today. */
-function serviceAt(week: Week, now: Date): { at: Date; when: string } | null {
-  const status = hallStatus(week, now)
-  if (status.state === 'unknown') return { at: now, when: 'today' }
-  if (status.state === 'open') return { at: now, when: 'now' }
+function serviceAt(week: Week, now: Date, t: T): { at: Date; when: string } | null {
+  const status = hallStatus(week, now, t)
+  if (status.state === 'unknown') return { at: now, when: t.t('hours.today') }
+  if (status.state === 'open') return { at: now, when: t.t('hours.now') }
   // A hall that reopens on a later day (JCL over a weekend) is not "next": it is shut, and today's gap is today's.
   if (status.opens === null || status.day !== null) return null
-  return { at: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, status.opens), when: `from ${formatTime(status.opens)}` }
+  const when = t.t('hours.from', { at: formatTime(status.opens, t) })
+  return { at: new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, status.opens), when }
 }
 
 /** Today's items at every hall that is open now or opens again today, for the service being served then. */
-export function availableItems(menu: Menu | null, hours: Hours | null, now: Date, today: string): Candidate[] {
+export function availableItems(menu: Menu | null, hours: Hours | null, now: Date, today: string, t: T): Candidate[] {
   const halls = menu?.days[today] ?? []
   const out: Candidate[] = []
   for (const { id } of HALLS) {
     const hallMenu = halls.find((h) => h.hall === id)
     if (hallMenu === undefined) continue
     const meals = hallMenu.meals.filter((m) => m.items.length > 0)
-    const slot = serviceAt(hours?.[id] ?? UNKNOWN_HOURS[id], now)
+    const slot = serviceAt(hours?.[id] ?? UNKNOWN_HOURS[id], now, t)
     if (slot === null) continue
     const chosen = meals.find((m) => m.name === currentMeal(meals.map((other) => other.name), slot.at))
     if (chosen === undefined) continue // the hall posts nothing for this day
@@ -370,7 +398,7 @@ const MAX_PICKS = 6
 
 interface Scored { readonly score: number; readonly ink: MacroKey | null; readonly reason: string }
 
-function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow: boolean): Scored {
+function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow: boolean, t: T): Scored {
   let score = 0
   let bestTerm = 0
   let ink: MacroKey | null = null
@@ -384,7 +412,7 @@ function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow
     if (term > bestTerm) {
       bestTerm = term
       ink = key
-      reason = `${String(round1(nut[key]))} g ${key} toward the ${String(round1(need))} g left`
+      reason = t.t('health.pick.macro', { grams: t.d(nut[key]), macro: t.t(MACRO_LOWER_KEY[key]), need: t.d(need) })
     }
   }
   if (fiberLow) {
@@ -393,7 +421,7 @@ function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow
     // Last term in, so nothing reads bestTerm after this: the comparison is the whole point of keeping it.
     if (term > bestTerm) {
       ink = null
-      reason = `${String(round1(nut.fiber))} g of fiber`
+      reason = t.t('health.pick.fiber', { grams: t.d(nut.fiber) })
     }
   }
   const day = Math.max(gap.targets.calories, 1)
@@ -405,8 +433,9 @@ function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow
 }
 
 /** No targets yet: protein per 100 kcal is the one ranking that needs nothing from the user to be useful. */
-function scoreWithoutGap(nut: Nutrients): Scored {
-  return { score: (nut.protein * 100) / nut.calories, ink: 'protein', reason: `${String(round1(nut.protein))} g of protein in ${n(nut.calories)} kcal` }
+function scoreWithoutGap(nut: Nutrients, t: T): Scored {
+  const reason = t.t('health.pick.protein', { grams: t.d(nut.protein), calories: t.n(nut.calories) })
+  return { score: (nut.protein * 100) / nut.calories, ink: 'protein', reason }
 }
 
 // Score desc, then name, then the menu's own order (the sort is stable): the same inputs always give the same list.
@@ -422,12 +451,14 @@ export function pickFoods(input: {
   gap: Gap | null
   sodiumHigh: boolean
   fiberLow: boolean
+  t: T
 }): Pick[] {
+  const { t } = input
   const scored: Pick[] = []
-  for (const c of availableItems(input.menu, input.hours, input.now, input.today)) {
+  for (const c of availableItems(input.menu, input.hours, input.now, input.today, t)) {
     const nut = c.item.nutrients
     if (nut.calories < MIN_KCAL || !coherent(nut)) continue
-    const s = input.gap === null ? scoreWithoutGap(nut) : scoreAgainstGap(nut, input.gap, input.sodiumHigh, input.fiberLow)
+    const s = input.gap === null ? scoreWithoutGap(nut, t) : scoreAgainstGap(nut, input.gap, input.sodiumHigh, input.fiberLow, t)
     // A non-positive score means the item closes nothing that is still open, so there is nothing to say about it.
     if (s.score <= 0) continue
     scored.push({ ...c, ...s })

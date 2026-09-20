@@ -28,7 +28,7 @@ const base: ProfileRow = {
 
 test('applyAdaptive stores previous/next/today on updated', () => {
   const r: AdaptiveResult = {
-    kind: 'updated', previous: 2770, next: 2635, estimate: 2500, actualLbPerWeek: 0, plannedLbPerWeek: -1, reason: 'x',
+    kind: 'updated', previous: 2770, next: 2635, estimate: 2500, actualLbPerWeek: 0, plannedLbPerWeek: -1, reason: 'onPace',
   }
   expect(applyAdaptive(base, r, '2026-09-19')).toEqual({ ...base, tdeePrevious: 2770, tdeeEstimate: 2635, tdeeUpdatedOn: '2026-09-19' })
 })

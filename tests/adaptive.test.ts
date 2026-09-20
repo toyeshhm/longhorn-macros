@@ -120,21 +120,21 @@ function reason(plannedLbPerWeek: number, weights: readonly WeightPoint[]): stri
 }
 
 test('reason: right on pace when within 0.2 lb/wk of plan', () => {
-  expect(reason(-0.8, fallingWeights)).toBe("you're right on pace")
-  expect(reason(0.8, risingWeights)).toBe("you're right on pace")
+  expect(reason(-0.8, fallingWeights)).toBe('onPace')
+  expect(reason(0.8, risingWeights)).toBe('onPace')
 })
 
 test('reason: cutting slower/faster than planned', () => {
-  expect(reason(-1.5, fallingWeights)).toBe("you're losing slower than planned") // actual -0.8 > planned -1.5
-  expect(reason(-0.2, fallingWeights)).toBe("you're losing faster than planned") // actual -0.8 < planned -0.2
+  expect(reason(-1.5, fallingWeights)).toBe('losingSlower') // actual -0.8 > planned -1.5
+  expect(reason(-0.2, fallingWeights)).toBe('losingFaster') // actual -0.8 < planned -0.2
 })
 
 test('reason: bulking slower/faster than planned', () => {
-  expect(reason(1.5, risingWeights)).toBe("you're gaining slower than planned") // actual 0.8 < planned 1.5
-  expect(reason(0.1, risingWeights)).toBe("you're gaining faster than planned") // actual 0.8 > planned 0.1
+  expect(reason(1.5, risingWeights)).toBe('gainingSlower') // actual 0.8 < planned 1.5
+  expect(reason(0.1, risingWeights)).toBe('gainingFaster') // actual 0.8 > planned 0.1
 })
 
 test('reason: maintain-goal drift has no planned rate to compare against', () => {
-  expect(reason(0, risingWeights)).toBe('your weight is drifting up')
-  expect(reason(0, fallingWeights)).toBe('your weight is drifting down')
+  expect(reason(0, risingWeights)).toBe('driftingUp')
+  expect(reason(0, fallingWeights)).toBe('driftingDown')
 })

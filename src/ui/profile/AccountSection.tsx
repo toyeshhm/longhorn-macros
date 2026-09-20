@@ -3,6 +3,7 @@ import { log } from '../../log'
 import { isAuthRetryableFetchError } from '@supabase/supabase-js'
 import { supabase } from '../../supabase/client'
 import { useApp } from '../context'
+import { useT } from '../i18n'
 
 const MIN_PASSWORD = 6
 
@@ -11,6 +12,7 @@ const MIN_PASSWORD = 6
 interface FieldError { readonly field: 'current' | 'next' | 'form'; readonly text: string }
 
 export function AccountSection() {
+  const t = useT()
   const { userId } = useApp()
   const [email, setEmail] = useState<string | null>(null)
   const [current, setCurrent] = useState('')
@@ -29,10 +31,10 @@ export function AccountSection() {
   const change = async (): Promise<void> => {
     setError(null)
     setStatus(null)
-    if (email === null) { setError({ field: 'form', text: 'Not signed in.' }); return }
-    if (current === '') { setError({ field: 'current', text: 'Enter your current password.' }); return }
-    if (next.length < MIN_PASSWORD) { setError({ field: 'next', text: `New password must be at least ${String(MIN_PASSWORD)} characters.` }); return }
-    if (next === current) { setError({ field: 'next', text: 'New password must be different from the current one.' }); return }
+    if (email === null) { setError({ field: 'form', text: t.t('account.notSignedIn') }); return }
+    if (current === '') { setError({ field: 'current', text: t.t('account.enterCurrent') }); return }
+    if (next.length < MIN_PASSWORD) { setError({ field: 'next', text: t.t('account.tooShort', { min: MIN_PASSWORD }) }); return }
+    if (next === current) { setError({ field: 'next', text: t.t('account.mustDiffer') }); return }
     setBusy(true)
     // Supabase's updateUser does not check the old password, so prove it first by signing in with it. That also
     // means a wrong current password is reported as such instead of silently letting the change through.
@@ -42,12 +44,13 @@ export function AccountSection() {
       // Only the server saying "wrong credentials" is a wrong password. Offline is normal here, and the old code
       // told a user with a perfectly good password that they had typed it wrong.
       setError(check.error.code === 'invalid_credentials'
-        ? { field: 'current', text: 'Current password is incorrect.' }
+        ? { field: 'current', text: t.t('account.wrongCurrent') }
         : {
             field: 'form',
+            // The server's own words are the only honest thing to print for anything but these two cases.
             text: isAuthRetryableFetchError(check.error)
-              ? "Couldn't reach the server — try again when you're online."
-              : `Couldn't check your password: ${check.error.message}`,
+              ? t.t('account.offline')
+              : t.t('account.checkFailed', { reason: check.error.message }),
           })
       setBusy(false)
       return
@@ -59,7 +62,7 @@ export function AccountSection() {
     } else {
       setCurrent('')
       setNext('')
-      setStatus('Password changed.')
+      setStatus(t.t('account.changed'))
     }
     setBusy(false)
   }
@@ -67,7 +70,7 @@ export function AccountSection() {
   return (
     <>
       <dl class="account-id">
-        <dt>Signed in as</dt>
+        <dt>{t.t('account.signedInAs')}</dt>
         <dd>{email ?? '…'}</dd>
       </dl>
 
@@ -75,35 +78,34 @@ export function AccountSection() {
         ev.preventDefault()
         change().then(undefined, (e: unknown) => { log.error('auth.password_change_failed', { userId, error: String(e) }); setError({ field: 'form', text: String(e) }); setBusy(false) })
       }}>
-        <h3>Change password</h3>
+        <h3>{t.t('account.changePassword')}</h3>
         {/* Password managers key a change-password form on an adjacent identifier: without one, iOS Keychain and
             1Password either skip the update prompt or save an orphan entry. The email is read-only and off-screen. */}
         <input type="text" autocomplete="username" value={email ?? ''} readOnly tabIndex={-1} aria-hidden="true" class="visually-hidden" />
         <label class="field">
-          Current password
+          {t.t('account.currentPassword')}
           <input type="password" autocomplete="current-password" value={current} aria-invalid={error?.field === 'current'}
             aria-describedby={error?.field === 'current' ? 'account-err' : undefined} onInput={(ev) => { setCurrent(ev.currentTarget.value) }} />
         </label>
         <label class="field">
-          New password
+          {t.t('account.newPassword')}
           <input type="password" autocomplete="new-password" value={next} aria-invalid={error?.field === 'next'}
             aria-describedby={error?.field === 'next' ? 'account-err' : undefined} onInput={(ev) => { setNext(ev.currentTarget.value) }} />
         </label>
         {error !== null && <p id="account-err" role="alert" class="error">{error.text}</p>}
-        <button type="submit" class="primary" disabled={busy}>Change password</button>
+        <button type="submit" class="primary" disabled={busy}>{t.t('account.changePassword')}</button>
         {/* Mounted empty from the first paint so the confirmation is announced when it arrives. */}
         <p role="status" class="muted">{status}</p>
       </form>
 
-      <p class="muted">Changing your email address and deleting your account are not available here: both need a
-        confirmation email this app does not send. Ask for either by writing from the address above.</p>
+      <p class="muted">{t.t('account.note')}</p>
 
       <button type="button" onClick={() => {
         supabase.auth.signOut().then(
           ({ error: signOutError }) => { if (signOutError) log.warn('auth.sign_out_failed', { userId, reason: signOutError.message }) },
           (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },
         )
-      }}>Log out</button>
+      }}>{t.t('account.logOut')}</button>
     </>
   )
 }

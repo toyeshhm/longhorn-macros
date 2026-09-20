@@ -1,3 +1,5 @@
+import type { T } from './i18n'
+
 const KEY = /^(\d{4})-(\d{2})-(\d{2})$/
 function parts(key: string): [number, number, number] {
   const m = KEY.exec(key)
@@ -25,11 +27,13 @@ export function feedDateToKey(s: string): string {
 // overnight, and the weekday alone does not say which week. `full` is the chip's accessible name, and it starts
 // with the two strings the chip prints: a name that replaced the visible text failed WCAG 2.5.3, so "tap 9/19"
 // and "tap Sat" both missed for anyone driving the app by voice.
-export function dateLabel(key: string): { date: string; weekday: string; full: string } {
+// The chip's own language, not the device's: `undefined` here handed a Spanish reader an English weekday under a
+// Spanish heading, because the browser locale and the app's are two different settings.
+export function dateLabel(key: string, t: T): { date: string; weekday: string; full: string } {
   const [y, m, d] = parts(key)
   const at = new Date(y, m - 1, d, 12)
-  const date = at.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })
-  const weekday = at.toLocaleDateString(undefined, { weekday: 'short' })
-  const spoken = at.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  const date = t.date(at, { month: 'numeric', day: 'numeric' })
+  const weekday = t.date(at, { weekday: 'short' })
+  const spoken = t.date(at, { weekday: 'long', month: 'long', day: 'numeric' })
   return { date, weekday, full: `${date} ${weekday}, ${spoken}` }
 }

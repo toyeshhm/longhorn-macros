@@ -16,6 +16,9 @@ export interface Profile {
   tdeePrevious: number | null
 }
 
+/** The four targets, in the order the form prints them. */
+export const TARGET_KEYS: readonly (keyof Targets)[] = ['calories', 'protein', 'carbs', 'fat']
+
 export const ACTIVITY_FACTOR: Readonly<Record<Activity, number>> = {
   sedentary: 1.2, light: 1.375, moderate: 1.55, active: 1.725, very_active: 1.9,
 }
@@ -64,17 +67,26 @@ function inRange(n: number, min: number, max: number): boolean {
   return Number.isFinite(n) && n >= min && n <= max
 }
 
-export function validateProfile(p: Profile): string[] {
-  const errors: string[] = []
-  if (!inRange(p.birthYear, 1900, 2015)) errors.push('birth year must be between 1900 and 2015')
-  if (!inRange(p.heightIn, 48, 96)) errors.push('height must be between 48 and 96 inches')
-  if (!RATE_OPTIONS[p.goal].includes(p.rateLbPerWeek)) {
-    errors.push(`rate must be one of ${RATE_OPTIONS[p.goal].join(', ')} lb/week for ${p.goal}`)
-  }
-  if (p.override) {
-    for (const [key, value] of Object.entries(p.override)) {
-      if (!inRange(value, 0, 10000)) errors.push(`override ${key} must be between 0 and 10000`)
-    }
+/** The bounds the form's inputs and its messages both read, so the two can never disagree. */
+export const BIRTH_YEAR_RANGE = { min: 1900, max: 2015 } as const
+export const HEIGHT_IN_RANGE = { min: 48, max: 96 } as const
+export const OVERRIDE_RANGE = { min: 0, max: 10000 } as const
+
+/**
+ * What is wrong, not how to say it. The wording moved out to the screen when the app learned a second language:
+ * the form used to route each message to its field by reading the English text ("starts with 'birth year'"),
+ * which is exactly the kind of thing that breaks silently the day the text is translated.
+ */
+export interface ProfileError { readonly field: 'birthYear' | 'height' | 'rate' | keyof Targets }
+
+export function validateProfile(p: Profile): ProfileError[] {
+  const errors: ProfileError[] = []
+  if (!inRange(p.birthYear, BIRTH_YEAR_RANGE.min, BIRTH_YEAR_RANGE.max)) errors.push({ field: 'birthYear' })
+  if (!inRange(p.heightIn, HEIGHT_IN_RANGE.min, HEIGHT_IN_RANGE.max)) errors.push({ field: 'height' })
+  if (!RATE_OPTIONS[p.goal].includes(p.rateLbPerWeek)) errors.push({ field: 'rate' })
+  for (const key of TARGET_KEYS) {
+    const value = p.override?.[key]
+    if (value !== undefined && !inRange(value, OVERRIDE_RANGE.min, OVERRIDE_RANGE.max)) errors.push({ field: key })
   }
   return errors
 }

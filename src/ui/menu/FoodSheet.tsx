@@ -9,21 +9,19 @@ import { NutrientTable } from '../components/NutrientTable'
 import { Sheet } from '../components/Sheet'
 import { Stepper } from '../components/Stepper'
 import { useApp } from '../context'
+import { useT } from '../i18n'
 
 export function isMeal(v: string): v is Meal {
   return MEALS.some((m) => m === v)
 }
 
-export function capitalize(s: string): string {
-  return s.charAt(0).toUpperCase() + s.slice(1)
-}
-
 export function MealSelect({ meal, onMeal }: { meal: Meal; onMeal: (m: Meal) => void }) {
+  const t = useT()
   return (
     <label class="field">
-      Meal
+      {t.t('common.meal')}
       <select value={meal} onChange={(ev) => { const v = ev.currentTarget.value; if (isMeal(v)) onMeal(v) }}>
-        {MEALS.map((m) => <option key={m} value={m}>{capitalize(m)}</option>)}
+        {MEALS.map((m) => <option key={m} value={m}>{t.t(`meal.${m}`)}</option>)}
       </select>
     </label>
   )
@@ -36,6 +34,7 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
   onClose: () => void
   onAdded: (meal: Meal) => void
 }) {
+  const t = useT()
   const { store, viewDate } = useApp()
   const [text, setText] = useState('1')
   const [meal, setMeal] = useState<Meal>(() => {
@@ -62,7 +61,7 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
       onAdded(meal)
     } catch (e) {
       log.error('ui.food_log_put_failed', { error: String(e) })
-      setError(`Couldn't save: ${String(e)}`)
+      setError(t.t('common.saveFailed', { error: String(e) }))
       setBusy(false)
     }
   }
@@ -70,17 +69,20 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
   const where = [item.hall, item.station].filter((s): s is string => s !== null).join(' · ')
   return (
     <Sheet title={item.name} onClose={onClose} footer={
-      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>Add</button>
+      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>{t.t('common.add')}</button>
     }>
       {where !== '' && <p class="where">{where}</p>}
-      <p class="portion">Portion: {item.portion}</p>
+      <p class="portion">{t.t('food.portion', { portion: item.portion })}</p>
       <Stepper text={text} onText={setText} />
       <MealSelect meal={meal} onMeal={setMeal} />
       <NutrientTable
-        caption={`Nutrition${servings !== null && servings !== 1 ? ` for ${formatServings(servings)} servings` : ''}`}
+        caption={servings !== null && servings !== 1
+          ? t.t('food.nutritionFor', { servings: formatServings(servings) })
+          : t.t('food.nutrition')}
         columns={[{ head: null, values: servings === null ? null : scaled }]} />
+      {/* UT's own legends, printed as UT publishes them: these are its labels, not the app's words. */}
       {legends.length > 0 && (
-        <ul class="legends" aria-label="Allergens and diet">
+        <ul class="legends" aria-label={t.t('food.legends')}>
           {legends.map((l) => <li key={l}>{l}</li>)}
         </ul>
       )}

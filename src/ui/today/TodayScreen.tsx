@@ -2,18 +2,18 @@ import { useEffect, useRef, useState } from 'preact/hooks'
 import { addDays, daysBetween, localDateKey } from '../../dates'
 import { summarizeDay } from '../../daySummary'
 import type { LogEntry } from '../../db/types'
+import type { Key, T } from '../../i18n'
 import { log } from '../../log'
-import { round1 } from '../../nutrition'
 import { formatServings } from '../../servings'
 import { InkBar } from '../components/InkBar'
 import { MacroBar } from '../components/MacroBar'
+import { Rich } from '../components/Rich'
 import type { Tab } from '../components/TabBar'
 import { useApp } from '../context'
-import { n } from '../format'
 import { useLive, useTargets } from '../hooks'
+import { useT } from '../i18n'
 import { BowlDoodle } from '../icons/Doodles'
 import { ArrowMark } from '../icons/Marks'
-import { capitalize } from '../menu/FoodSheet'
 import { EntrySheet } from './EntrySheet'
 
 // A delete is only undoable from this toast, so it carries no clock: a time limit on the sole path to a function
@@ -21,17 +21,26 @@ import { EntrySheet } from './EntrySheet'
 // next toast. Plain confirmations do time out; nothing is lost when they go.
 const TOAST_MS = 3000
 
-function dateLabel(key: string, today: string): string {
+function dateLabel(key: string, today: string, t: T): string {
   const offset = daysBetween(today, key)
-  if (offset === 0) return 'Today'
-  if (offset === -1) return 'Yesterday'
-  if (offset === 1) return 'Tomorrow'
-  return new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })
+  if (offset === 0) return t.t('today.today')
+  if (offset === -1) return t.t('today.yesterday')
+  if (offset === 1) return t.t('today.tomorrow')
+  return t.date(new Date(`${key}T12:00:00`), { weekday: 'short', month: 'short', day: 'numeric' })
+}
+
+// Four states, two of them about today, and Spanish puts "hoy" where English puts "today": one key each rather
+// than a stem with a suffix glued on.
+function heroLabel(left: number | null, isToday: boolean): Key {
+  if (left === null) return isToday ? 'today.hero.eatenToday' : 'today.hero.eaten'
+  if (left < 0) return isToday ? 'today.hero.passedToday' : 'today.hero.passed'
+  return isToday ? 'today.hero.leftToday' : 'today.hero.left'
 }
 
 type Toast = { kind: 'deleted'; entry: LogEntry } | { kind: 'info'; text: string }
 
 export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
+  const t = useT()
   const { store, viewDate, setViewDate } = useApp()
   const entries = useLive(() => store.logForDate(viewDate), [viewDate])
   const targets = useTargets()
@@ -59,7 +68,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
     dropToast()
     store.put('food_log', { ...entry, deletedAt: null }).then(undefined, (e: unknown) => {
       log.error('ui.food_log_undo_failed', { id: entry.id, error: String(e) })
-      setToast({ kind: 'info', text: `Couldn't undo: ${String(e)}` })
+      setToast({ kind: 'info', text: t.t('today.undoFailed', { error: String(e) }) })
     })
   }
 
@@ -71,44 +80,48 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   return (
     <div class="today">
       <header class="date-nav">
-        <button type="button" class="icon-btn" aria-label="Previous day" onClick={() => { setViewDate(addDays(viewDate, -1)) }}><ArrowMark dir="prev" /></button>
+        <button type="button" class="icon-btn" aria-label={t.t('today.prevDay')} onClick={() => { setViewDate(addDays(viewDate, -1)) }}><ArrowMark dir="prev" /></button>
         {/* Both arrows replace the whole screen while focus stays on the button: the heading is always mounted,
             so announcing the new day from it is reliable (a region created with its text is not). */}
-        <h2 aria-live="polite">{dateLabel(viewDate, today)}</h2>
-        <button type="button" class="icon-btn" aria-label="Next day" onClick={() => { setViewDate(addDays(viewDate, 1)) }}><ArrowMark dir="next" /></button>
-        {viewDate !== today && <button type="button" class="stamp" onClick={() => { setViewDate(today) }}>Today</button>}
+        <h2 aria-live="polite">{dateLabel(viewDate, today, t)}</h2>
+        <button type="button" class="icon-btn" aria-label={t.t('today.nextDay')} onClick={() => { setViewDate(addDays(viewDate, 1)) }}><ArrowMark dir="next" /></button>
+        {viewDate !== today && <button type="button" class="stamp" onClick={() => { setViewDate(today) }}>{t.t('today.today')}</button>}
       </header>
 
-      <section class="calories" aria-label="Calories">
-        <p class="hero-label">{left === null ? 'calories eaten' : left < 0 ? 'target passed' : 'calories left'}{viewDate === today ? ' today' : ''}</p>
+      <section class="calories" aria-label={t.t('today.calories')}>
+        <p class="hero-label">{t.t(heroLabel(left, viewDate === today))}</p>
         <p class={`hero-num${left !== null && left < 0 ? ' over' : ''}`}>
-          <span class="big" data-ink={n(left === null ? eaten : Math.abs(left))}>{n(left === null ? eaten : Math.abs(left))}</span>
-          {left !== null && left < 0 && <span class="over-word"> over</span>}
+          <span class="big" data-ink={t.n(left === null ? eaten : Math.abs(left))}>{t.n(left === null ? eaten : Math.abs(left))}</span>
+          {left !== null && left < 0 && <span class="over-word"> {t.t('today.overWord')}</span>}
         </p>
-        {targets && <p class="eaten"><strong>{n(eaten)}</strong> eaten of <strong>{n(targets.calories)}</strong></p>}
         {targets && (
-          <InkBar ink="calories" eaten={eaten} target={targets.calories} label="Calories eaten"
-            valueText={`${String(eaten)} of ${String(targets.calories)} kcal`} />
+          <p class="eaten">
+            <Rich line="today.eatenOf" slots={{ eaten: <strong>{t.n(eaten)}</strong>, target: <strong>{t.n(targets.calories)}</strong> }} />
+          </p>
+        )}
+        {targets && (
+          <InkBar ink="calories" eaten={eaten} target={targets.calories} label={t.t('today.caloriesEaten')}
+            valueText={t.t('today.ofKcal', { eaten: t.n(eaten), target: t.n(targets.calories) })} />
         )}
       </section>
       {!targets && (
-        <p class="notice">No daily targets yet, so there's nothing to count down from. <button type="button" class="link" onClick={() => { onGo('Profile') }}>Set up your goals</button></p>
+        <p class="notice">{t.t('today.noTargets')} <button type="button" class="link" onClick={() => { onGo('Profile') }}>{t.t('common.setUpGoals')}</button></p>
       )}
 
-      <section class="macros" aria-label="Macros">
-        <MacroBar ink="protein" label="Protein" eaten={s.total.protein} target={targets?.protein ?? null} unit="g" />
-        <MacroBar ink="carbs" label="Carbs" eaten={s.total.carbs} target={targets?.carbs ?? null} unit="g" />
-        <MacroBar ink="fat" label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
+      <section class="macros" aria-label={t.t('today.macros')}>
+        <MacroBar ink="protein" label={t.t('nutrient.protein')} eaten={s.total.protein} target={targets?.protein ?? null} unit={t.t('unit.g')} />
+        <MacroBar ink="carbs" label={t.t('nutrient.carbs')} eaten={s.total.carbs} target={targets?.carbs ?? null} unit={t.t('unit.g')} />
+        <MacroBar ink="fat" label={t.t('nutrient.fat')} eaten={s.total.fat} target={targets?.fat ?? null} unit={t.t('unit.g')} />
       </section>
       {/* A <p> cannot carry aria-label (the paragraph role does not support naming), so the name goes on a section. */}
-      <section class="micros" aria-label="Micronutrients">
-        Fiber&nbsp;{round1(s.total.fiber)}&nbsp;g · Sugar&nbsp;{round1(s.total.sugar)}&nbsp;g · Sodium&nbsp;{n(s.total.sodium)}&nbsp;mg
+      <section class="micros" aria-label={t.t('today.micros')}>
+        {t.t('nutrient.fiber')}&nbsp;{t.d(s.total.fiber)}&nbsp;{t.t('unit.g')} · {t.t('nutrient.sugar')}&nbsp;{t.d(s.total.sugar)}&nbsp;{t.t('unit.g')} · {t.t('nutrient.sodium')}&nbsp;{t.n(s.total.sodium)}&nbsp;{t.t('unit.mg')}
       </section>
 
-      <section aria-label="Logged foods" class="logged">
+      <section aria-label={t.t('today.loggedFoods')} class="logged">
         {s.byMeal.map((g) => (
           <section key={g.meal} class="meal-group">
-            <h3><span>{capitalize(g.meal)}</span><span class="meal-kcal">{n(g.calories)} kcal</span></h3>
+            <h3><span>{t.t(`meal.${g.meal}`)}</span><span class="meal-kcal">{t.n(g.calories)} {t.t('unit.kcal')}</span></h3>
             <ul class="food-list">
               {g.entries.map((e) => (
                 <li key={e.id}>
@@ -117,7 +130,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
                       <span class="food-name">{e.name}</span>
                       <span class="food-meta">{formatServings(e.servings)} × {e.portion}</span>
                     </span>
-                    <span class="food-kcal">{n(e.perServing.calories * e.servings)} kcal</span>
+                    <span class="food-kcal">{t.n(e.perServing.calories * e.servings)} {t.t('unit.kcal')}</span>
                   </button>
                 </li>
               ))}
@@ -128,7 +141,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
       {entries && s.byMeal.length === 0 && (
         <div class="empty">
           <BowlDoodle class="doodle-md" />
-          <p>Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
+          <p>{t.t('today.empty')} <button type="button" class="link" onClick={() => { onGo('Menu') }}>{t.t('today.browseMenu')}</button></p>
         </div>
       )}
 
@@ -141,10 +154,10 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
       <div ref={toastRef} class="toast" role="status">
         {toast === null ? null : toast.kind === 'info' ? toast.text : (
           <>
-            Deleted {toast.entry.name}
-            <button ref={undoRef} type="button" class="link" aria-label={`Undo deleting ${toast.entry.name}`}
-              onClick={() => { undo(toast.entry) }}>Undo</button>
-            <button type="button" class="link" onClick={dropToast}>Dismiss</button>
+            {t.t('today.deleted', { name: toast.entry.name })}
+            <button ref={undoRef} type="button" class="link" aria-label={t.t('today.undoLabel', { name: toast.entry.name })}
+              onClick={() => { undo(toast.entry) }}>{t.t('common.undo')}</button>
+            <button type="button" class="link" onClick={dropToast}>{t.t('common.dismiss')}</button>
           </>
         )}
       </div>

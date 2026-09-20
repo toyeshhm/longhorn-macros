@@ -1,13 +1,17 @@
 import { useState } from 'preact/hooks'
 import { localDateKey } from '../../dates'
+import type { Key, T } from '../../i18n'
 import { log } from '../../log'
+import { Rich } from '../components/Rich'
 import { useApp } from '../context'
 import { useLive } from '../hooks'
+import { useT } from '../i18n'
 
 // The status line is read out verbatim, right under a sync line that already pluralises: "1 logged foods" was audible.
-const count = (n: number, thing: string): string => `${String(n)} ${thing}${n === 1 ? '' : 's'}`
+const count = (n: number, one: Key, other: Key, t: T): string => t.t(n === 1 ? one : other, { count: t.n(n) })
 
 export function DataSection() {
+  const t = useT()
   const { store, engine, userId } = useApp()
   const [status, setStatus] = useState<string | null>(null)
   const pending = useLive(() => engine.pending(), [engine])
@@ -24,26 +28,30 @@ export function DataSection() {
     a.click()
     // Revoked a tick later: revoking in the same task cancels the download in Chromium.
     setTimeout(() => { URL.revokeObjectURL(url) }, 0)
-    setStatus(`Exported ${count(foodLog.length, 'logged food')}, ${count(weights.length, 'weigh-in')} and ${count(customFoods.length, 'custom food')}.`)
+    setStatus(t.t('data.exported', {
+      foods: count(foodLog.length, 'data.loggedFoods.one', 'data.loggedFoods.other', t),
+      weights: count(weights.length, 'data.weighIns.one', 'data.weighIns.other', t),
+      customs: count(customFoods.length, 'data.customFoods.one', 'data.customFoods.other', t),
+    }))
   }
 
   return (
     <>
-      <p class="muted">Everything on this device: your profile, every logged food, every weigh-in and every custom
-        food, as one JSON file.</p>
+      <p class="muted">{t.t('data.intro')}</p>
       <button type="button" onClick={() => {
-        exportAll().then(undefined, (e: unknown) => { log.error('ui.export_failed', { userId, error: String(e) }); setStatus(`Couldn't export: ${String(e)}`) })
-      }}>Export my log</button>
+        exportAll().then(undefined, (e: unknown) => { log.error('ui.export_failed', { userId, error: String(e) }); setStatus(t.t('data.exportFailed', { error: String(e) })) })
+      }}>{t.t('data.export')}</button>
       {/* Mounted empty from the first paint: a region that arrives with its text is unreliably announced. */}
       <p role="status" class="muted">{status}</p>
 
-      <h3>Sync</h3>
+      <h3>{t.t('data.sync')}</h3>
       <p class="sync-counts">
-        {pending === undefined ? 'Checking…' : (
-          <>
-            <strong>{pending.queued}</strong> {pending.queued === 1 ? 'change' : 'changes'} waiting to sync,{' '}
-            <strong>{pending.failed}</strong> rejected
-          </>
+        {pending === undefined ? t.t('data.checking') : (
+          <Rich line="data.counts" slots={{
+            queued: <strong>{t.n(pending.queued)}</strong>,
+            queuedWord: t.t(pending.queued === 1 ? 'data.change.one' : 'data.change.other'),
+            failed: <strong>{t.n(pending.failed)}</strong>,
+          }} />
         )}
       </p>
     </>

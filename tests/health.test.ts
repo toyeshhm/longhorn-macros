@@ -2,13 +2,30 @@ import { expect, test } from 'vitest'
 import type { LogEntry } from '../src/db/types'
 import type { Targets } from '../src/goals'
 import {
-  adherence, availableItems, dailyTotals, healthReport, macroReads, pickFoods, plantShare, qualitySignals, todayRead,
-  type DayTotal, type Gap,
+  adherence as adherenceIn, availableItems as availableItemsIn, dailyTotals, healthReport as healthReportIn,
+  macroReads as macroReadsIn, pickFoods as pickFoodsIn, plantShare, qualitySignals as qualitySignalsIn,
+  todayRead as todayReadIn,
+  type Adherence, type Candidate, type DayTotal, type Gap, type HealthReport, type MacroRead, type Pick,
+  type PlantShare, type Signal, type TodayRead,
 } from '../src/health'
+import { translator } from '../src/i18n'
 import type { HallMenu, Menu, MenuItem } from '../src/menu/feed'
 import type { Hours, Week } from '../src/menu/hours'
 import { legendsByRecipe } from '../src/menu/select'
 import { zeroNutrients, type Nutrients } from '../src/nutrition'
+
+// Every judgement below is asserted in English. The same sentences in Spanish are in tests/i18n.test.ts; what is
+// tested here is the judgement, and it must not change with the language.
+const t = translator('en')
+const adherence = (days: readonly DayTotal[], goals: Targets | null): Adherence => adherenceIn(days, goals, t)
+const macroReads = (days: readonly DayTotal[], goals: Targets | null): MacroRead[] => macroReadsIn(days, goals, t)
+const qualitySignals = (days: readonly DayTotal[], plants: PlantShare): Signal[] => qualitySignalsIn(days, plants, t)
+const todayRead = (entries: readonly LogEntry[], goals: Targets | null, today: string): TodayRead =>
+  todayReadIn(entries, goals, today, t)
+const healthReport = (a: Omit<Parameters<typeof healthReportIn>[0], 't'>): HealthReport => healthReportIn({ ...a, t })
+const availableItems = (menu: Menu | null, hours: Hours | null, now: Date, today: string): Candidate[] =>
+  availableItemsIn(menu, hours, now, today, t)
+const pickFoods = (a: Omit<Parameters<typeof pickFoodsIn>[0], 't'>): Pick[] => pickFoodsIn({ ...a, t })
 
 const targets: Targets = { calories: 2000, protein: 150, carbs: 200, fat: 60 }
 

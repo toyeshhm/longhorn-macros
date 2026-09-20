@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { dateLabel, daysBetween, localDateKey } from '../../dates'
+import type { T } from '../../i18n'
 import { log } from '../../log'
 import type { HallId } from '../../menu/feed'
 import { hoursLine, UNKNOWN_HOURS } from '../../menu/hours'
 import { currentMeal, groupByStation, HALLS, legendsByRecipe } from '../../menu/select'
-import { round1 } from '../../nutrition'
 import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem } from '../../search'
 import { Banner } from '../components/Banner'
 import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
+import { useT } from '../i18n'
 import { UtensilsDoodle } from '../icons/Doodles'
 import { PlusMark, Swatch } from '../icons/Marks'
 import { useHours, useLive, useMenu, useNow } from '../hooks'
@@ -20,14 +21,13 @@ const DIET_HINTS: ReadonlyMap<string, string> = new Map([['Vegan', 'Vegan'], ['V
 const TOAST_MS = 3000
 
 // Feed `last_cached` is "YYYY-MM-DD HH:MM:SS" in Austin local time, which is also the user's zone.
-function savedAgo(cachedAt: string, now: Date): string {
-  const t = new Date(cachedAt.replace(' ', 'T')).getTime()
-  if (!Number.isFinite(t)) return `at ${cachedAt}`
-  const minutes = Math.round((now.getTime() - t) / 60_000)
-  const rtf = new Intl.RelativeTimeFormat(undefined, { numeric: 'auto' })
-  if (Math.abs(minutes) < 60) return rtf.format(-minutes, 'minute')
-  if (Math.abs(minutes) < 48 * 60) return rtf.format(-Math.round(minutes / 60), 'hour')
-  return rtf.format(-Math.round(minutes / 1440), 'day')
+function savedAgo(cachedAt: string, now: Date, t: T): string {
+  const at = new Date(cachedAt.replace(' ', 'T')).getTime()
+  if (!Number.isFinite(at)) return t.t('menu.savedAt', { when: cachedAt })
+  const minutes = Math.round((now.getTime() - at) / 60_000)
+  if (Math.abs(minutes) < 60) return t.rel(-minutes, 'minute')
+  if (Math.abs(minutes) < 48 * 60) return t.rel(-Math.round(minutes / 60), 'hour')
+  return t.rel(-Math.round(minutes / 1440), 'day')
 }
 
 // `sub` stacks a smaller second line under the label (the day chips' weekday); `spoken`, when given, is the whole
@@ -55,13 +55,14 @@ export function Chips<T extends string>({ legend, name, options, value, onSelect
 }
 
 function FoodRow({ item, badge, hints, onOpen }: { item: SearchItem; badge: string | null; hints: readonly string[]; onOpen: () => void }) {
+  const t = useT()
   return (
     <li>
       <button type="button" class="food-row" onClick={onOpen}>
         <span class="food-name">{item.name}</span>
         <span class="food-meta">
-          <span class="meta-kcal">{Math.round(item.nutrients.calories)} kcal</span>
-          <span class="meta-protein"><Swatch ink="protein" />{round1(item.nutrients.protein)}g protein</span>
+          <span class="meta-kcal">{t.n(item.nutrients.calories)} {t.t('unit.kcal')}</span>
+          <span class="meta-protein"><Swatch ink="protein" />{t.t('menu.rowProtein', { grams: t.d(item.nutrients.protein) })}</span>
           {hints.map((h) => <span key={h} class="tag">{h}</span>)}
           {badge !== null && <span class="badge">{badge}</span>}
         </span>
@@ -74,13 +75,15 @@ function dietHints(legends: readonly string[]): string[] {
   return legends.flatMap((l) => { const h = DIET_HINTS.get(l); return h === undefined ? [] : [h] })
 }
 
-function sourceBadge(item: SearchItem): string {
-  if (item.source === 'custom') return 'Custom'
-  if (item.source === 'history') return 'Logged before'
-  return item.hall ?? 'Menu'
+// A hall's own name is UT's, so it is printed as UT writes it; the two app-made badges are translated.
+function sourceBadge(item: SearchItem, t: T): string {
+  if (item.source === 'custom') return t.t('food.badgeCustom')
+  if (item.source === 'history') return t.t('food.badgeHistory')
+  return item.hall ?? t.t('food.badgeMenu')
 }
 
 export function MenuScreen() {
+  const t = useT()
   const { store } = useApp()
   const { menu, stale, error, cachedAt, retry } = useMenu()
   const { hours, error: hoursError } = useHours()
@@ -130,18 +133,23 @@ export function MenuScreen() {
   // Still in flight is not the same as failed: the strip stays blank while the feed loads, exactly as the week
   // table on Profile prints "Loading hours…" rather than "Hours unavailable".
   const week = hours === null && hoursError === null ? null : hours?.[hall] ?? UNKNOWN_HOURS[hall]
-  const hoursText = week === null || activeDay === null ? null : hoursLine(week, now, daysBetween(today, activeDay))
+  const hoursText = week === null || activeDay === null ? null : hoursLine(week, now, daysBetween(today, activeDay), t)
   const open = (item: SearchItem): void => { setSheet({ kind: 'food', item }) }
   const close = (): void => { setSheet(null) }
 
   return (
     <div class="menu">
-      <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
-        placeholder="Search menu, history, custom foods" value={query}
+      <input type="search" enterKeyHint="search" class="search" aria-label={t.t('menu.searchLabel')}
+        placeholder={t.t('menu.searchPlaceholder')} value={query}
         onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
+      {/* Said once, here, where a reader in Spanish first meets a screen full of English dish names. */}
+      <p class="muted ut-names">{t.t('menu.utNames')}</p>
       {/* ponytail: announced on every keystroke, no debounce — a polite region only speaks once typing pauses. */}
       <p class="visually-hidden" role="status">
-        {results === null ? '' : `${results.length === 0 ? 'No' : String(results.length)} ${results.length === 1 ? 'result' : 'results'} for ${query.trim()}`}
+        {results === null ? '' : t.t(
+          results.length === 0 ? 'menu.results.none' : results.length === 1 ? 'menu.results.one' : 'menu.results.other',
+          { count: t.n(results.length), query: query.trim() },
+        )}
       </p>
       {/* The strip below is created with the menu, and a live region born with its text is unreliably announced:
           the hall's state is spoken from here instead, mounted from the first paint and empty until there is
@@ -149,32 +157,32 @@ export function MenuScreen() {
       <p class="visually-hidden" role="status">
         {hoursText === null ? '' : `${hall} ${hoursText.head}${hoursText.detail === null ? '' : `, ${hoursText.detail}`}`}
       </p>
-      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />Custom food</button>
+      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />{t.t('food.custom')}</button>
 
       {stale && cachedAt !== null && (
-        <Banner tone="info">Showing the menu saved {savedAgo(cachedAt, now)}. Couldn't reach UT dining.</Banner>
+        <Banner tone="info">{t.t('menu.stale', { ago: savedAgo(cachedAt, now, t) })}</Banner>
       )}
       {menu === null && error !== null && (
         <Banner tone="error">
-          Couldn't load UT menu <button type="button" onClick={retry}>Retry</button>
+          {t.t('menu.loadFailed')} <button type="button" onClick={retry}>{t.t('common.retry')}</button>
         </Banner>
       )}
 
       {results !== null ? (
-        results.length === 0 ? <div class="empty"><UtensilsDoodle /><p>No matches for “{query.trim()}”.</p></div> : (
-          <ul class="food-list" aria-label="Search results">
+        results.length === 0 ? <div class="empty"><UtensilsDoodle /><p>{t.t('menu.noMatches', { query: query.trim() })}</p></div> : (
+          <ul class="food-list" aria-label={t.t('menu.searchResults')}>
             {results.map((r) => (
-              <FoodRow key={r.key} item={r} badge={sourceBadge(r)}
+              <FoodRow key={r.key} item={r} badge={sourceBadge(r, t)}
                 hints={dietHints(r.recipeNumber === null ? [] : legends.get(r.recipeNumber) ?? [])}
                 onOpen={() => { open(r) }} />
             ))}
           </ul>
         )
       ) : menu === null ? (
-        error === null && <p class="loading">Loading menu…</p>
+        error === null && <p class="loading">{t.t('menu.loading')}</p>
       ) : (
         <>
-          <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
+          <Chips legend={t.t('menu.hall')} name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
           {/* Whether the hall is serving, in words — never carried by ink alone. On a day other than today it is
               that day's own windows: "Today" printed over a Tuesday menu contradicts the chip 40px below it. */}
           {hoursText !== null && (
@@ -183,12 +191,13 @@ export function MenuScreen() {
               {hoursText.detail !== null && <span class="muted">{hoursText.detail}</span>}
             </p>
           )}
-          <Chips legend="Day" name="day" options={dates.map((d) => {
-            const { date, weekday, full } = dateLabel(d)
+          <Chips legend={t.t('menu.day')} name="day" options={dates.map((d) => {
+            const { date, weekday, full } = dateLabel(d, t)
             return { value: d, label: date, sub: weekday, spoken: full }
           })} value={activeDay} onSelect={setDay} />
-          <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
-          {stations.length === 0 && <div class="empty"><UtensilsDoodle /><p>No menu posted for this hall and day.</p></div>}
+          {/* The meal chips print UT's own service names ("Brunch"), which are data, not copy. */}
+          <Chips legend={t.t('common.meal')} name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
+          {stations.length === 0 && <div class="empty"><UtensilsDoodle /><p>{t.t('menu.noMenu')}</p></div>}
           {stations.map((s) => (
             <section key={s.station} class="station">
               <h2>{s.station}</h2>
@@ -204,14 +213,14 @@ export function MenuScreen() {
       )}
 
       {sheet?.kind === 'custom' && (
-        <Sheet key="custom" title="Custom food" onClose={close}>
+        <Sheet key="custom" title={t.t('food.custom')} onClose={close}>
           <CustomFoodForm onSaved={(food) => { open(fromCustomFood(food)) }} />
         </Sheet>
       )}
       {sheet?.kind === 'food' && (
         <FoodSheet key={sheet.item.key} item={sheet.item} menuMeal={activeMeal}
           legends={sheet.item.recipeNumber === null ? [] : legends.get(sheet.item.recipeNumber) ?? []}
-          onClose={close} onAdded={(m) => { setSheet(null); setToast(`Added to ${m}`) }} />
+          onClose={close} onAdded={(m) => { setSheet(null); setToast(t.t('food.addedTo', { meal: t.t(`meal.${m}`) })) }} />
       )}
       {/* Both regions are mounted for the screen's whole life and only their text changes: a live region that is
           created in the same paint as its content is unreliably announced. */}

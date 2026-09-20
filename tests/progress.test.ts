@@ -1,10 +1,22 @@
 import { expect, test } from 'vitest'
 import { addDays } from '../src/dates'
 import type { LogEntry, ProfileRow, WeightEntry } from '../src/db/types'
+import { translator } from '../src/i18n'
 import {
-  adaptiveStatus, calorieSeries, chartDates, chartGeometry, inRange, movingMean, predictedSeries, predictionNote,
-  rangeDays, rangeStart, signed, summarize, weightSeries, type ChartSeries, type Point,
+  adaptiveStatus as adaptiveStatusIn, calorieSeries, chartDates, chartGeometry as chartGeometryIn, inRange,
+  movingMean, predictedSeries, predictionNote as predictionNoteIn, rangeDays, rangeStart, signed as signedIn,
+  summarize as summarizeIn, weightSeries,
+  type ChartGeometry, type ChartSeries, type Point, type Summary,
 } from '../src/progress'
+
+// English here; the Spanish run of the same figures is in tests/i18n.test.ts.
+const t = translator('en')
+const predictionNote = (maintenance: number | null): string => predictionNoteIn(maintenance, t)
+const signed = (lb: number): string => signedIn(lb, t)
+const summarize = (a: Omit<Parameters<typeof summarizeIn>[0], 't'>): Summary => summarizeIn({ ...a, t })
+const adaptiveStatus = (...a: [ProfileRow | null | undefined, readonly WeightEntry[], readonly LogEntry[], string]): string =>
+  adaptiveStatusIn(...a, t)
+const chartGeometry = (a: Omit<Parameters<typeof chartGeometryIn>[0], 't'>): ChartGeometry => chartGeometryIn({ ...a, t })
 
 const TODAY = '2026-09-19'
 

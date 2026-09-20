@@ -1,4 +1,5 @@
 import { chartDates, chartGeometry, type ChartSeries, type Mark } from '../../progress'
+import { useT } from '../i18n'
 
 const W = 340
 const H = 220
@@ -57,8 +58,9 @@ export function InkChart({ title, series, yPad, format }: {
   yPad: number
   format: (value: number) => string
 }) {
+  const t = useT()
   const font = chartFont()
-  const geo = chartGeometry({ series, width: W, height: H, font, yPad, format })
+  const geo = chartGeometry({ series, width: W, height: H, font, yPad, format, t })
   const { x0, y0, x1, y1 } = geo.frame
   const at = new Map(series.map((s) => [s.id, new Map(s.points.map((p) => [p.date, p.value]))]))
   return (
@@ -82,14 +84,14 @@ export function InkChart({ title, series, yPad, format }: {
       </p>
       <table class="visually-hidden">
         <caption>{title}</caption>
-        <thead><tr><th scope="col">Date</th>{series.map((s) => <th key={s.id} scope="col">{s.label}</th>)}</tr></thead>
+        <thead><tr><th scope="col">{t.t('common.date')}</th>{series.map((s) => <th key={s.id} scope="col">{s.label}</th>)}</tr></thead>
         <tbody>
           {chartDates(series).map((date) => (
             <tr key={date}>
               <th scope="row">{date}</th>
               {series.map((s) => {
                 const value = at.get(s.id)?.get(date)
-                return <td key={s.id}>{value === undefined ? 'no reading' : format(value)}</td>
+                return <td key={s.id}>{value === undefined ? t.t('progress.noReading') : format(value)}</td>
               })}
             </tr>
           ))}

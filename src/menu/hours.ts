@@ -1,4 +1,5 @@
 import { isPlainObject } from '../guard'
+import type { T } from '../i18n'
 import type { HallId } from './feed'
 
 // UT serves this as text/plain JavaScript: `const diningHours = { ... };`. Strip the assignment, parse the rest.
@@ -14,7 +15,6 @@ export type Hours = Readonly<Record<HallId, Week>>
 
 // The menu feed calls Jester City Limits "JCL Dining"; the hours feed spells it out.
 const HALL_NAMES: Readonly<Record<HallId, string>> = { J2: 'J2 Dining', JCL: 'Jester City Limits', Kins: 'Kins Dining' }
-export const DAY_NAMES: readonly string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 const UNKNOWN_WEEK: Week = [null, null, null, null, null, null, null]
 export const UNKNOWN_HOURS: Hours = { J2: UNKNOWN_WEEK, JCL: UNKNOWN_WEEK, Kins: UNKNOWN_WEEK }
 
@@ -86,6 +86,12 @@ export function parseHours(body: string, today: string): Hours {
 
 /** Monday-first index, matching the feed's array order. */
 export function dayIndex(d: Date): number { return (d.getDay() + 6) % 7 }
+
+/** The week's short day names in the reader's language, Monday first, for the Profile hours table. */
+export function dayNames(t: T): string[] {
+  // 2024-01-01 was a Monday; the names come from Intl rather than a list, so they move with the language.
+  return Array.from({ length: 7 }, (_, i) => t.date(new Date(2024, 0, 1 + i), { weekday: 'short' }))
+}
 function minutesOf(d: Date): number { return d.getHours() * 60 + d.getMinutes() }
 function dayAt(week: Week, i: number): DayHours { return week[i] ?? null }
 
@@ -95,25 +101,25 @@ export type Status =
   | { readonly state: 'closed'; readonly opens: number | null; readonly day: string | null; readonly allDay: boolean }
   | { readonly state: 'unknown' }
 
-/** The short weekday `plus` days from `now`, in the reader's locale. */
-function weekday(now: Date, plus: number): string {
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus).toLocaleDateString(undefined, { weekday: 'short' })
+/** The short weekday `plus` days from `now`, in the app's language (not the device's). */
+function weekday(now: Date, plus: number, t: T): string {
+  return t.date(new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus), { weekday: 'short' })
 }
 
 // Done for the day: walk forward for the next day that opens at all. JCL is shut from Saturday afternoon to Monday
 // morning, and "Closed" with no reopening time is exactly the weekend a student needs told. A day the feed wrote in
 // a way we cannot read ends the walk: we cannot promise Monday when Sunday is a question mark.
-function nextOpening(week: Week, now: Date, i: number): { opens: number | null; day: string | null } {
+function nextOpening(week: Week, now: Date, i: number, t: T): { opens: number | null; day: string | null } {
   for (let n = 1; n < 7; n++) {
     const ahead = dayAt(week, (i + n) % 7)
     if (ahead === null) break
     const first = ahead[0]
-    if (first !== undefined) return { opens: first.open, day: n === 1 ? 'tomorrow' : weekday(now, n) }
+    if (first !== undefined) return { opens: first.open, day: n === 1 ? t.t('hours.tomorrow') : weekday(now, n, t) }
   }
   return { opens: null, day: null }
 }
 
-export function hallStatus(week: Week, now: Date): Status {
+export function hallStatus(week: Week, now: Date, t: T): Status {
   const i = dayIndex(now)
   const minutes = minutesOf(now)
   const today = dayAt(week, i)
@@ -126,30 +132,39 @@ export function hallStatus(week: Week, now: Date): Status {
   const open = today.find((w) => w.open <= minutes && minutes < w.close)
   if (open !== undefined) return { state: 'open', until: open.close, reopens: next?.open ?? null }
   if (next !== undefined) return { state: 'closed', opens: next.open, day: null, allDay: false }
-  return { state: 'closed', ...nextOpening(week, now, i), allDay: today.length === 0 }
+  return { state: 'closed', ...nextOpening(week, now, i, t), allDay: today.length === 0 }
 }
 
-export function formatTime(minutes: number): string {
+/** English reads the 12-hour clock UT publishes ("4:30pm"); Spanish reads the 24-hour one it actually uses. */
+export function formatTime(minutes: number, t: T): string {
   const m = ((minutes % DAY) + DAY) % DAY
-  if (m === 0) return 'Midnight'
+  if (m === 0) return t.t('hours.midnight')
   const h = Math.floor(m / 60)
-  return `${String(h % 12 === 0 ? 12 : h % 12)}:${String(m % 60).padStart(2, '0')}${h < 12 ? 'am' : 'pm'}`
+  const mm = String(m % 60).padStart(2, '0')
+  if (!t.hour12) return `${String(h)}:${mm}`
+  return `${String(h % 12 === 0 ? 12 : h % 12)}:${mm}${h < 12 ? 'am' : 'pm'}`
 }
 
 /** One line for the selected hall: state first, in words, then the times. */
-export function statusText(s: Status): string {
-  if (s.state === 'unknown') return 'Hours unavailable'
-  if (s.state === 'open') return `Open until ${formatTime(s.until)}${s.reopens === null ? '' : ` · reopens ${formatTime(s.reopens)}`}`
-  const head = s.allDay ? 'Closed today' : 'Closed'
+export function statusText(s: Status, t: T): string {
+  if (s.state === 'unknown') return t.t('hours.unavailable')
+  if (s.state === 'open') {
+    const until = formatTime(s.until, t)
+    return s.reopens === null
+      ? t.t('hours.openUntil', { until })
+      : t.t('hours.openUntilReopens', { until, reopens: formatTime(s.reopens, t) })
+  }
+  const head = s.allDay ? t.t('hours.closedToday') : t.t('hours.closed')
   if (s.opens === null) return head
-  return `${head} · opens ${s.day === null ? '' : `${s.day} `}${formatTime(s.opens)}`
+  const at = formatTime(s.opens, t)
+  return s.day === null ? t.t('hours.opens', { head, at }) : t.t('hours.opensDay', { head, day: s.day, at })
 }
 
 /** A day's windows written out, for the status line and the week table. */
-export function dayText(day: DayHours): string {
-  if (day === null) return 'Unknown'
-  if (day.length === 0) return 'Closed'
-  return day.map((w) => `${formatTime(w.open)}–${formatTime(w.close)}`).join(', ')
+export function dayText(day: DayHours, t: T): string {
+  if (day === null) return t.t('hours.unknown')
+  if (day.length === 0) return t.t('hours.closed')
+  return day.map((w) => `${formatTime(w.open, t)}–${formatTime(w.close, t)}`).join(', ')
 }
 
 /**
@@ -157,16 +172,17 @@ export function dayText(day: DayHours): string {
  * any other day its own windows under its weekday, because "Today" over a Tuesday menu is a lie. The second line
  * is dropped whenever it would only restate the first (closed all day, unreadable, or already done for today).
  */
-export function hoursLine(week: Week, now: Date, offset: number): { readonly head: string; readonly detail: string | null } {
+export function hoursLine(week: Week, now: Date, offset: number, t: T): { readonly head: string; readonly detail: string | null } {
   if (offset !== 0) {
     const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
-    return { head: `${weekday(now, offset)} ${dayText(dayAt(week, dayIndex(at)))}`, detail: null }
+    const windows = dayText(dayAt(week, dayIndex(at)), t)
+    return { head: t.t('hours.dayWindows', { day: weekday(now, offset, t), windows }), detail: null }
   }
-  const status = hallStatus(week, now)
+  const status = hallStatus(week, now, t)
   const today = dayAt(week, dayIndex(now))
   const spent = status.state === 'closed' && status.day !== null
   const said = spent || today === null || today.length === 0
-  return { head: statusText(status), detail: said ? null : `Today ${dayText(today)}` }
+  return { head: statusText(status, t), detail: said ? null : t.t('hours.todayWindows', { windows: dayText(today, t) }) }
 }
 
 export async function fetchHours(fetchFn: typeof fetch): Promise<string> {

@@ -3,6 +3,13 @@ import { addDays, daysBetween } from './dates'
 export interface WeightPoint { date: string; weightLb: number }
 export interface DayIntake { date: string; calories: number } // only days with ≥1 entry
 
+/**
+ * Why the estimate moved, as a name rather than a sentence: the card that prints it is translated, and a module
+ * that decides the arithmetic has no business deciding the wording.
+ */
+export type PaceReason =
+  | 'onPace' | 'losingSlower' | 'losingFaster' | 'gainingSlower' | 'gainingFaster' | 'driftingUp' | 'driftingDown'
+
 export type AdaptiveResult =
   | { kind: 'not-due' }
   | { kind: 'insufficient'; loggedDaysNeeded: number; weighInsNeeded: number }
@@ -13,7 +20,7 @@ export type AdaptiveResult =
       estimate: number
       actualLbPerWeek: number
       plannedLbPerWeek: number
-      reason: string
+      reason: PaceReason
     }
 
 const MIN_LOGGED_DAYS = 14
@@ -44,15 +51,11 @@ export function trendBounds(trendInWindow: readonly WeightPoint[]): { first: Wei
   return { first, last }
 }
 
-function reasonFor(actualLbPerWeek: number, plannedLbPerWeek: number): string {
-  if (Math.abs(actualLbPerWeek - plannedLbPerWeek) < PACE_TOLERANCE) return "you're right on pace"
-  if (plannedLbPerWeek < 0) {
-    return actualLbPerWeek > plannedLbPerWeek ? "you're losing slower than planned" : "you're losing faster than planned"
-  }
-  if (plannedLbPerWeek > 0) {
-    return actualLbPerWeek < plannedLbPerWeek ? "you're gaining slower than planned" : "you're gaining faster than planned"
-  }
-  return actualLbPerWeek > 0 ? 'your weight is drifting up' : 'your weight is drifting down'
+function reasonFor(actualLbPerWeek: number, plannedLbPerWeek: number): PaceReason {
+  if (Math.abs(actualLbPerWeek - plannedLbPerWeek) < PACE_TOLERANCE) return 'onPace'
+  if (plannedLbPerWeek < 0) return actualLbPerWeek > plannedLbPerWeek ? 'losingSlower' : 'losingFaster'
+  if (plannedLbPerWeek > 0) return actualLbPerWeek < plannedLbPerWeek ? 'gainingSlower' : 'gainingFaster'
+  return actualLbPerWeek > 0 ? 'driftingUp' : 'driftingDown'
 }
 
 export function evaluateAdaptive(a: {

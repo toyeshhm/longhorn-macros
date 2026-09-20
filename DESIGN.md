@@ -279,6 +279,30 @@ accessibility tree whether or not the page is unfolded, and the screen is never 
 Goals is unfolded on arrival. The fold marker is the hand-drawn chevron, turned 90 degrees when shut. The dining-hours
 week prints as one two-column table per hall (day, hours), which still fits a 320px page.
 
+### Language
+Two languages, English and Spanish, chosen by a chip group in Profile > Appearance under the theme's: a language
+switch is not a special control, so it is the same printed radio stamp as hall, day, meal and press. Each option
+names itself in itself (English, Español) and never translates, because the one reader who needs the list is the
+one who cannot read the page it is printed on. The choice lives in `localStorage` per device, like the press, and
+sets `<html lang>` so a screen reader changes voice with the app.
+
+Every string comes from `src/i18n`: one dictionary per locale, `keyof typeof en` as the key type, so a missing or
+misspelt key is a compile error and `tests/i18n.test.ts` holds the Spanish dictionary to exactly the English key
+set. The modules that write prose — `health.ts`, `progress.ts`, `menu/hours.ts`, `dates.ts` — take the translator
+as an argument and write no English of their own; `goals.ts` now returns the *field* that is wrong rather than a
+sentence, because the form used to route each message to its input by reading the English text.
+
+Numbers, dates and times move with the words, through `Intl` on the active locale rather than the device's:
+Spanish prints 1.234 and 1,5 where English prints 1,234 and 1.5, writes 19/9 where English writes 9/19, and reads
+a 24-hour clock ("abre mañana a las 9:00") where English reads UT's 12-hour one ("opens tomorrow 9:00am"). The
+exceptions are deliberate: a year and the bounds in a validation message print as bare digits in both languages,
+because a limit is not a quantity, and `<input type="date">` keeps the browser's own format, which is the
+platform's to decide.
+
+**UT's words are not translated, in any locale.** Food names, hall names, station names and the diet and allergen
+legends print exactly as UT publishes them, in English. Said once, in Soft Ink under the Menu's search box, which
+is where a Spanish reader first meets a screen of English dish names.
+
 ### Inputs
 Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`, on the one field the message is about — never pooled across the form, or a wrong current password paints the new-password box red too. Focus everywhere: 2.5px orange outline; on the blue toast plate it switches to paper (orange on blue is 1.75:1). Date inputs use a hand-drawn calendar (`ink/calendar.svg`) in place of the browser picker glyph.
 
@@ -326,4 +350,5 @@ rather than five of each on top of each other.
 - **Don't** pull icons from a library or draw marks with perfect primitives.
 - **Don't** add soft shadows, gradients, glass or side-stripe borders.
 - **Don't** animate anything else on a loop; the boil is for doodles only.
+- **Don't** translate UT's own words, or build a sentence by gluing translated fragments together: one key per whole sentence, with `{slots}` for the figures.
 - **Don't** use em dashes in copy.

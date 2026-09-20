@@ -1,8 +1,16 @@
 import { expect, test } from './fixtures'
-import { dateLabel, daysBetween, localDateKey } from '../src/dates'
+import { dateLabel as dateLabelIn, daysBetween, localDateKey } from '../src/dates'
+import { translator } from '../src/i18n'
 import { fetchMenu } from '../src/menu/feed'
-import { fetchHours, hoursLine, parseHours } from '../src/menu/hours'
+import { fetchHours, hoursLine as hoursLineIn, parseHours } from '../src/menu/hours'
 import { currentMeal, groupByStation } from '../src/menu/select'
+import type { Week } from '../src/menu/hours'
+
+// The app is in English by default, so the expected wording is the English one.
+const en = translator('en')
+const dateLabel = (key: string): { date: string; weekday: string; full: string } => dateLabelIn(key, en)
+const hoursLine = (week: Week, now: Date, offset: number): { head: string; detail: string | null } =>
+  hoursLineIn(week, now, offset, en)
 
 // Live UT feed on both sides: the test derives the expected first row (default hall J2, today, current meal)
 // from the same feed the app loads, so it checks real numbers without pinning any menu content.

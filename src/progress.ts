@@ -2,8 +2,8 @@ import { evaluateAdaptive, ewmaTrend, type WeightPoint } from './adaptive'
 import { dailyIntake } from './adaptiveRun'
 import { addDays, dateLabel, daysBetween } from './dates'
 import type { LogEntry, ProfileRow, WeightEntry } from './db/types'
+import type { T } from './i18n'
 import { round1 } from './nutrition'
-import { n } from './ui/format'
 
 /**
  * Everything the Progress screen works out: which days a range covers, the series it can draw (weight,
@@ -102,9 +102,9 @@ export function predictedSeries(a: {
 }
 
 /** What the prediction assumed, always printed with it: the estimate moves, and a line drawn from it is only as good. */
-export function predictionNote(maintenance: number | null): string {
-  if (maintenance === null) return 'No maintenance estimate yet, so there is nothing to predict from. Set up your goals first.'
-  return `Predicted from intake at ${n(maintenance)} kcal a day of maintenance, ${n(KCAL_PER_LB)} kcal to the pound. Days you did not log are skipped, so the line holds flat across a gap.`
+export function predictionNote(maintenance: number | null, t: T): string {
+  if (maintenance === null) return t.t('progress.note.none')
+  return t.t('progress.note', { maintenance: t.n(maintenance), perPound: t.n(KCAL_PER_LB) })
 }
 
 export interface Summary {
@@ -120,7 +120,7 @@ export interface Summary {
   readonly rangeDays: number | null
 }
 
-export function summarize(a: { trend: readonly Point[]; calories: readonly Point[]; range: Range }): Summary {
+export function summarize(a: { trend: readonly Point[]; calories: readonly Point[]; range: Range; t: T }): Summary {
   const first = a.trend[0]
   const last = a.trend[a.trend.length - 1]
   const ends = first === undefined || last === undefined ? null : { first, last }
@@ -130,23 +130,25 @@ export function summarize(a: { trend: readonly Point[]; calories: readonly Point
     trendWeight: ends === null ? null : round1(ends.last.value),
     changeLb: ends === null ? null : round1(ends.last.value - ends.first.value),
     spanDays,
-    changeLabel: spanDays === 0 ? 'Change' : `Change over ${spanDays === 1 ? 'a day' : `${String(spanDays)} days`}`,
+    changeLabel: spanDays === 0
+      ? a.t.t('progress.change')
+      : a.t.t(spanDays === 1 ? 'progress.changeOver.one' : 'progress.changeOver.other', { days: spanDays }),
     avgCalories: days === 0 ? null : a.calories.reduce((sum, p) => sum + p.value, 0) / days,
     daysLogged: days,
     rangeDays: rangeDays(a.range),
   }
 }
 
-/** Signed so a gain never reads as a loss: the sign is the whole point of the figure. */
-export function signed(lb: number): string {
-  return lb > 0 ? `+${String(lb)}` : String(lb)
+/** Signed so a gain never reads as a loss: the sign is the whole point of the figure, and so is the decimal mark. */
+export function signed(lb: number, t: T): string {
+  return lb > 0 ? `+${t.d(lb)}` : t.d(lb)
 }
 
 /** Where adaptive TDEE stands: the estimate it landed on, or what it is still short of. */
-export function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonly WeightEntry[], entries: readonly LogEntry[], today: string): string {
+export function adaptiveStatus(profile: ProfileRow | null | undefined, weights: readonly WeightEntry[], entries: readonly LogEntry[], today: string, t: T): string {
   if (profile?.tdeeEstimate != null && profile.tdeeUpdatedOn !== null) {
-    const on = new Date(`${profile.tdeeUpdatedOn}T12:00:00`).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
-    return `Maintenance estimate: ${n(profile.tdeeEstimate)} kcal (updated ${on})`
+    const on = t.date(new Date(`${profile.tdeeUpdatedOn}T12:00:00`), { month: 'short', day: 'numeric' })
+    return t.t('progress.maintEstimate', { value: t.n(profile.tdeeEstimate), when: on })
   }
   // Only the eligibility part of the result is used here; previous/pace don't affect it.
   const r = evaluateAdaptive({
@@ -154,15 +156,13 @@ export function adaptiveStatus(profile: ProfileRow | null | undefined, weights: 
     weights: weights.map((w) => ({ date: w.date, weightLb: w.weightLb })), intake: dailyIntake(entries),
   })
   if (r.kind === 'insufficient') {
-    const parts = [
-      r.loggedDaysNeeded > 0 && `~${String(r.loggedDaysNeeded)} more logged days`,
-      r.weighInsNeeded > 0 && `${String(r.weighInsNeeded)} ${r.weighInsNeeded === 1 ? 'weigh-in' : 'weigh-ins'}`,
+    const needed = [
+      r.loggedDaysNeeded > 0 && t.t('progress.needDays', { days: r.loggedDaysNeeded }),
+      r.weighInsNeeded > 0 && t.t(r.weighInsNeeded === 1 ? 'progress.needWeighIns.one' : 'progress.needWeighIns.other', { count: r.weighInsNeeded }),
     ].filter((p) => p !== false)
-    return `Needs ${parts.join(' and ')}`
+    return t.t('progress.needs', { parts: needed.join(t.t('common.and')) })
   }
-  return profile?.adaptiveEnabled
-    ? 'Enough data. Your maintenance estimate updates next time you open the app.'
-    : 'Enough data. Turn on adaptive TDEE in Goals to learn your maintenance.'
+  return profile?.adaptiveEnabled ? t.t('progress.enoughOn') : t.t('progress.enoughOff')
 }
 
 // ------------------------------------------------------------------------------------------------- chart
@@ -202,8 +202,9 @@ export function chartGeometry(a: {
   font: number
   yPad: number
   format: (value: number) => string
+  t: T
 }): ChartGeometry {
-  const { width, height, font, format } = a
+  const { width, height, font, format, t } = a
   const all = a.series.flatMap((s) => s.points)
   const x1 = width - font * CHAR
   const y0 = font * 0.7
@@ -233,7 +234,7 @@ export function chartGeometry(a: {
     yTicks: tickLabels.map((label, i) => ({ y: y(yMin + ((yMax - yMin) * i) / (tickCount - 1)), label })),
     xLabels: Array.from({ length: labelCount }, (_, i) => {
       const date = labelCount === 1 ? first : addDays(first, Math.round((span * i) / (labelCount - 1)))
-      return { x: x(date), y: round1(y1 + font * 1.35), label: dateLabel(date).date, anchor: anchor(i) }
+      return { x: x(date), y: round1(y1 + font * 1.35), label: dateLabel(date, t).date, anchor: anchor(i) }
     }),
     frame: { x0: round1(x0), y0: round1(y0), x1: round1(x1), y1: round1(y1) },
   }

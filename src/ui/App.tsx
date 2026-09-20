@@ -6,10 +6,11 @@ import { supabase } from '../supabase/client'
 import { SyncEngine } from '../sync/engine'
 import { LocalStore } from '../sync/store'
 import { SyncBanner } from './components/Banner'
-import { TabBar, type Tab } from './components/TabBar'
+import { TabBar, tabKey, type Tab } from './components/TabBar'
 import { AppContext } from './context'
 import { AdaptiveCard, runAdaptive, type AdaptiveUpdate } from './goals/AdaptiveCard'
 import { useProfile } from './hooks'
+import { useT } from './i18n'
 import { Login } from './Login'
 import { HealthScreen } from './health/HealthScreen'
 import { MenuScreen } from './menu/MenuScreen'
@@ -64,9 +65,19 @@ export function App() {
   }, [userId])
 
   if (userId === null) return <Login />
-  if (openError !== null) return <p role="alert" class="fatal">Could not open local storage: {openError}</p>
-  if (userId === undefined || session === null) return <p class="loading">Loading…</p>
+  if (openError !== null) return <OpenError error={openError} />
+  if (userId === undefined || session === null) return <Loading />
   return <Shell session={session} />
+}
+
+function OpenError({ error }: { error: string }) {
+  const t = useT()
+  return <p role="alert" class="fatal">{t.t('app.storageFailed', { error })}</p>
+}
+
+function Loading() {
+  const t = useT()
+  return <p class="loading">{t.t('common.loading')}</p>
 }
 
 function Shell({ session }: { session: Session }) {
@@ -107,6 +118,7 @@ function Shell({ session }: { session: Session }) {
 }
 
 function Tabs() {
+  const t = useT()
   const profile = useProfile()
   const [tab, setTab] = useState<Tab>('Menu')
   // First run (no profile yet) lands on Profile, whose Goals section is the one that is unfolded.
@@ -118,7 +130,7 @@ function Tabs() {
       {/* tabindex=-1: somewhere for focus to land when the element that had it is removed (deleting a logged food). */}
       <main class="screen" tabIndex={-1}>
         {/* Tracker leads with its date line; its title stays for screen readers only. */}
-        <h1 class={tab === 'Tracker' ? 'visually-hidden' : 'masthead'}>{tab}</h1>
+        <h1 class={tab === 'Tracker' ? 'visually-hidden' : 'masthead'}>{t.t(tabKey(tab))}</h1>
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Tracker' && <TodayScreen onGo={setTab} />}
         {tab === 'Health' && <HealthScreen onGo={setTab} />}
