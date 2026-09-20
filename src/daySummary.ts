@@ -25,10 +25,3 @@ export function summarizeDay(entries: readonly LogEntry[], targets: Targets | nu
   }
   return { total, byMeal, remaining }
 }
-
-// Copies live entries onto `toDate` as new rows (fresh ids), e.g. "repeat yesterday's lunch".
-export function copyMeal(entries: readonly LogEntry[], toDate: string, now: () => string): LogEntry[] {
-  return entries
-    .filter((e) => e.deletedAt === null)
-    .map((e) => ({ ...e, id: crypto.randomUUID(), date: toDate, updatedAt: now() }))
-}

@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures'
 
-const SCREENS = ['Menu', 'Today', 'Progress', 'Profile'] as const
+const SCREENS = ['Menu', 'Tracker', 'Health', 'Progress', 'Profile'] as const
 
 // A phone does not scroll sideways when something is too wide: it widens its own layout viewport and shrinks
 // everything to fit, so window.innerWidth staying at the viewport width is the tell that nothing overflowed.
@@ -15,7 +15,8 @@ test('mobile and screen reader basics: 320px layout, big text, dialogs, focus re
   await expect(tabs).toMatchAriaSnapshot(`
     - navigation "Main":
       - button "Menu"
-      - button "Today"
+      - button "Tracker"
+      - button "Health"
       - button "Progress"
       - button "Profile"
   `)
@@ -53,7 +54,7 @@ test('mobile and screen reader basics: 320px layout, big text, dialogs, focus re
   }
 
   // The entry sheet is a labelled dialog; Esc closes it and focus goes back to the row that opened it.
-  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
   const row = page.getByRole('button', { name: /A11y Bar/ })
   await row.click()
   const entry = page.getByRole('dialog', { name: 'A11y Bar' })

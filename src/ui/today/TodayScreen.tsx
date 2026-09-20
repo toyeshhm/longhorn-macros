@@ -15,7 +15,6 @@ import { BowlDoodle } from '../icons/Doodles'
 import { ArrowMark } from '../icons/Marks'
 import { capitalize } from '../menu/FoodSheet'
 import { EntrySheet } from './EntrySheet'
-import { RepeatMeal } from './RepeatMeal'
 
 // A delete is only undoable from this toast, so it carries no clock: a time limit on the sole path to a function
 // is WCAG 2.2.1 (and 10s is nowhere near enough to hear it, decide and act). It stays until Undo, Dismiss, or the
@@ -36,7 +35,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   const { store, viewDate, setViewDate } = useApp()
   const entries = useLive(() => store.logForDate(viewDate), [viewDate])
   const targets = useTargets()
-  const [sheet, setSheet] = useState<{ kind: 'entry'; entry: LogEntry } | { kind: 'repeat' } | null>(null)
+  const [sheet, setSheet] = useState<LogEntry | null>(null)
   const [toast, setToast] = useState<Toast | null>(null)
 
   // A delete takes the focused row with it, so focus moves to Undo; when the toast goes it hands focus to the
@@ -113,7 +112,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
             <ul class="food-list">
               {g.entries.map((e) => (
                 <li key={e.id}>
-                  <button type="button" class="food-row entry-row" onClick={() => { setSheet({ kind: 'entry', entry: e }) }}>
+                  <button type="button" class="food-row entry-row" onClick={() => { setSheet(e) }}>
                     <span class="food-main">
                       <span class="food-name">{e.name}</span>
                       <span class="food-meta">{formatServings(e.servings)} × {e.portion}</span>
@@ -132,15 +131,10 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
           <p>Nothing logged for this day. <button type="button" class="link" onClick={() => { onGo('Menu') }}>Browse the menu</button></p>
         </div>
       )}
-      <button type="button" class="link repeat" onClick={() => { setSheet({ kind: 'repeat' }) }}>Repeat a past meal</button>
 
-      {sheet?.kind === 'entry' && (
-        <EntrySheet key={sheet.entry.id} entry={sheet.entry} onClose={() => { setSheet(null) }}
+      {sheet !== null && (
+        <EntrySheet key={sheet.id} entry={sheet} onClose={() => { setSheet(null) }}
           onDeleted={(entry) => { setSheet(null); setToast({ kind: 'deleted', entry }) }} />
-      )}
-      {sheet?.kind === 'repeat' && (
-        <RepeatMeal onClose={() => { setSheet(null) }}
-          onAdded={(n) => { setSheet(null); setToast({ kind: 'info', text: `Added ${String(n)} ${n === 1 ? 'item' : 'items'}` }) }} />
       )}
       {/* Always mounted, empty when there is nothing to say: a live region that appears together with its text is
           unreliably announced. The Undo button carries the item name because the focus move pre-empts the region. */}

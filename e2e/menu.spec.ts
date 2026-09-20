@@ -47,7 +47,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(page.getByRole('status').filter({ hasText: /^Added to / })).toBeVisible()
   await expect(sheet).toBeHidden()
 
-  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
   const logged = page.getByRole('region', { name: 'Logged foods' })
   await expect(logged).toContainText(first.name)
   await expect(logged).toContainText(`${Math.round(1.5 * first.nutrients.calories).toLocaleString('en-US')} kcal`)
@@ -83,7 +83,7 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await shakeSheet.getByRole('button', { name: 'Add' }).click()
   await expect(shakeSheet).toBeHidden()
 
-  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
   await expect(logged).toContainText('Protein Shake')
   await expect(logged).toContainText('160 kcal')
 })
@@ -144,7 +144,7 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
   await expect(hall.getByRole('radio', { name: 'J2' })).toBeChecked()
   await hall.getByRole('radio', { name: 'JCL' }).check()
   // Remounting Menu re-reads the saved hall; IndexedDB orders that read after the write, so the reload can't cut it off.
-  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
   await tabs.getByRole('button', { name: 'Menu' }).click()
   await expect(hall.getByRole('radio', { name: 'JCL' })).toBeChecked()
   await page.reload()

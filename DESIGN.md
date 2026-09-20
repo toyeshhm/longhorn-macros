@@ -196,9 +196,9 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 ## 5. Components
 
 ### Hand-drawn marks
-- Tab icons: `src/ui/icons/TabIcons.tsx`. Blue line always; orange plate prints only on the active tab, and its label gets an orange underline.
+- Tab icons: `src/ui/icons/TabIcons.tsx`, one per tab (Menu, Tracker, Health, Progress, Profile). Blue line always; orange plate prints only on the active tab, and its label gets an orange underline. Five tabs leave 64px each on a 320px phone, so the bar's buttons carry no side padding and set their label a notch down: at the token's 16px gutters "Progress" wrapped onto three lines and pushed the bar over the page.
 - Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`.
-- Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on Today's empty state and Login; utensils on empty menu/search; scale on no weigh-ins.
+- Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on the Tracker's empty state and Login; utensils on empty menu/search and on Health's What to eat; scale on no weigh-ins.
 - CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, grain): `src/ui/ink/*.svg`. Colors are baked in as hex because an image cannot read CSS tokens; keep them in step with the tokens above.
 - **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things.
 
@@ -210,7 +210,7 @@ Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble tha
 
 The three macro rows share one subgrid so the bars align, but the bar's track is never allowed to starve: it has a 3rem floor, and under 16em of the row's own width (a container query, because media-query `em` cannot see the page's font-size) the row reflows to two lines, name and number above, bar full width below. A bar that has printed its aria but not its ink is a bug the e2e catches at 320px with 32px root text.
 
-### Today hero
+### Tracker hero
 Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral (plus "over" when over), "**eaten** eaten of **target**" (no unit; the label already says calories), then the full-width calories InkBar in orange. Macro rows below share one subgrid so the three bars align.
 
 ### Buttons
@@ -250,6 +250,28 @@ because the strip itself is created with the menu and a region born with its tex
 Parsing and wording live in `src/menu/hours.ts`; anything the feed writes in a way we cannot read is "unknown", never
 a guess and never a crash. While the feed is still in flight the strip prints nothing at all — "Hours unavailable" is
 reserved for a request that actually failed, the same distinction the Profile week table makes.
+
+### Health
+A page you read, not a dashboard. Five sections (Today, Last 7 days, Macro balance, Diet quality, What to eat),
+each a Bungee `h2` over a hand-drawn rule, and no stamped numeral anywhere: the Tracker owns the day's hero and a
+screen gets one at most. Every sentence on the screen comes from `src/health.ts`, which is pure and fully covered;
+the screen decides nothing except which line to print when the feed has nothing to suggest.
+
+Rows in Macro balance and Diet quality are one run of inline text (name in ink, figure in Soft Ink) over a dashed
+pencil rule, not two flex columns: at 320px a column layout wrapped the number into a narrow box with a hanging
+indent, and these read as sentences anyway. The macro swatch sits beside the macro's name as it does everywhere
+else; fiber, sodium and sugar print no ink, because they are not macros and the macro inks mean one nutrient each.
+
+What to eat reuses the Menu's food row and the food sheet, so adding from Health is the same three taps as adding
+from the Menu. Each pick carries its hall, station, service and when it is served, in words ("Dinner · now",
+"Dinner · from 4:30pm"), and the macro that earned it prints in its own ink beside its name. Opening the sheet
+also pulls the viewed day back to today, because a suggestion is about the gap that is still open today.
+
+The copy is flat on purpose: no streaks, no badges, no grades, no "you failed". The week is reported with its
+numbers and the count of days behind them ("Short on 5 of 6 logged days, averaging 118 g against 170 g"), a
+partial week always says how partial it is ("3 of 7 days logged"), and a day with nothing logged is absent from
+every average rather than counted as a zero. An empty account gets one line per block saying what that block will
+read once there is something to read, never a column of zeros.
 
 ### Profile sections
 Folded pages: a `<details>` per section with its `<h2>` inside the `<summary>`, so the heading is in the

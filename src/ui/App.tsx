@@ -11,6 +11,7 @@ import { AppContext } from './context'
 import { AdaptiveCard, runAdaptive, type AdaptiveUpdate } from './goals/AdaptiveCard'
 import { useProfile } from './hooks'
 import { Login } from './Login'
+import { HealthScreen } from './health/HealthScreen'
 import { MenuScreen } from './menu/MenuScreen'
 import { ProfileScreen } from './profile/ProfileScreen'
 import { ProgressScreen } from './progress/ProgressScreen'
@@ -116,10 +117,11 @@ function Tabs() {
       <SyncBanner />
       {/* tabindex=-1: somewhere for focus to land when the element that had it is removed (deleting a logged food). */}
       <main class="screen" tabIndex={-1}>
-        {/* Today leads with its date line; its title stays for screen readers only. */}
-        <h1 class={tab === 'Today' ? 'visually-hidden' : 'masthead'}>{tab}</h1>
+        {/* Tracker leads with its date line; its title stays for screen readers only. */}
+        <h1 class={tab === 'Tracker' ? 'visually-hidden' : 'masthead'}>{tab}</h1>
         {tab === 'Menu' && <MenuScreen />}
-        {tab === 'Today' && <TodayScreen onGo={setTab} />}
+        {tab === 'Tracker' && <TodayScreen onGo={setTab} />}
+        {tab === 'Health' && <HealthScreen onGo={setTab} />}
         {tab === 'Progress' && <ProgressScreen />}
         {tab === 'Profile' && <ProfileScreen />}
       </main>

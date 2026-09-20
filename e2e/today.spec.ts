@@ -20,15 +20,15 @@ async function addToLunch(page: Page, name: string): Promise<void> {
 }
 
 // This test has no profile, so it checks totals without targets. The next test seeds one.
-test('totals, edit servings, delete with undo, date nav, repeat a meal', async ({ page }) => {
+test('totals, edit servings, delete with undo, date nav', async ({ page }) => {
   await page.goto('/')
   await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
   await page.getByLabel('Password').fill(crypto.randomUUID())
   await page.getByRole('button', { name: 'Create account' }).click()
   const tabs = page.getByRole('navigation', { name: 'Main' })
-  const goToday = async (): Promise<void> => { await tabs.getByRole('button', { name: 'Today' }).click() }
+  const goTracker = async (): Promise<void> => { await tabs.getByRole('button', { name: 'Tracker' }).click() }
 
-  await goToday()
+  await goTracker()
   await expect(page.getByText('Nothing logged for this day.')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Set up your goals' })).toBeVisible()
 
@@ -37,7 +37,7 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await createCustomFood(page, 'E2E Bar', { 'Calories (kcal)': '250', 'Protein (g)': '10', 'Carbs (g)': '30', 'Fat (g)': '9', 'Fiber (g)': '4', 'Sugar (g)': '12', 'Sodium (mg)': '150' })
 
   // Totals equal the sum of both items.
-  await goToday()
+  await goTracker()
   const calories = page.getByRole('region', { name: 'Calories' })
   const eaten = calories.locator('.big')
   const macros = page.getByRole('region', { name: 'Macros' })
@@ -113,26 +113,17 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
     await results.getByRole('button').filter({ hasText: name }).filter({ hasText: 'Custom' }).click()
     await addToLunch(page, name)
   }
-  await goToday()
+  await goTracker()
   await expect(page.getByRole('heading', { name: 'Yesterday' })).toBeVisible()
   await expect(eaten).toHaveText('410')
 
-  // Today button returns; repeat yesterday's lunch onto today.
+  // The Today stamp jumps back, and goes away once it would do nothing.
   const todayButton = page.locator('.date-nav').getByRole('button', { name: 'Today' })
   await todayButton.click()
   await expect(page.locator('.date-nav h2')).toHaveText('Today')
   await expect(todayButton).toHaveCount(0)
-  await page.getByRole('button', { name: 'Repeat a past meal' }).click()
-  const repeat = page.getByRole('dialog', { name: 'Repeat a past meal' })
-  await repeat.getByLabel('Meal').selectOption('lunch')
-  const preview = repeat.getByRole('list', { name: 'Items to copy' })
-  await expect(preview).toContainText('E2E Shake')
-  await expect(preview).toContainText('E2E Bar')
-  await repeat.getByRole('button', { name: 'Add 2 items' }).click()
-  await expect(repeat).toBeHidden()
-  await expect(page.getByRole('status').filter({ hasText: 'Added 2 items' })).toBeVisible()
-  await expect(eaten).toHaveText('980')
-  await expect(logged.getByRole('button', { name: /E2E Bar/ })).toHaveCount(2)
+  await expect(eaten).toHaveText('570')
+  await expect(page.getByRole('button', { name: 'Repeat a past meal' })).toHaveCount(0)
 })
 
 // No Goals UI until Task 13: seed a profile (targets via override) and a weight straight into the real local DB, then sign in so pull brings them down.
@@ -162,7 +153,7 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   const tabs = page.getByRole('navigation', { name: 'Main' })
   await tabs.getByRole('button', { name: 'Menu' }).click()
   await createCustomFood(page, 'E2E Shake', { 'Calories (kcal)': '160', 'Protein (g)': '30', 'Carbs (g)': '5', 'Fat (g)': '2' })
-  await tabs.getByRole('button', { name: 'Today' }).click()
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
 
   const calories = page.getByRole('region', { name: 'Calories' })
   const macros = page.getByRole('region', { name: 'Macros' })

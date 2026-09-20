@@ -86,7 +86,7 @@ test('sign up, set goal, log online and offline, rows reach Supabase and a secon
   await other.getByLabel('Email').fill(email)
   await other.getByLabel('Password').fill(password)
   await other.getByRole('button', { name: 'Sign in' }).click()
-  await other.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Today' }).click()
+  await other.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Tracker' }).click()
   const logged = other.getByRole('region', { name: 'Logged foods' })
   await expect(logged).toContainText(first.name)
   await expect(logged).toContainText(second.name)

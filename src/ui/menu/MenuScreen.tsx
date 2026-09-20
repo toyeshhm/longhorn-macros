@@ -3,7 +3,7 @@ import { dateLabel, daysBetween, localDateKey } from '../../dates'
 import { log } from '../../log'
 import type { HallId } from '../../menu/feed'
 import { hoursLine, UNKNOWN_HOURS } from '../../menu/hours'
-import { currentMeal, groupByStation, HALLS } from '../../menu/select'
+import { currentMeal, groupByStation, HALLS, legendsByRecipe } from '../../menu/select'
 import { round1 } from '../../nutrition'
 import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem } from '../../search'
 import { Banner } from '../components/Banner'
@@ -110,13 +110,7 @@ export function MenuScreen() {
     () => buildIndex({ menu, history: history ?? [], customFoods: customFoods ?? [] }),
     [menu, history, customFoods],
   )
-  const legendsByRecipe = useMemo(() => {
-    const map = new Map<string, readonly string[]>()
-    for (const halls of Object.values(menu?.days ?? {})) {
-      for (const h of halls) for (const m of h.meals) for (const i of m.items) map.set(i.recipeNumber, i.legends)
-    }
-    return map
-  }, [menu])
+  const legends = useMemo(() => legendsByRecipe(menu), [menu])
 
   const selectHall = (id: HallId): void => {
     setHall(id)
@@ -171,7 +165,7 @@ export function MenuScreen() {
           <ul class="food-list" aria-label="Search results">
             {results.map((r) => (
               <FoodRow key={r.key} item={r} badge={sourceBadge(r)}
-                hints={dietHints(r.recipeNumber === null ? [] : legendsByRecipe.get(r.recipeNumber) ?? [])}
+                hints={dietHints(r.recipeNumber === null ? [] : legends.get(r.recipeNumber) ?? [])}
                 onOpen={() => { open(r) }} />
             ))}
           </ul>
@@ -216,7 +210,7 @@ export function MenuScreen() {
       )}
       {sheet?.kind === 'food' && (
         <FoodSheet key={sheet.item.key} item={sheet.item} menuMeal={activeMeal}
-          legends={sheet.item.recipeNumber === null ? [] : legendsByRecipe.get(sheet.item.recipeNumber) ?? []}
+          legends={sheet.item.recipeNumber === null ? [] : legends.get(sheet.item.recipeNumber) ?? []}
           onClose={close} onAdded={(m) => { setSheet(null); setToast(`Added to ${m}`) }} />
       )}
       {/* Both regions are mounted for the screen's whole life and only their text changes: a live region that is

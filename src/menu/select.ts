@@ -1,4 +1,4 @@
-import type { HallId, MenuItem } from './feed'
+import type { HallId, Menu, MenuItem } from './feed'
 
 export const HALLS: readonly { id: HallId; label: string; full: string }[] = [
   { id: 'J2', label: 'J2', full: 'J2 Dining' },
@@ -19,6 +19,16 @@ export function groupByStation(items: readonly MenuItem[]): { station: string; i
     bucket.push(item)
   }
   return groups
+}
+
+// Diet and allergen labels are only carried on the menu feed, never on a logged row: anything logged before this
+// week's feed, or added by hand, simply has no UT label, and the screens that read this say so rather than guess.
+export function legendsByRecipe(menu: Menu | null): Map<string, readonly string[]> {
+  const map = new Map<string, readonly string[]>()
+  for (const halls of Object.values(menu?.days ?? {})) {
+    for (const hall of halls) for (const meal of hall.meals) for (const item of meal.items) map.set(item.recipeNumber, item.legends)
+  }
+  return map
 }
 
 export function currentMeal(available: readonly string[], now: Date): string | null {

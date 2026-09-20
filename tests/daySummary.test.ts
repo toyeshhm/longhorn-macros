@@ -1,5 +1,5 @@
 import { expect, test } from 'vitest'
-import { copyMeal, summarizeDay } from '../src/daySummary'
+import { summarizeDay } from '../src/daySummary'
 import type { LogEntry, Meal } from '../src/db/types'
 
 function entry(id: string, meal: Meal, servings: number, calories: number, deletedAt: string | null = null): LogEntry {
@@ -31,18 +31,4 @@ test('remaining goes negative when over; null without targets', () => {
   expect(empty.remaining).toBeNull()
   expect(empty.byMeal).toEqual([])
   expect(empty.total.calories).toBe(0)
-})
-
-test('copyMeal makes fresh live rows on the target date', () => {
-  const src = [entry('a', 'lunch', 2, 300), entry('b', 'lunch', 1, 500), entry('gone', 'lunch', 1, 1, '2026-09-18T13:00:00.000Z')]
-  const out = copyMeal(src, '2026-09-19', () => '2026-09-19T08:00:00.000Z')
-  expect(out).toHaveLength(2)
-  for (const [i, c] of out.entries()) {
-    const orig = src[i]
-    if (!orig) throw new Error('missing source')
-    expect(c).toEqual({ ...orig, id: c.id, date: '2026-09-19', updatedAt: '2026-09-19T08:00:00.000Z' })
-    expect(c.id).not.toBe(orig.id)
-    expect(c.id).toMatch(/^[0-9a-f-]{36}$/)
-  }
-  expect(new Set(out.map((c) => c.id)).size).toBe(2)
 })

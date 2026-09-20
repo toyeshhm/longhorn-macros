@@ -206,7 +206,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 /* Tab bar */
 .tabbar {
   position: fixed; inset: auto 0 0 0; z-index: 10;
-  display: grid; grid-template-columns: repeat(4, 1fr);
+  display: grid; grid-template-columns: repeat(5, 1fr);
   padding: 4px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: var(--paper) var(--mark-rule-thick) no-repeat top / 100% 6px;
 }
@@ -215,7 +215,9 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
    instead; .screen already reserves the token plus 24px, and the a11y e2e holds that reserve to the real height. */
 .tabbar button {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  min-height: var(--tabbar-h); border: 0; border-radius: 0; background: none; font-size: 0.8rem; color: var(--ink-soft);
+  /* Five tabs across a 320px phone leave 64px each: the button's own 16px gutters would squeeze the label into
+     three wrapped lines, so the padding goes and the label drops a notch. */
+  min-height: var(--tabbar-h); padding: 0 2px; border: 0; border-radius: 0; background: none; font-size: 0.75rem; color: var(--ink-soft);
 }
 .tabbar button span { overflow-wrap: anywhere; } /* at 200% text "Progress" would otherwise run into its neighbours */
 .tabbar button:active .line { stroke: var(--ink-deep); }
@@ -258,7 +260,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .food-row:active { background-color: var(--paper-shade); }
 .food-name { font-weight: 700; overflow-wrap: break-word; color: var(--ink-deep); }
 .food-meta { color: var(--ink-soft); font-size: 0.875rem; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
-.meta-protein { display: inline-flex; align-items: center; }
+.meta-protein, .pick-why { display: inline-flex; align-items: center; }
 .tag, .badge { padding: 0 6px; border: 1px solid var(--ink-soft); border-radius: var(--wobble-sm); font-size: 0.8rem; }
 .badge { border-color: var(--blue); color: var(--ink); }
 
@@ -401,98 +403,3 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .food-main { display: flex; flex: 1 1 8em; flex-direction: column; gap: 1px; min-width: 0; }
 .entry-row .food-meta { font-size: 0.85rem; }
 .food-kcal { flex: none; font-weight: 700; font-variant-numeric: tabular-nums; color: var(--ink-deep); }
-.repeat { margin-top: 14px; min-height: 44px; }
-
-/* Progress */
-.weight-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 12px; align-items: end; }
-.weight-form .primary, .weight-form .error { grid-column: 1 / -1; }
-.weight-form input { width: 100%; min-width: 0; }
-.progress .chips { margin-top: 18px; }
-.weight-chart { margin: 12px 0 0; }
-.weight-chart > svg { display: block; width: 100%; height: auto; font-size: 11px; font-family: var(--text); overflow: visible; }
-.weight-chart .tick path { fill: none; stroke: var(--blue); stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 14 3 22 4 9 3; }
-.weight-chart .axis { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
-.weight-chart text { fill: var(--ink-soft); }
-.weight-chart .trend { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: var(--blend); }
-.weight-chart .dot { fill: var(--blue); }
-.chart-key { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 0; font-size: 0.8rem; color: var(--ink-soft); }
-.chart-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
-.chart-key svg { width: 14px; height: 14px; overflow: visible; }
-.chart-key .key-line { width: 26px; }
-/* rem track minimums: at the user's largest text these rows drop to fewer columns instead of running off the page. */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); margin-top: 20px; padding: 10px 0; background: var(--mark-rule) no-repeat top / 100% 6px, var(--mark-rule) no-repeat bottom / 100% 6px; }
-.stat { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; padding: 4px 8px; }
-.stat + .stat { border-left: 1px dashed var(--blue); }
-/* Inline, not flex: the macro swatch then wraps as part of the words instead of sitting on a line of its own. */
-.stat-label { color: var(--ink-soft); font-size: 0.8rem; }
-.stat-label .swatch { width: 12px; margin-right: 4px; }
-.stat-value { font-family: var(--display); font-weight: 400; font-size: 1.25rem; color: var(--ink-deep); font-variant-numeric: tabular-nums; }
-.stat-value small { font-family: var(--text); font-weight: 700; font-size: 0.8rem; }
-.adaptive-status { font-size: 0.9rem; }
-
-/* Goals */
-.goals-form { display: flex; flex-direction: column; gap: 14px; }
-.goals-form .chips { margin-top: 0; }
-.goals-form .height { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 12px; margin: 0; padding: 0; border: 0; }
-.goals-form .height legend { font-weight: 700; padding: 0; margin-bottom: 4px; }
-.goals-form input:not([type='checkbox']), .goals-form select { width: 100%; min-width: 0; }
-.goals-form .toggle { display: flex; gap: 4px; align-items: center; font-weight: 700; }
-.overrides summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px; }
-.overrides[open] .nutrient-grid { margin-top: 10px; }
-.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
-.goal-panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; }
-.goal-panel dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); margin: 8px 0; font-variant-numeric: tabular-nums; }
-.goal-panel dt, .goal-panel dd { padding: 7px 0; background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
-.goal-panel dt { display: flex; align-items: center; color: var(--ink-soft); }
-.goal-panel dd { margin: 0; text-align: end; font-weight: 700; color: var(--ink-deep); }
-.goal-panel .target { color: var(--ink-deep); }
-.goal-panel dt.target { font-weight: 700; }
-.adaptive-card { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; margin: 12px 16px 0; }
-.adaptive-card p { margin: 0; flex: 1 1 100%; font-weight: 700; }
-
-/* Login masthead */
-.login { max-width: 420px; margin: 0 auto; padding: 40px 20px; }
-.login-mast { margin-bottom: 28px; }
-.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(var(--orange-rgb) / calc(0.6 * var(--plate-k))); }
-.login-mast h1 span { display: block; }
-.login-mast h1 span + span { margin-left: 0.6em; }
-.login-mast p { margin: 0; max-width: 32ch; }
-.login form, .login label { display: flex; flex-direction: column; gap: 14px; }
-.login label { gap: 4px; font-weight: 700; }
-
-/* Day chips print the date over its weekday; the full date is the chip's accessible name. */
-.chip-stack { flex-direction: column; justify-content: center; gap: 0; padding: 4px 12px; line-height: 1.15; }
-.chip-sub { font-weight: 400; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
-
-/* Hall hours: state first in words, then today's windows. */
-.hall-hours { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 8px 0 0; font-size: 0.9rem; }
-.hall-hours strong { color: var(--ink-deep); }
-
-/* Profile: folded pages. Only the section you came for is unfolded; each keeps its heading in the tree. */
-.profile-section { margin: 0 -16px; padding: 0 16px; background: var(--mark-rule) no-repeat bottom / 100% 6px; }
-.profile-section > summary { display: flex; align-items: center; gap: 8px; min-height: 52px; cursor: pointer; list-style: none; }
-.profile-section > summary::-webkit-details-marker { display: none; }
-/* Hand-drawn chevron, turned down when the page is unfolded. */
-.profile-section > summary::after {
-  content: ''; flex: none; width: 22px; height: 22px; margin-left: auto;
-  background: var(--mark-chevron) center / 22px no-repeat; transform: rotate(-90deg); transition: transform 160ms var(--ease);
-}
-.profile-section[open] > summary::after { transform: rotate(0deg); }
-.profile-section > summary h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; color: var(--ink); }
-.profile-section .section-body { display: flex; flex-direction: column; gap: 12px; padding-bottom: 18px; }
-.profile-section h3 { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 0.9rem; color: var(--ink); }
-.profile-section .goal-panel { margin: 12px 0; }
-.section-body > .muted { margin: 0; font-size: 0.9rem; }
-
-.account-id { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 4px 12px; margin: 0; }
-.account-id dt { color: var(--ink-soft); }
-.account-id dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; color: var(--ink-deep); }
-.sync-counts { margin: 0; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
-.sync-counts strong { color: var(--ink-deep); }
-
-/* One small table per hall: two columns, so it still fits a 320px page. */
-.hours-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
-.hours-table caption { text-align: left; padding-bottom: 4px; font-family: var(--display); font-size: 0.85rem; color: var(--ink); }
-.hours-table tr { background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
-.hours-table th { text-align: left; font-weight: 400; color: var(--ink-soft); padding: 6px 0; width: 4em; }
-.hours-table td { text-align: right; font-weight: 700; padding: 6px 0; color: var(--ink-deep); overflow-wrap: anywhere; }

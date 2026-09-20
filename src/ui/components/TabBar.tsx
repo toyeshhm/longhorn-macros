@@ -1,6 +1,7 @@
 import { TabIcon } from '../icons/TabIcons'
 
-export const TABS = ['Menu', 'Today', 'Progress', 'Profile'] as const
+// Health sits in the middle, between logging the day and the weight trend: it is what the log is for.
+export const TABS = ['Menu', 'Tracker', 'Health', 'Progress', 'Profile'] as const
 export type Tab = (typeof TABS)[number]
 
 export function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {
