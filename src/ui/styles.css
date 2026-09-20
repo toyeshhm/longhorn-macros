@@ -312,7 +312,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet-body {
   flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
   padding: 10px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
-  display: flex; flex-direction: column; gap: 12px;
+  display: flex; flex-direction: column; gap: 10px;
 }
 /* The Add/Save plate is printed outside the scrollport, not stuck to the bottom of it: with the on-screen keyboard
    up a sticky plate sat on top of the Meal select and, at 320px, the whole servings stepper. A footer cannot. */
@@ -331,24 +331,40 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .sheet p { margin: 0; }
-.sheet .where { color: var(--ink-soft); font-size: 0.9rem; margin-top: -6px; }
-.sheet .portion { font-weight: 700; }
+/* Hall, source and portion set as one run of meta, not three stacked paragraphs each costing a sheet gap: the
+   nutrition label has to begin above the fold on a 390px phone, and those three lines were most of what pushed
+   it under. The hairline between them is decoration — the paragraphs still separate the runs for a screen reader. */
+.sheet-meta { display: flex; flex-wrap: wrap; column-gap: 10px; row-gap: 2px; margin-top: -4px; font-size: 0.9rem; color: var(--ink-soft); }
+.sheet-meta p + p { border-left: 1px solid var(--ink-soft); padding-left: 10px; }
+.sheet-meta .portion { font-weight: 700; color: var(--ink); }
 .field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; color: var(--ink); }
+.field, .stepper label { font-size: 0.875rem; }
 .stepper label { font-weight: 700; }
+/* Servings and Meal share one line. At 320px, or once the reader's text grows, Meal drops under the stepper
+   rather than squeezing the select down to its chevron. */
+.sheet-controls { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; }
+.sheet-controls .stepper { flex: 0 0 auto; }
+.sheet-controls .field { flex: 1 1 6.5rem; min-width: 0; }
 .stepper-row { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
-.stepper-row input { width: 6em; text-align: center; font-weight: 700; }
+.stepper-row input { width: 4em; text-align: center; font-weight: 700; }
 .stepper-row .icon-btn { border: 1.5px solid var(--ink); border-radius: var(--wobble); background: var(--paper-raised); }
 
+/* A printed nutrition label: hairline rules, tight rows, figures right-aligned in tabular numerals. */
 .nutrients { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
-.nutrients caption { text-align: left; font-family: var(--display); font-size: 0.9rem; padding-bottom: 6px; color: var(--ink); }
-.nutrients tbody th { text-align: left; font-weight: 400; display: flex; align-items: center; }
-.nutrients td { text-align: right; font-weight: 700; color: var(--ink-deep); }
+.nutrients caption { text-align: left; font-family: var(--display); font-size: 0.85rem; padding-bottom: 2px; color: var(--ink); }
+.nutrients tbody th { text-align: left; font-weight: 400; display: flex; align-items: center; line-height: 1.25; }
+.nutrients td { text-align: right; font-weight: 700; color: var(--ink-deep); line-height: 1.25; }
 .nutrients tr { background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
-.nutrients th, .nutrients td { padding: 7px 0; }
-.nutrients td + td, .nutrients thead th + th { padding-left: 12px; }
-.nutrients thead th { text-align: right; font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); }
+.nutrients th, .nutrients td { padding: 3px 0; }
+/* Per serving is the second read: smaller and in soft ink, so the column costs width and not height. */
+.nutrients td + td { padding-left: 12px; font-size: 0.85rem; font-weight: 400; color: var(--ink-soft); }
+.nutrients thead th + th { padding-left: 12px; }
+.nutrients thead th, .nutrients thead td { padding: 0 0 2px; text-align: right; font-size: 0.75rem; font-weight: 700; color: var(--ink-soft); }
+/* Calories is the line a nutrition label shouts: the big figure, and the one hand-ruled thick rule on the sheet. */
+.nutrients .kcal-row { background: var(--mark-rule-thick) no-repeat bottom / 100% 6px; }
 .nutrients .kcal-row td { font-size: 1.15rem; }
-.sheet .note { font-size: 0.85rem; color: var(--ink-soft); }
+.nutrients .kcal-row td + td { font-size: 0.9rem; }
+.sheet .note { font-size: 0.8rem; color: var(--ink-soft); }
 .legends { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; font-size: 0.85rem; }
 .legends li { padding: 0 6px; border: 1px solid var(--ink-soft); border-radius: var(--wobble-sm); }
 .custom-food { display: flex; flex-direction: column; gap: 12px; }

@@ -56,15 +56,19 @@ test('totals, edit servings, delete with undo, date nav', async ({ page }) => {
   await expect(shake).toContainText('Custom food')
   await expect(shake).toContainText('Portion: 1 serving')
   await expect(shake.getByLabel('Meal')).toHaveValue('lunch')
-  await expect(shake).toContainText('These are the numbers saved with this entry, last edited ')
+  await expect(shake).toContainText('Numbers saved with this entry, last edited ')
   await expect(nutrients.locator('caption')).toHaveText('Nutrition for 1 serving')
-  await expect(nutrients).toContainText('Calories160 kcal160 kcal')
-  await expect(nutrients).toContainText('Protein30 g30 g')
-  await expect(nutrients).toContainText('Sodium200 mg200 mg')
+  // At one serving Total and Per serving are the same seven numbers, so only one column prints and there is no header.
+  await expect(nutrients.locator('thead')).toHaveCount(0)
+  await expect(nutrients).toContainText('Calories160 kcal')
+  await expect(nutrients).toContainText('Protein30 g')
+  await expect(nutrients).toContainText('Sodium200 mg')
+  await expect(nutrients.locator('.kcal-row td')).toHaveCount(1)
 
   // Editing servings rescales the Total column live, leaving Per serving alone.
   await shake.getByRole('textbox', { name: 'Servings' }).fill('3')
   await expect(nutrients.locator('caption')).toHaveText('Nutrition for 3 servings')
+  await expect(nutrients.locator('thead')).toContainText('TotalPer serving')
   await expect(nutrients).toContainText('Calories480 kcal160 kcal')
   await expect(nutrients).toContainText('Carbs15 g5 g')
   await expect(nutrients).toContainText('Fat6 g2 g')
@@ -197,4 +201,54 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   expect(bars.map((b) => b.label)).toEqual(['Calories eaten', 'Protein', 'Carbs', 'Fat'])
   for (const b of bars) expect(b.width, `${b.label ?? '?'} bar at 320px with 32px root text`).toBeGreaterThan(0)
   expect(await page.evaluate(() => window.innerWidth)).toBe(320)
+})
+
+// How far past the fold each nutrition row ends, with the sheet unscrolled: the scrollport's own bottom edge or
+// the viewport's, whichever is higher. Zero or less means the row is printed where the reader can see it.
+function rowsPastFold(): Record<string, number> {
+  const body = document.querySelector('dialog.sheet[open] .sheet-body')
+  if (!(body instanceof HTMLElement)) throw new Error('no open sheet')
+  if (body.scrollTop !== 0) throw new Error('the sheet opened already scrolled')
+  const fold = Math.min(window.innerHeight, body.getBoundingClientRect().bottom)
+  const out: Record<string, number> = {}
+  for (const row of body.querySelectorAll('table.nutrients tbody tr')) {
+    out[row.querySelector('th')?.textContent.trim() ?? '?'] = Math.round(row.getBoundingClientRect().bottom - fold)
+  }
+  return out
+}
+
+// A detail sheet that is correct and three scrolls tall is a sheet nobody reads. It opened on a 390x844 phone with
+// the portion, the stepper and the Meal select above the table and the label cut off at Protein, and every
+// assertion in this file still passed — so the fold is measured here, in both presses and on the small phone too.
+test('entry sheet: calories and all three macros open above the fold', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  // A name long enough to wrap the Bungee title onto two lines at 320px, which is the height that has to fit.
+  await createCustomFood(page, 'E2E Chicken Tortilla Soup', { 'Calories (kcal)': '160', 'Protein (g)': '30', 'Carbs (g)': '5', 'Fat (g)': '2' })
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
+  const logged = page.getByRole('region', { name: 'Logged foods' })
+
+  for (const scheme of ['light', 'dark'] as const) {
+    await page.emulateMedia({ colorScheme: scheme })
+    for (const size of [{ width: 390, height: 844 }, { width: 320, height: 568 }]) {
+      await page.setViewportSize(size)
+      await logged.getByRole('button', { name: /E2E Chicken Tortilla Soup/ }).click()
+      const sheet = page.getByRole('dialog', { name: 'E2E Chicken Tortilla Soup' })
+      await expect(sheet.locator('table.nutrients')).toBeVisible()
+      // The sheet slides in: measuring mid-animation reads a rect 24px low.
+      await page.waitForFunction(() =>
+        document.querySelector('dialog.sheet[open]')?.getAnimations().every((a) => a.playState === 'finished') ?? false)
+      const past = await page.evaluate(rowsPastFold)
+      const where = `${scheme} at ${String(size.width)}x${String(size.height)}`
+      for (const row of ['Calories', 'Protein', 'Carbs', 'Fat']) {
+        expect(past[row], `${row} row past the fold, ${where}`).toBeLessThanOrEqual(0)
+      }
+      await sheet.getByRole('button', { name: 'Close' }).click()
+      await expect(sheet).toBeHidden()
+    }
+  }
 })

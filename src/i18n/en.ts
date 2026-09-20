@@ -113,8 +113,8 @@ export const en = {
   'entry.nutritionFor.other': 'Nutrition for {servings} servings',
   'entry.total': 'Total',
   'entry.perServing': 'Per serving',
-  'entry.note': "These are the numbers saved with this entry, not today's menu — the dining hall's figures may have changed since.",
-  'entry.noteEdited': "These are the numbers saved with this entry, last edited {when}, not today's menu — the dining hall's figures may have changed since.",
+  'entry.note': "Numbers saved with this entry, not today's menu.",
+  'entry.noteEdited': "Numbers saved with this entry, last edited {when}.",
 
   'food.custom': 'Custom food',
   'food.menuItem': 'Menu item · recipe {recipe}',

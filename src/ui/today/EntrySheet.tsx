@@ -56,18 +56,27 @@ export function EntrySheet({ entry, onClose, onDeleted }: { entry: LogEntry; onC
         <button type="button" class="danger" disabled={busy} onClick={() => { void remove() }}>{t.t('common.delete')}</button>
       </>
     }>
-      {where !== '' && <p class="where">{where}</p>}
-      {source !== null && <p class="where">{source}</p>}
-      <p class="portion">{t.t('food.portion', { portion: entry.portion })}</p>
-      <Stepper text={text} onText={setText} />
-      <MealSelect meal={meal} onMeal={setMeal} />
+      <div class="sheet-meta">
+        {where !== '' && <p>{where}</p>}
+        {source !== null && <p>{source}</p>}
+        <p class="portion">{t.t('food.portion', { portion: entry.portion })}</p>
+      </div>
+      <div class="sheet-controls">
+        <Stepper text={text} onText={setText} />
+        <MealSelect meal={meal} onMeal={setMeal} />
+      </div>
+      {/* At one serving the two columns print the same seven numbers, so the second one is a header row and a
+          column rule bought for nothing. It appears the moment the figures diverge, which is the moment it says
+          something — the caption above already names how many servings the left column counts. */}
       <NutrientTable
         caption={t.t(servings === 1 ? 'entry.nutritionFor.one' : 'entry.nutritionFor.other',
           { servings: servings === null ? '—' : formatServings(servings) })}
-        columns={[
-          { head: t.t('entry.total'), values: servings === null ? null : scaleNutrients(entry.perServing, servings) },
-          { head: t.t('entry.perServing'), values: entry.perServing },
-        ]} />
+        columns={servings === 1
+          ? [{ head: null, values: entry.perServing }]
+          : [
+            { head: t.t('entry.total'), values: servings === null ? null : scaleNutrients(entry.perServing, servings) },
+            { head: t.t('entry.perServing'), values: entry.perServing },
+          ]} />
       <p class="note">
         {savedAt === null ? t.t('entry.note') : t.t('entry.noteEdited', { when: savedAt })}
       </p>

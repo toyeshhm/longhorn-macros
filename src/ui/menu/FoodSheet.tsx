@@ -71,10 +71,14 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
     <Sheet title={item.name} onClose={onClose} footer={
       <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>{t.t('common.add')}</button>
     }>
-      {where !== '' && <p class="where">{where}</p>}
-      <p class="portion">{t.t('food.portion', { portion: item.portion })}</p>
-      <Stepper text={text} onText={setText} />
-      <MealSelect meal={meal} onMeal={setMeal} />
+      <div class="sheet-meta">
+        {where !== '' && <p>{where}</p>}
+        <p class="portion">{t.t('food.portion', { portion: item.portion })}</p>
+      </div>
+      <div class="sheet-controls">
+        <Stepper text={text} onText={setText} />
+        <MealSelect meal={meal} onMeal={setMeal} />
+      </div>
       <NutrientTable
         caption={servings !== null && servings !== 1
           ? t.t('food.nutritionFor', { servings: formatServings(servings) })

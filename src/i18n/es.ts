@@ -117,8 +117,8 @@ export const es: Dictionary = {
   'entry.nutritionFor.other': 'Nutrición de {servings} porciones',
   'entry.total': 'Total',
   'entry.perServing': 'Por porción',
-  'entry.note': 'Estos son los números guardados con esta entrada, no los del menú de hoy: las cifras del comedor pueden haber cambiado desde entonces.',
-  'entry.noteEdited': 'Estos son los números guardados con esta entrada, editada por última vez el {when}, no los del menú de hoy: las cifras del comedor pueden haber cambiado desde entonces.',
+  'entry.note': 'Números guardados con esta entrada, no los del menú de hoy.',
+  'entry.noteEdited': 'Números guardados con esta entrada, editada el {when}.',
 
   'food.custom': 'Alimento propio',
   'food.menuItem': 'Del menú · receta {recipe}',
