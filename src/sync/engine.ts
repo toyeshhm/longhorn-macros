@@ -19,6 +19,9 @@ function isNetwork(e: PostgrestError): boolean {
 export class SyncEngine {
   private attempt = 0
   private started = false
+  // stop() can land mid-cycle (sign-out unmounts the app while a push/pull loop is between requests). The session is
+  // already revoked by then, so every remaining request would come back 401; the loops check this between requests.
+  private stopped = false
   private retry: ReturnType<typeof setTimeout> | undefined
   private interval: ReturnType<typeof setInterval> | undefined
   private inflight: Promise<void> | undefined
@@ -32,6 +35,7 @@ export class SyncEngine {
     let pushed = 0
     let failed = 0
     for (const item of await this.store.outbox()) {
+      if (this.stopped) break
       if (item.failed !== null) continue
       const row = await this.store.get(item.table, item.id)
       if (!row) { await this.store.ackOutbox(item.seq); continue } // nothing left to send
@@ -55,6 +59,7 @@ export class SyncEngine {
   async pull(): Promise<number> {
     let n = 0
     for (const table of TABLES) {
+      if (this.stopped) break
       const key = `cursor:${table}`
       const cursor = (await this.store.getMeta(key)) ?? EPOCH
       const { data, error } = await this.client.from(table).select('*').gt('updated_at', cursor).order('updated_at')
@@ -100,6 +105,7 @@ export class SyncEngine {
 
   start(): void {
     this.started = true
+    this.stopped = false
     window.addEventListener('online', this.kick)
     document.addEventListener('visibilitychange', this.kick) // ponytail: syncing on hide too is harmless (flushes before backgrounding)
     this.interval = setInterval(this.kick, 60_000)
@@ -108,6 +114,7 @@ export class SyncEngine {
 
   stop(): void {
     this.started = false
+    this.stopped = true
     window.removeEventListener('online', this.kick)
     document.removeEventListener('visibilitychange', this.kick)
     clearInterval(this.interval)

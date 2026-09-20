@@ -139,6 +139,16 @@ test('start syncs now and on online/visibilitychange; overlapping runs share one
   expect((await e.pending()).queued).toBe(1)
 })
 
+test('stop() halts the loops, so a signed-out session is never called again', async () => {
+  const s = await LocalStore.open(dbName())
+  const e = engine(s, phone)
+  await s.put('food_log', entry())
+  e.stop() // what sign-out does, and it can land while a cycle sits between requests
+  expect(await e.push()).toEqual({ pushed: 0, failed: 0 })
+  expect(await e.pull()).toBe(0)
+  expect(await e.pending()).toEqual({ queued: 1, failed: 0 }) // kept for the next sign-in
+})
+
 test('a started engine schedules a backoff retry after a network failure', async () => {
   const s = await LocalStore.open(dbName())
   const e = engine(s, client('http://127.0.0.1:9'))
