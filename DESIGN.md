@@ -285,8 +285,32 @@ Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn che
 ### Lists
 Station and meal headers are Bungee with a hand-drawn blue rule, sticky on Menu. Rows are divided by a dashed pencil rule. Food name: Courier 700 in Deep Ink. Portion/servings: Courier 400 in Soft Ink, smaller.
 
+### Progress
+Change over time, so the chart comes first and the weigh-in form goes last. Under the chart are the four figures
+the chart cannot state exactly (trend weight, the change and the days it happened over, average calories over the
+days actually logged, days logged) and then the adaptive-TDEE line, which is the same maintenance the prediction
+runs on. The stats grid carries no vertical rules between its cells: it reflows to one, two or three columns with
+the reader's text size, and a rule drawn per cell lands inside a row as often as between two.
+
+Every number on the screen comes from `src/progress.ts`, which is pure and covered. The prediction always prints
+what it assumed, because a line drawn from a maintenance estimate is only as good as that estimate.
+
 ### Chart
-Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per index), EWMA trend as a freehand cubic line with hand-picked nudges, in orange multiply offset (1.5, -1), wobbly dashed gridlines and a hand-drawn L axis. A small key under the chart names both marks ("weigh-in", "trend (smoothed)").
+One chart on Progress, switched between three views by a labelled `<select>` (Weight, Daily calories, Predicted vs
+actual) with the range chips under it. Blue dots drawn as lumpy ink blobs (four quadratic curves, turned per index),
+smoothed lines as freehand cubics with hand-picked nudges in orange multiply offset (1.5, -1), wobbly dashed
+gridlines and a hand-drawn L axis. Anything predicted rather than measured is a **dashed blue** line: blue as
+decoration is linework, and the dash is what separates it from the orange trend for a reader who cannot separate
+the two inks. A key under the chart names every mark in words.
+
+Every chart carries the same numbers as a visually-hidden table, one row per date and one column per mark, because
+an SVG is not readable by a screen reader and a picture is not an alternative to the data.
+
+**The chart's type is sized in user units, so it cannot inherit the reader's text size the way the page does.**
+The screen reads the root font size and hands it to `chartGeometry`, which lays the axis out for that size: the
+left gutter is the widest y label (Courier is monospace, so a label's width is known without measuring it), and
+the count of date labels and gridlines drops as the type grows. At 200% it prints two dates and two gridlines
+rather than five of each on top of each other.
 
 ## 6. Do's and Don'ts
 
