@@ -282,11 +282,11 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 
 /* Bottom sheet: a fresh sheet of the same stock slid over an ink wash. */
 .sheet {
-  /* 92%, not 90: at 320x568 the fat row printed 9px past the fold at 90. Three caps, weakest first: vh is
-     the floor every engine understands, svh is the toolbars-visible height, dvh the live one. An engine that
-     mismeasures dvh — iOS in standalone does — falls back to a cap that is merely conservative, not broken. */
+  /* 92%, not 90: at 320x568 the fat row printed 9px past the fold at 90. `vh` is the base, and `svh` is layered
+     on in an @supports block below — written as three consecutive declarations the minifier drops all but the
+     last, which is how the owner's installed app ended up capped by `dvh` alone. */
   width: 100%; max-width: 560px; overflow: hidden;
-  max-height: 92vh; max-height: 92svh; max-height: 92dvh;
+  max-height: 92vh;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
   /* Same grain as the page layer on either press: --veil is 1 minus the page's grain opacity. */
   background: linear-gradient(rgb(var(--paper-rgb) / var(--veil)), rgb(var(--paper-rgb) / var(--veil))), var(--mark-grain) repeat, var(--paper); color: var(--ink);
@@ -296,6 +296,9 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet[open] { display: flex; flex-direction: column; animation: sheet-in 240ms var(--ease); }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: 0.4; } }
 .sheet::backdrop { background: var(--wash); }
+/* The small-viewport height where it exists: toolbars-visible, so it never overshoots. An @supports block
+   survives minification, unlike repeated declarations, and an engine that mismeasures it simply keeps 92vh. */
+@supports (max-height: 92svh) { .sheet { max-height: 92svh; } }
 /* The sheet is in the top layer, so it does not inherit the body's safe-area padding: keep its own clear of the
    notch and the home indicator in both orientations. */
 /* `flex: 0 1 auto`, never `flex: 1`: the body's height comes from its own content and only shrinks when the
