@@ -30,7 +30,7 @@ const BOWL_FRAMES = [
 export function BowlDoodle({ class: cls }: { class: string }) {
   return (
     <svg class={`doodle ${cls}`} viewBox="0 12 120 92" aria-hidden="true">
-      <path class="plate" {...SQUASH} opacity=".82" d="M12 60C20 62 40 63 62 62 84 61 100 59 109 57 104 71 88 81 62 82 38 83 19 74 12 60Z" />
+      <path class="plate plate-wash" {...SQUASH} d="M12 60C20 62 40 63 62 62 84 61 100 59 109 57 104 71 88 81 62 82 38 83 19 74 12 60Z" />
       <path class="plate" d="M33.5 44.2c2.6-3.1 7.3-2.4 8.1.6.4 2.9-4.6 4.2-7.6 2.1ZM57 40.6c2.9-2.4 6.8-1.2 7 1.6-.2 2.9-4.9 3.3-7 1.1ZM80.4 42c3-2 6.4-.4 6.2 2.3-.5 2.6-5 2.6-6.4.3Z" />
       {BOWL_FRAMES.map((fr, i) => (
         <g key={i} class={`boil boil-${String(i + 1)}`} {...LINE}>
@@ -52,7 +52,7 @@ export function BowlDoodle({ class: cls }: { class: string }) {
 export function UtensilsDoodle() {
   return (
     <svg class="doodle doodle-sm" viewBox="0 0 112 56" aria-hidden="true">
-      <path class="plate" d="M33 27.6C33 21.4 44 18.6 56.4 18.8 69 19 79.4 22 79.2 28 79 33.8 68 36.6 56 36.4 43.4 36.2 33.2 33.4 33 27.6Z" opacity=".35" />
+      <path class="plate plate-soft" d="M33 27.6C33 21.4 44 18.6 56.4 18.8 69 19 79.4 22 79.2 28 79 33.8 68 36.6 56 36.4 43.4 36.2 33.2 33.4 33 27.6Z" />
       <path class="line" {...LINE} stroke-width="1.8" d="M24.2 28.8C23.4 18.4 40 12.6 57.6 12.8 76.6 13 90.4 19 89.8 28.4 89.2 38.6 74 44.2 56.4 44 38.2 43.8 24.6 38.6 25.8 27.2" />
       <path class="line-blue" {...LINE} stroke-width="1.1" d="M34.6 24.4C39 19.8 48 18 57.4 18.2 70 18.6 79.6 22.4 79.8 27.6M78.4 32.2C74 36.4 65 38.4 56 38.2" />
       <path class="line" {...LINE} stroke-width="1.6" d="M10.6 8.8l.4 12.2M7.4 9.4c-.2 5 .2 9.6 3.4 11.8 3.2-2 3.6-6.8 3.4-11.6M11 21.4c-.4 8.6.2 16.8-.4 26.2" />

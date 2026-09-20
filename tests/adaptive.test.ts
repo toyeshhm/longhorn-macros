@@ -34,6 +34,17 @@ test('ewmaTrend sorts unsorted input and applies t = t + α(w − t) with trend0
   ])
 })
 
+test('the trend advances per elapsed day, not per weigh-in', () => {
+  // Weighing in every five days used to advance the smoother one step per reading, giving it a time constant of
+  // about two months: a real 2.8 lb over three weeks printed as 0.7. A gap of n days now applies the daily rate
+  // n times, so the trend moves the same amount whether it was fed daily or weekly.
+  const sparse = ewmaTrend([{ date: '2026-01-01', weightLb: 170 }, { date: '2026-01-06', weightLb: 160 }])
+  expect(sparse[1]?.weightLb).toBeCloseTo(170 - 10 * (1 - 0.9 ** 5), 10)
+  // The same five days fed one at a time land on the same place, which is the whole point.
+  const daily = ewmaTrend(Array.from({ length: 6 }, (_, i) => ({ date: addDays('2026-01-01', i), weightLb: i === 0 ? 170 : 160 })))
+  expect(daily[5]?.weightLb).toBeCloseTo(sparse[1]?.weightLb ?? 0, 10)
+})
+
 test('not-due when last run was under 7 days ago', () => {
   expect(evaluateAdaptive({
     today, lastRunOn: addDays(today, -6), previous: 2600, plannedLbPerWeek: -0.5, weights: [], intake: [],

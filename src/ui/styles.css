@@ -157,6 +157,10 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .line { stroke: var(--ink); }
 .line-blue { stroke: var(--blue); }
 .plate { fill: var(--orange); mix-blend-mode: var(--blend); }
+/* A doodle's softer plate goes through --plate-k like every other alpha plate. Written as a bare SVG `opacity`
+   it darkened to brown on the night stock instead of lifting, which is the exact failure --plate-k exists for. */
+.plate-soft { fill-opacity: calc(0.35 * var(--plate-k)); }
+.plate-wash { fill-opacity: calc(0.82 * var(--plate-k)); }
 .plate-line { stroke: var(--orange); mix-blend-mode: var(--blend); }
 .swatch { width: 16px; height: 12px; margin-right: 6px; vertical-align: -1px; flex: none; }
 .ink-protein .ink-fill { fill: var(--blue); }
@@ -219,7 +223,10 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
      three wrapped lines, so the padding goes and the label drops a notch. */
   min-height: var(--tabbar-h); padding: 0 2px; border: 0; border-radius: 0; background: none; font-size: 0.75rem; color: var(--ink-soft);
 }
-.tabbar button span { overflow-wrap: anywhere; } /* at 200% text "Progress" would otherwise run into its neighbours */
+/* At 200% text the labels have to break somewhere; `anywhere` broke them mid-word ("Prog/reso", "Heal/th") so
+   they stopped reading as words. A soft hyphen where the language allows one, and an arbitrary break only as a
+   last resort for a word with no break point at all. */
+.tabbar button span { hyphens: auto; overflow-wrap: break-word; }
 .tabbar button:active .line { stroke: var(--ink-deep); }
 .tab-icon { width: 30px; height: 30px; overflow: visible; flex: none; }
 .tab-icon .line { stroke: var(--ink-soft); }
@@ -237,6 +244,14 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .menu > button.link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; min-height: 44px; }
 .menu > button.link .mark { width: 18px; height: 18px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; min-inline-size: 0; margin: 10px -16px 0; padding: 4px 16px 6px; border: 0; scrollbar-width: none; }
+/* A closed set of settings (theme, language, sex, goal, chart view, range) wraps instead of scrolling. The strip
+   hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish —
+   was a setting with no cue that it existed. Hall, day and meal keep the scrolling strip: those are a browsing
+   list whose length is the feed's, not a set the reader has to see all of. */
+.chips-wrap { flex-wrap: wrap; overflow: visible; margin-inline: 0; padding-inline: 0; }
+/* And the stamp itself gives up `nowrap` here: once the strip no longer scrolls, a chip wider than the page has
+   nowhere to go, and "Predicted vs actual" at 200% text is wider than a 320px page on its own. */
+.chips-wrap .chip { white-space: normal; }
 .chip {
   position: relative; display: inline-flex; align-items: center; min-height: 44px; padding: 0 14px;
   border: 1.5px solid var(--ink); border-radius: var(--wobble); background: var(--paper-raised);
@@ -262,16 +277,23 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .food-row:active { background-color: var(--paper-shade); }
 .food-name { font-weight: 700; overflow-wrap: break-word; color: var(--ink-deep); }
 .food-meta { color: var(--ink-soft); font-size: 0.875rem; display: flex; flex-wrap: wrap; gap: 4px 10px; align-items: center; }
-.meta-protein, .pick-why { display: inline-flex; align-items: center; }
+/* baseline, not center: when a pick's reason wraps to two lines, centring put the macro swatch in the left margin
+   between them rather than beside the figure it inks. */
+.meta-protein, .pick-why { display: inline-flex; align-items: baseline; }
 .tag, .badge { padding: 0 6px; border: 1px solid var(--ink-soft); border-radius: var(--wobble-sm); font-size: 0.8rem; }
 .badge { border-color: var(--blue); color: var(--ink); }
 
-.empty { display: flex; align-items: center; gap: 14px; margin: 18px 0; }
-.empty p { margin: 0; }
-.doodle { overflow: visible; flex: none; }
-.doodle-sm { width: 112px; height: 56px; }
-.doodle-md { width: 120px; height: 92px; }
-.doodle-lg { width: 150px; height: 115px; }
+/* Wraps, and the doodle is allowed to shrink: at 320px with 200% text the Spanish empty-state line could not fit
+   beside a fixed 150px drawing, so it ran 22px past the viewport and widened the layout viewport — which dragged
+   the fixed tab bar out with it and put part of the last tab off-screen on every screen in the session. */
+.empty { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin: 18px 0; }
+/* 8rem, so the line only breaks when the reader's text is large enough that it has to: at the default size the
+   drawing and its line still sit side by side exactly as before. */
+.empty p { margin: 0; min-width: 0; flex: 1 1 8rem; }
+.doodle { overflow: visible; flex: 0 1 auto; max-width: 100%; height: auto; }
+.doodle-sm { width: 112px; aspect-ratio: 112 / 56; }
+.doodle-md { width: 120px; aspect-ratio: 120 / 92; }
+.doodle-lg { width: 150px; aspect-ratio: 150 / 115; }
 
 /* Bottom sheet: a fresh sheet of the same stock slid over an ink wash. */
 .sheet {
@@ -389,8 +411,11 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   .macro > *:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
 }
 .macro .ink-bar { height: 18px; }
-.macro-name { display: inline-flex; align-items: center; font-weight: 700; }
-.macro-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
+/* min-width: 0 on both, or the name's own word sets the first track's floor and the glyphs paint outside their
+   grid area while the right-aligned number overflows leftward: at 320px with 200% text "Protein" and its figure
+   printed on top of each other, which is the app's primary readout. */
+.macro-name { display: inline-flex; align-items: center; min-width: 0; overflow-wrap: anywhere; font-weight: 700; }
+.macro-num { min-width: 0; text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }
 .macro-num strong { color: var(--ink-deep); }
 .macro.over .macro-num { color: var(--over); font-weight: 700; }
 .micros { margin: 0 0 8px; color: var(--ink-soft); font-size: 0.875rem; }

@@ -196,9 +196,9 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 ## 5. Components
 
 ### Hand-drawn marks
-- Tab icons: `src/ui/icons/TabIcons.tsx`, one per tab (Menu, Tracker, Health, Progress, Profile). Blue line always; orange plate prints only on the active tab, and its label gets an orange underline. Five tabs leave 64px each on a 320px phone, so the bar's buttons carry no side padding and set their label a notch down: at the token's 16px gutters "Progress" wrapped onto three lines and pushed the bar over the page.
+- Tab icons: `src/ui/icons/TabIcons.tsx`, one per tab (Menu, Tracker, Health, Progress, Profile). Blue line always; orange plate prints only on the active tab, and its label gets an orange underline. **All five are an object drawn inside the same hand-ruled rectangular frame** — the menu card, the calendar, the gauge plate, the vitals card, the ID card — so the bar reads as one set of drawings rather than four drawings and a pictogram. Health was a stock heart-plus-ECG glyph with no frame and with halves that reflected onto each other to within 0.2 user units; it is a vitals card now, a pulse under a header rule with the plate on the header band. Five tabs leave 64px each on a 320px phone, so the bar's buttons carry no side padding and set their label a notch down: at the token's 16px gutters "Progress" wrapped onto three lines and pushed the bar over the page. At 200% text the labels break with `hyphens: auto`, not `overflow-wrap: anywhere`, so "Pro-greso" still reads as a word.
 - Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`.
-- Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on the Tracker's empty state and Login; utensils on empty menu/search and on Health's What to eat; scale on no weigh-ins.
+- Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on the Tracker's empty state and Login; utensils on empty menu/search and on Health's What to eat; scale on no weigh-ins. A doodle's softer plates go through `--plate-k` like every other alpha plate (`.plate-soft`, `.plate-wash` in the stylesheet), never a bare SVG `opacity`: written as an attribute the utensils plate darkened to brown on the night stock instead of lifting, which is the exact failure the token exists for. An empty state wraps and its drawing may shrink — at 200% text the Spanish line could not fit beside a fixed 150px doodle and ran off the page, which widens the layout viewport and drags the fixed tab bar out with it.
 - CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, grain): `src/ui/ink/*.svg`. Colors are baked in as hex because an image cannot read CSS tokens; keep them in step with the tokens above.
 - **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things.
 
@@ -224,8 +224,10 @@ A scrolling body with the primary plate (and Delete) printed in a footer below i
 ### Toast
 One slip of blue stock, gutter to gutter and then shrunk to its text (never pinned to half the viewport). It is always in the DOM and prints only when it has something to say. A plain confirmation fades after 3s; a delete does not, because its Undo is the only way back and a clock on the sole path to a function is a WCAG failure. It stays until Undo, Dismiss, or the next toast, and the Undo button names what it would restore.
 
-### Chips (hall / day / meal / range / sex / goal)
-Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
+### Chips (hall / day / meal / chart view / range / sex / goal / theme / language)
+Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. **Every one-of-N pick in the app is a stamp**, including the chart view, which used to be a native `<select>` printed directly above the range stamps — two idioms for the same job, one on top of the other.
+
+Two behaviours. A **browsing strip** (hall, day, meal) scrolls horizontally, full-bleed: its length is the feed's, not a set the reader has to see all of. A **settings group** (`.chips-wrap`: chart view, range, sex, goal, theme, language) wraps to a second row instead, and its stamps give up `nowrap`. The strip hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish — was a setting with no cue that it existed at all. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
 
 Day chips stack (`.chip-stack`): the numeric date over a smaller caps weekday ("9/19" / "SAT"). Never a relative word
 — "Today" is wrong on a phone left open past midnight and a bare weekday does not say which week. The chip's
@@ -255,7 +257,10 @@ reserved for a request that actually failed, the same distinction the Profile we
 A page you read, not a dashboard. Five sections (Today, Last 7 days, Macro balance, Diet quality, What to eat),
 each a Bungee `h2` over a hand-drawn rule, and no stamped numeral anywhere: the Tracker owns the day's hero and a
 screen gets one at most. Every sentence on the screen comes from `src/health.ts`, which is pure and fully covered;
-the screen decides nothing except which line to print when the feed has nothing to suggest.
+the screen decides nothing except which line to print when the feed has nothing to suggest. Each section is named
+by `aria-labelledby` pointing at its own `<h2>`, never by a duplicate `aria-label`: region navigation used to read
+the name and then read the same words again as the heading, and one region was named "Goal adherence" while the
+heading on screen said "Last 7 days".
 
 Rows in Macro balance and Diet quality are one run of inline text (name in ink, figure in Soft Ink) over a dashed
 pencil rule, not two flex columns: at 320px a column layout wrapped the number into a narrow box with a hanging
@@ -269,9 +274,27 @@ also pulls the viewed day back to today, because a suggestion is about the gap t
 
 The copy is flat on purpose: no streaks, no badges, no grades, no "you failed". The week is reported with its
 numbers and the count of days behind them ("Short on 5 of 6 logged days, averaging 118 g against 170 g"), a
-partial week always says how partial it is ("3 of 7 days logged"), and a day with nothing logged is absent from
-every average rather than counted as a zero. An empty account gets one line per block saying what that block will
-read once there is something to read, never a column of zeros.
+partial week always says how partial it is ("3 of 7 days logged" — printed in Diet quality too, whose per-day and
+per-1,000-kcal figures rest on the same days), and a day with nothing logged is absent from every average rather
+than counted as a zero. An empty account gets one line per block saying what that block will read once there is
+something to read, never a column of zeros.
+
+**The week is the seven complete days behind today.** Today is still being eaten; counted as a finished day it
+reported a large fabricated deficit and three "Short" verdicts for most of every day. Today has its own section.
+A diet signal (low fiber, high sodium) prints on however many days there are, but only gets to re-rank the food
+suggestions once it rests on at least three: one light day was enough to read "low fiber" and turn the whole list
+into fruit.
+
+**What the suggestions are allowed to credit.** Only the macros that are actually the gap: a macro counts only
+while it is proportionally shorter than protein is, so while protein is the widest open gap carbohydrate and fat
+earn nothing, and once protein is met the rule reverses and they are credited normally. Without it a fresh day
+credits all three equally, and because fat targets are small next to protein targets, fat won the "why" line on
+most real dishes — the app's stated reason for suggesting a chicken breast was its fat — and two apples and two
+oranges outranked every protein source on a day with 150 g of protein still owed. The list is deduplicated on the
+*dish*, never on UT's recipe number: UT publishes one dish under a different number per station and per hall, so
+keying on the number filled two of six slots with the same food. When the hours feed cannot be read every hall
+reads as "unknown", which the suggestions take as serving now, so the section prints the Menu's own "Hours
+unavailable" rather than quietly recommending food from a hall that is shut.
 
 ### Profile sections
 Folded pages: a `<details>` per section with its `<h2>` inside the `<summary>`, so the heading is in the
@@ -314,14 +337,22 @@ Change over time, so the chart comes first and the weigh-in form goes last. Unde
 the chart cannot state exactly (trend weight, the change and the days it happened over, average calories over the
 days actually logged, days logged) and then the adaptive-TDEE line, which is the same maintenance the prediction
 runs on. The stats grid carries no vertical rules between its cells: it reflows to one, two or three columns with
-the reader's text size, and a rule drawn per cell lands inside a row as often as between two.
+the reader's text size, and a rule drawn per cell lands inside a row as often as between two. It carries one rule,
+at its foot: the Summary heading already draws one at its own bottom edge, and a second copy of the same mark 18px
+under it printed as a mistake rather than as misregistration. Each tile is written value-then-label, in that order
+in the DOM as well as on the page — it used to be written label-first and flipped back with `column-reverse`, so
+what was read and what was painted disagreed.
 
 Every number on the screen comes from `src/progress.ts`, which is pure and covered. The prediction always prints
-what it assumed, because a line drawn from a maintenance estimate is only as good as that estimate.
+what it assumed, because a line drawn from a maintenance estimate is only as good as that estimate — and it says
+*which* maintenance, because an adaptive estimate learned from the reader's own weight and intake and a
+Mifflin-St Jeor formula guess are not the same claim. The change is labelled "(smoothed)" because it is the
+trend's change, not the scale's; the trend itself advances per elapsed day rather than per weigh-in, or weighing
+in every four days gives the smoother a two-month time constant and a real 2.8 lb over three weeks prints as 0.7.
 
 ### Chart
-One chart on Progress, switched between three views by a labelled `<select>` (Weight, Daily calories, Predicted vs
-actual) with the range chips under it. Blue dots drawn as lumpy ink blobs (four quadratic curves, turned per index),
+One chart on Progress, switched between three views by a chip group (Weight, Daily calories, Predicted vs actual)
+with the range chips under it. Blue dots drawn as lumpy ink blobs (four quadratic curves, turned per index),
 smoothed lines as freehand cubics with hand-picked nudges in orange multiply offset (1.5, -1), wobbly dashed
 gridlines and a hand-drawn L axis. Anything predicted rather than measured is a **dashed blue** line: blue as
 decoration is linework, and the dash is what separates it from the orange trend for a reader who cannot separate
@@ -334,7 +365,15 @@ an SVG is not readable by a screen reader and a picture is not an alternative to
 The screen reads the root font size and hands it to `chartGeometry`, which lays the axis out for that size: the
 left gutter is the widest y label (Courier is monospace, so a label's width is known without measuring it), and
 the count of date labels and gridlines drops as the type grows. At 200% it prints two dates and two gridlines
-rather than five of each on top of each other.
+rather than five of each on top of each other. The date labels are not centred in equal slots: the first is
+start-anchored at the left edge of the plot and the last end-anchored at the right, so each of those takes a whole
+label width *inside* the frame rather than half, and the budget charges them for it. Budgeting as though every
+label were centred left the final gap at about a quarter of the others and the last two dates read as one run.
+
+The prediction carries a point on every day between the weigh-in it starts from and the last day logged, holding
+the previous value across days with nothing logged. The line is one cubic per pair of points, so a series that
+simply skipped a gap drew a smooth twenty-day slope from one logged day to the next and sold twenty days of
+evidence that did not exist — the opposite of what the note under it says.
 
 ## 6. Do's and Don'ts
 

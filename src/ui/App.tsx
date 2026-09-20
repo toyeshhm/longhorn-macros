@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import { undoAdaptive } from '../adaptiveRun'
 import { localDateKey } from '../dates'
 import { log } from '../log'
@@ -121,19 +121,26 @@ function Tabs() {
   const t = useT()
   const profile = useProfile()
   const [tab, setTab] = useState<Tab>('Menu')
+  const screen = useRef<HTMLElement>(null)
   // First run (no profile yet) lands on Profile, whose Goals section is the one that is unfolded.
   // A profile arriving by pull later just hides the notice.
   useEffect(() => { if (profile === null) setTab('Profile') }, [profile === null])
+  // A link inside a screen that switches tabs unmounts the control that had focus, and nothing claims it back, so
+  // focus lands on <body> and a screen-reader user is dropped at the top of the document without being told the
+  // screen changed. Sheet.tsx re-claims focus to main.screen for exactly this reason; doing it here covers every
+  // in-page tab link at once (Health → Profile, Tracker → Profile, Tracker → Menu) instead of each call site.
+  // The tab bar's own buttons keep their focus and go through setTab directly.
+  const go = (next: Tab): void => { setTab(next); screen.current?.focus() }
   return (
     <>
       <SyncBanner />
       {/* tabindex=-1: somewhere for focus to land when the element that had it is removed (deleting a logged food). */}
-      <main class="screen" tabIndex={-1}>
+      <main class="screen" tabIndex={-1} ref={screen}>
         {/* Tracker leads with its date line; its title stays for screen readers only. */}
         <h1 class={tab === 'Tracker' ? 'visually-hidden' : 'masthead'}>{t.t(tabKey(tab))}</h1>
         {tab === 'Menu' && <MenuScreen />}
-        {tab === 'Tracker' && <TodayScreen onGo={setTab} />}
-        {tab === 'Health' && <HealthScreen onGo={setTab} />}
+        {tab === 'Tracker' && <TodayScreen onGo={go} />}
+        {tab === 'Health' && <HealthScreen onGo={go} />}
         {tab === 'Progress' && <ProgressScreen />}
         {tab === 'Profile' && <ProfileScreen />}
       </main>

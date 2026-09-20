@@ -57,8 +57,11 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
 
   return (
     <div class="health">
-      <section aria-label={t.t('health.today')}>
-        <h2>{t.t('health.today')}</h2>
+      {/* Every section is named by its own visible heading rather than by a duplicate `aria-label`: region
+          navigation used to read the name and then read the same words again as the heading, and the seven-day
+          section was named "Goal adherence" while the heading on screen said "Last 7 days". */}
+      <section aria-labelledby="h-today">
+        <h2 id="h-today">{t.t('health.today')}</h2>
         <p class="health-line">{report.today.line}</p>
         {targets === null && (
           <p class="notice">
@@ -67,14 +70,14 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         )}
       </section>
 
-      <section aria-label={t.t('health.adherenceLabel')}>
-        <h2>{t.t('health.last7')}</h2>
+      <section aria-labelledby="h-week">
+        <h2 id="h-week">{t.t('health.last7')}</h2>
         <p class="health-cover">{report.adherence.coverage}</p>
         <p class="health-line">{report.adherence.headline}</p>
       </section>
 
-      <section aria-label={t.t('health.macroBalance')}>
-        <h2>{t.t('health.macroBalance')}</h2>
+      <section aria-labelledby="h-macros">
+        <h2 id="h-macros">{t.t('health.macroBalance')}</h2>
         {nothingRead ? <p class="health-line">{t.t('health.macroEmpty')}</p> : (
         <ul class="reads">
           {report.macros.map((m) => (
@@ -90,8 +93,11 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         )}
       </section>
 
-      <section aria-label={t.t('health.dietQuality')}>
-        <h2>{t.t('health.dietQuality')}</h2>
+      <section aria-labelledby="h-quality">
+        <h2 id="h-quality">{t.t('health.dietQuality')}</h2>
+        {/* These are per-day and per-1,000-kcal averages like the ones two sections up, and they are read in a
+            different block, so they carry the same day count rather than leaving the reader to go and find it. */}
+        {!nothingRead && <p class="health-cover">{report.adherence.coverage}</p>}
         {nothingRead ? <p class="health-line">{t.t('health.qualityEmpty')}</p> : (
         <ul class="reads">
           {report.signals.map((s) => (
@@ -104,8 +110,12 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         )}
       </section>
 
-      <section aria-label={t.t('health.whatToEat')}>
-        <h2>{t.t('health.whatToEat')}</h2>
+      <section aria-labelledby="h-eat">
+        <h2 id="h-eat">{t.t('health.whatToEat')}</h2>
+        {/* With no hours feed every hall reads as "unknown", which `serviceAt` takes as serving now: without this
+            line the tab would quietly recommend food from a hall that is shut, labelled only "today". The Menu
+            prints the same words in the same state. */}
+        {hours === null && picks.length > 0 && <p class="health-cover">{t.t('hours.unavailable')}</p>}
         {picks.length === 0 ? (
           <div class="empty">
             <UtensilsDoodle />
@@ -118,8 +128,9 @@ export function HealthScreen({ onGo }: { onGo: (tab: Tab) => void }) {
                 <button type="button" class="food-row" onClick={() => { open(p) }}>
                   <span class="food-name">{p.item.name}</span>
                   <span class="food-meta">
-                    <span>{p.hall} · {p.item.station}</span>
-                    <span>{p.meal} · {p.when}</span>
+                    {/* One run with one separator: as two spans the station and the meal ran together once the row
+                        wrapped, and "Breakfast Plant Based" + "Breakfast" read as a single station name. */}
+                    <span>{p.hall} · {p.item.station} · {p.meal} · {p.when}</span>
                     <span class="meta-kcal">{t.n(p.item.nutrients.calories)} {t.t('unit.kcal')}</span>
                     <span class="pick-why">{p.ink !== null && <Swatch ink={p.ink} />}{p.reason}</span>
                   </span>

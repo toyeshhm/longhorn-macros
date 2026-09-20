@@ -77,10 +77,14 @@ export function movingMean(points: readonly Point[], days: number): Point[] {
  * Weight predicted from intake: start at the first weigh-in in range and add (intake − maintenance) ÷ 3,500 lb
  * for every logged day after it. Two deliberate choices, both stated on screen:
  *
- * - A day with nothing logged is skipped, so the line holds flat across a gap rather than inventing a fast.
+ * - A day with nothing logged adds nothing, and carries the previous value forward so the drawn line *holds flat*
+ *   across the gap. Emitting no point for it was the older behaviour and it drew the opposite of what it claimed:
+ *   the chart joins consecutive points with one cubic, so a single logged day twenty days after the weigh-in
+ *   printed as a smooth twenty-day descent, selling evidence that does not exist.
  * - The anchor day's own food counts from the next day, because a weigh-in comes before the day is eaten.
  *
  * `weighIns` must be ascending, as weightSeries returns them.
+ * ponytail: one point per calendar day in range; a few hundred at worst, and the chart is redrawn from them anyway.
  */
 export function predictedSeries(a: {
   weighIns: readonly Point[]
@@ -93,18 +97,27 @@ export function predictedSeries(a: {
   if (anchor === undefined) return []
   const out: Point[] = [anchor]
   let lb = anchor.value
+  let prev = anchor.date
   for (const day of calorieSeries(a.entries, a.today, a.range)) {
     if (day.date <= anchor.date) continue
+    for (let gap = addDays(prev, 1); gap < day.date; gap = addDays(gap, 1)) out.push({ date: gap, value: lb })
     lb += (day.value - a.maintenance) / KCAL_PER_LB
     out.push({ date: day.date, value: lb })
+    prev = day.date
   }
   return out
 }
 
-/** What the prediction assumed, always printed with it: the estimate moves, and a line drawn from it is only as good. */
-export function predictionNote(maintenance: number | null, t: T): string {
+/**
+ * What the prediction assumed, always printed with it: the estimate moves, and a line drawn from it is only as
+ * good. `learned` separates the two maintenance figures the app can be running on, because they are not the same
+ * claim: an adaptive estimate came out of the reader's own weight and intake, while the Mifflin-St Jeor fallback
+ * is a formula guess from height, weight, age and activity. Printing the formula number as "your maintenance" on
+ * the same screen that says the app has not learned one yet is the kind of quiet confidence this app does not get.
+ */
+export function predictionNote(maintenance: number | null, learned: boolean, t: T): string {
   if (maintenance === null) return t.t('progress.note.none')
-  return t.t('progress.note', { maintenance: t.n(maintenance), perPound: t.n(KCAL_PER_LB) })
+  return t.t(learned ? 'progress.note' : 'progress.note.formula', { maintenance: t.n(maintenance), perPound: t.n(KCAL_PER_LB) })
 }
 
 export interface Summary {
@@ -224,7 +237,12 @@ export function chartGeometry(a: {
   const x = (date: string): number => round1(span === 0 ? (x0 + x1) / 2 : x0 + (daysBetween(first, date) / span) * (x1 - x0))
   const y = (value: number): number => round1(y0 + ((yMax - value) / (yMax - yMin)) * (y1 - y0))
 
-  const labelCount = Math.max(1, Math.min(MAX_X_LABELS, span + 1, Math.floor((x1 - x0) / ((DATE_CHARS + 1) * CHAR * font))))
+  // Labels are not centred in equal slots: label 0 is start-anchored at x0 and the last is end-anchored at x1, so
+  // each of those consumes a whole label width *inside* the frame rather than half. Budgeting as if every label
+  // were centred left the final gap at about a quarter of the others, and the last two dates read as one run.
+  const labelW = DATE_CHARS * CHAR * font
+  const space = CHAR * font
+  const labelCount = Math.max(1, Math.min(MAX_X_LABELS, span + 1, Math.floor((x1 - x0) / (labelW * 1.5 + space)) + 1))
   const anchor = (i: number): Anchor => (labelCount === 1 || (i > 0 && i < labelCount - 1) ? 'middle' : i === 0 ? 'start' : 'end')
   return {
     plots: a.series.map((s) => ({

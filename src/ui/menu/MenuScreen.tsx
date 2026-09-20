@@ -34,13 +34,15 @@ function savedAgo(cachedAt: string, now: Date, t: T): string {
 // accessible name, so a chip can print "9/19" and still say "Saturday, September 19".
 export interface ChipOption<T extends string> { value: T; label: string; sub?: string; spoken?: string }
 
-export function Chips<T extends string>({ legend, name, options, value, onSelect }: {
+export function Chips<T extends string>({ legend, name, options, value, onSelect, wrap }: {
   legend: string; name: string; options: readonly ChipOption<T>[]; value: T | null; onSelect: (v: T) => void
+  /** A closed set of settings rather than a browsing strip: wraps to a second row instead of scrolling one off. */
+  wrap?: boolean
 }) {
   // Named on the fieldset, not by a hidden <legend>: Chromium exposed the legend both as the group's name and as a
   // text node inside it, so browse mode read every group's name out twice.
   return (
-    <fieldset class="chips" role="radiogroup" aria-label={legend}>
+    <fieldset class={wrap === true ? 'chips chips-wrap' : 'chips'} role="radiogroup" aria-label={legend}>
       {options.map((o) => (
         <label key={o.value} class={o.sub === undefined ? 'chip' : 'chip chip-stack'}>
           <input type="radio" name={name} value={o.value} checked={o.value === value} aria-label={o.spoken}

@@ -30,14 +30,24 @@ const KCAL_PER_LB = 3500
 const CLAMP = 150
 const PACE_TOLERANCE = 0.2
 
+/**
+ * The smoothed weight, advanced per elapsed *day* rather than per weigh-in. `alpha` is the daily rate, and a gap
+ * of n days applies it n times (`1 - (1 - alpha) ** n`), which is the only reading that makes the smoother's time
+ * constant a fixed number of days instead of a function of how often the reader happens to stand on a scale.
+ * Per weigh-in, someone weighing in every four days gave the trend a two-month time constant: a real 2.8 lb over
+ * three weeks printed as 0.7, and the same under-correction went on into the adaptive maintenance estimate.
+ */
 export function ewmaTrend(points: readonly WeightPoint[], alpha = 0.1): WeightPoint[] {
   const sorted = [...points].sort((a, b) => a.date.localeCompare(b.date))
   const result: WeightPoint[] = []
   let trend = 0
-  sorted.forEach((p, i) => {
-    trend = i === 0 ? p.weightLb : trend + alpha * (p.weightLb - trend)
+  let prev: string | null = null
+  for (const p of sorted) {
+    const step = prev === null ? 1 : 1 - (1 - alpha) ** daysBetween(prev, p.date)
+    trend = prev === null ? p.weightLb : trend + step * (p.weightLb - trend)
     result.push({ date: p.date, weightLb: trend })
-  })
+    prev = p.date
+  }
   return result
 }
 

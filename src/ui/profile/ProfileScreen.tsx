@@ -30,12 +30,12 @@ function Appearance() {
   const { choice } = useTheme()
   return (
     <>
-      <Chips legend={t.t('profile.theme')} name="theme"
+      <Chips wrap legend={t.t('profile.theme')} name="theme"
         options={THEME_OPTIONS.map((c) => ({ value: c, label: t.t(`theme.${c}`) }))}
         value={choice} onSelect={setThemeChoice} />
       <p class="muted">{t.t('profile.themeNote')}</p>
       {/* The same printed radio stamps as every other chip group: a language switch is not a special control. */}
-      <Chips legend={t.t('profile.language')} name="language"
+      <Chips wrap legend={t.t('profile.language')} name="language"
         options={LOCALES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l] }))}
         value={t.locale} onSelect={setLocale} />
       <p class="muted">{t.t('profile.languageNote')}</p>

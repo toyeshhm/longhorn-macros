@@ -67,32 +67,53 @@ test('weigh-ins, the three chart views and the range they all answer to', async 
 
   // The numbers under the chart, which are what the screen is actually for.
   const summary = page.getByRole('region', { name: 'Summary' })
-  await expect(summary).toContainText('Trend weight171.9 lb')
-  await expect(summary).toContainText('Change over a day-0.1 lb')
-  await expect(summary).toContainText('Avg calories160 kcal')
-  await expect(summary).toContainText('Days logged1 of 30')
+  await expect(summary).toContainText('171.9 lbTrend weight')
+  await expect(summary).toContainText('-0.1 lbChange over a day (smoothed)')
+  await expect(summary).toContainText('160 kcalAvg calories')
+  await expect(summary).toContainText('1 of 30Days logged')
   await expect(summary.locator('.adaptive-status')).toHaveText('Needs ~13 more logged days and 6 weigh-ins')
 
   // The range applies to every view: yesterday falls outside a range that starts today.
-  const view = page.getByRole('combobox', { name: 'Chart' })
+  const view = page.getByRole('radiogroup', { name: 'View' })
   await page.getByText('All', { exact: true }).click()
   await expect(dots).toHaveCount(2)
   await expect(page.getByRole('img', { name: 'Weight, all time' })).toBeVisible()
 
-  await view.selectOption({ label: 'Daily calories' })
+  await view.getByRole('radio', { name: 'Daily calories' }).click()
   await expect(page.getByRole('img', { name: 'Daily calories, all time' })).toBeVisible()
   await expect(dots).toHaveCount(1) // one logged day, not one weigh-in
   await expect(rows).toHaveText([`${today}160160`])
   await expect(page.locator('.chart-key')).toContainText('7-day average')
 
-  await view.selectOption({ label: 'Predicted vs actual' })
+  await view.getByRole('radio', { name: 'Predicted vs actual' }).click()
   await expect(page.getByRole('img', { name: 'Predicted and actual weight, all time' })).toBeVisible()
   // Yesterday's weigh-in anchors the line; today's 160 kcal against maintenance drops it about half a pound.
-  await expect(page.locator('.chart-note')).toContainText('kcal a day of maintenance, 3,500 kcal to the pound')
+  // The estimate is the Mifflin-St Jeor guess, not one learned from this account's own data, and the note says so.
+  await expect(page.locator('.chart-note')).toContainText('at an estimated ')
+  await expect(page.locator('.chart-note')).toContainText('rather than learned from your own data, 3,500 kcal to the pound')
   await expect(page.locator('.ink-chart > svg path.predicted')).toHaveCount(1)
   await expect(page.locator('.ink-chart thead')).toHaveText('DateWeigh-inTrend (smoothed)Predicted from intake')
   await expect(rows.first()).toHaveText(`${yesterday}172172172`)
   await expect(rows.last()).toHaveText(new RegExp(`^${today}171171\\.9\\d+(\\.\\d)?$`))
+
+  // The date field has to be wide enough for the date it is about to save. A narrower grid track clipped
+  // "09/20/2026" under its own calendar mark at 320px and again in landscape, and because a replaced element
+  // clips its own content rather than pushing the page out, no page-width assertion could ever see it.
+  const dateSlack = (): Promise<number> => page.evaluate(() => {
+    const input = document.querySelector('.weight-form input[type="date"]')
+    if (!(input instanceof HTMLInputElement)) return -1
+    const clone = input.cloneNode(true)
+    if (!(clone instanceof HTMLInputElement)) return -1
+    clone.style.cssText = 'width: max-content; position: absolute; visibility: hidden'
+    input.parentElement?.append(clone)
+    const need = clone.getBoundingClientRect().width
+    clone.remove()
+    return Math.round(input.getBoundingClientRect().width - need)
+  })
+  for (const size of [{ width: 320, height: 780 }, { width: 844, height: 390 }]) {
+    await page.setViewportSize(size)
+    expect(await dateSlack(), `the date field fits its own value at ${String(size.width)}px`).toBeGreaterThanOrEqual(0)
+  }
 })
 
 test('with nothing logged at all, every view says so in words rather than drawing an empty chart', async ({ page }) => {
@@ -104,16 +125,16 @@ test('with nothing logged at all, every view says so in words rather than drawin
   await expect(page.getByText('Welcome! Set up your profile')).toBeVisible()
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Progress' }).click()
 
-  const view = page.getByRole('combobox', { name: 'Chart' })
+  const view = page.getByRole('radiogroup', { name: 'View' })
   await expect(page.getByText('No weigh-ins in this range yet.')).toBeVisible()
-  await view.selectOption({ label: 'Daily calories' })
+  await view.getByRole('radio', { name: 'Daily calories' }).click()
   await expect(page.getByText('Nothing logged in this range yet.')).toBeVisible()
-  await view.selectOption({ label: 'Predicted vs actual' })
+  await view.getByRole('radio', { name: 'Predicted vs actual' }).click()
   await expect(page.locator('.chart-note')).toHaveText('No maintenance estimate yet, so there is nothing to predict from. Set up your goals first.')
   await expect(page.getByText('No weigh-ins in this range yet, so there is nothing to compare a prediction with.')).toBeVisible()
 
   const summary = page.getByRole('region', { name: 'Summary' })
-  await expect(summary).toContainText('Trend weight—')
-  await expect(summary).toContainText('Change—')
-  await expect(summary).toContainText('Days logged0 of 30')
+  await expect(summary).toContainText('—Trend weight')
+  await expect(summary).toContainText('—Change (smoothed)')
+  await expect(summary).toContainText('0 of 30Days logged')
 })

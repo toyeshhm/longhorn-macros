@@ -11,7 +11,7 @@ import {
 
 // English here; the Spanish run of the same figures is in tests/i18n.test.ts.
 const t = translator('en')
-const predictionNote = (maintenance: number | null): string => predictionNoteIn(maintenance, t)
+const predictionNote = (maintenance: number | null, learned = true): string => predictionNoteIn(maintenance, learned, t)
 const signed = (lb: number): string => signedIn(lb, t)
 const summarize = (a: Omit<Parameters<typeof summarizeIn>[0], 't'>): Summary => summarizeIn({ ...a, t })
 const adaptiveStatus = (...a: [ProfileRow | null | undefined, readonly WeightEntry[], readonly LogEntry[], string]): string =>
@@ -66,12 +66,16 @@ test('a range longer than the data holds all of it', () => {
 // --------------------------------------------------------------------------------------------------- series
 
 test('weight series sorts the weigh-ins and windows a trend that was warmed up over the whole history', () => {
-  const weights = [weigh(TODAY, 168), weigh('2026-07-01', 180), weigh('2026-09-18', 169)]
+  const weights = [weigh(TODAY, 168), weigh('2026-08-15', 180), weigh('2026-09-18', 169)]
   const { weighIns, trend } = weightSeries(weights, TODAY, '30')
   expect(weighIns).toEqual([{ date: '2026-09-18', value: 169 }, { date: TODAY, value: 168 }])
-  // The July weigh-in is outside the range but still seeds the EWMA: the trend arrives at 180 − 1.1 = 178.9,
-  // not at the first in-range reading. A trend that restarts at the window edge is not a trend.
-  expect(trend).toEqual([{ date: '2026-09-18', value: 178.9 }, { date: TODAY, value: 177.81 }])
+  // The August weigh-in is outside the range but still seeds the EWMA, so the trend arrives at the window edge
+  // already carrying it rather than starting over at the first in-range reading: a trend that restarts at the
+  // edge of whatever the reader is looking at is not a trend. 34 days of decay leaves it near the new reading
+  // without landing on it; one more day moves it a tenth of the way to the next.
+  expect(trend.map((p) => p.date)).toEqual(['2026-09-18', TODAY])
+  expect(trend[0]?.value).toBeCloseTo(169.31, 2)
+  expect(trend[1]?.value).toBeCloseTo(169.18, 2)
 })
 
 test('no weigh-ins at all gives empty series rather than a chart of nothing', () => {
@@ -111,6 +115,9 @@ test('prediction starts at the first weigh-in in range and adds each later day o
   expect(predictedSeries({ weighIns, entries, maintenance: 2400, today: TODAY, range: '30' })).toEqual([
     { date: '2026-09-16', value: 170 },
     { date: '2026-09-17', value: 170 + 2850 / 3500 },
+    // Nothing logged on the 18th: it carries the day before forward, so the drawn line holds visibly flat over
+    // the gap instead of running one smooth slope from the 17th to the 19th.
+    { date: '2026-09-18', value: 170 + 2850 / 3500 },
     { date: TODAY, value: 170 + 2850 / 3500 - 1500 / 3500 },
   ])
 })
@@ -124,7 +131,11 @@ test('prediction with no weigh-ins is empty, and with one weigh-in and nothing l
 test('the prediction always says what it assumed, and says so plainly when it cannot assume anything', () => {
   expect(predictionNote(2400)).toContain('2,400 kcal a day of maintenance')
   expect(predictionNote(2400)).toContain('3,500 kcal to the pound')
-  expect(predictionNote(2400)).toContain('Days you did not log are skipped')
+  expect(predictionNote(2400)).toContain('Days you did not log add nothing')
+  // A learned estimate and a formula guess are not the same claim, and the note is the only place that says which.
+  expect(predictionNote(2400, false)).toContain('at an estimated 2,400 kcal a day of maintenance')
+  expect(predictionNote(2400, false)).toContain('rather than learned from your own data')
+  expect(predictionNote(2400, true)).not.toContain('estimated')
   expect(predictionNote(null)).toBe('No maintenance estimate yet, so there is nothing to predict from. Set up your goals first.')
 })
 
@@ -134,22 +145,22 @@ test('summary reads the trend, its change over the days it actually spans, and t
   const trend: Point[] = [{ date: '2026-09-01', value: 172.44 }, { date: TODAY, value: 170.02 }]
   const calories: Point[] = [{ date: '2026-09-01', value: 2000 }, { date: TODAY, value: 2500 }]
   expect(summarize({ trend, calories, range: '30' })).toEqual({
-    trendWeight: 170, changeLb: -2.4, spanDays: 18, changeLabel: 'Change over 18 days',
+    trendWeight: 170, changeLb: -2.4, spanDays: 18, changeLabel: 'Change over 18 days (smoothed)',
     avgCalories: 2250, daysLogged: 2, rangeDays: 30,
   })
 })
 
 test('summary with nothing at all reports nulls, not zeros', () => {
   expect(summarize({ trend: [], calories: [], range: 'all' })).toEqual({
-    trendWeight: null, changeLb: null, spanDays: 0, changeLabel: 'Change', avgCalories: null, daysLogged: 0, rangeDays: null,
+    trendWeight: null, changeLb: null, spanDays: 0, changeLabel: 'Change (smoothed)', avgCalories: null, daysLogged: 0, rangeDays: null,
   })
 })
 
 test('summary with a single weigh-in has a weight but no change to speak of', () => {
   const one = summarize({ trend: [{ date: TODAY, value: 170 }], calories: [], range: '30' })
-  expect(one).toMatchObject({ trendWeight: 170, changeLb: 0, spanDays: 0, changeLabel: 'Change' })
+  expect(one).toMatchObject({ trendWeight: 170, changeLb: 0, spanDays: 0, changeLabel: 'Change (smoothed)' })
   const twoDays = summarize({ trend: [{ date: '2026-09-18', value: 170 }, { date: TODAY, value: 170.5 }], calories: [], range: '30' })
-  expect(twoDays.changeLabel).toBe('Change over a day')
+  expect(twoDays.changeLabel).toBe('Change over a day (smoothed)')
 })
 
 test('a gain never prints as a loss', () => {
@@ -228,15 +239,25 @@ test('bigger text means fewer labels and fewer gridlines, never labels printed o
   const month = Array.from({ length: 30 }, (_, i) => ({ date: addDays('2026-09-01', i), value: 170 + i * 0.1 }))
   const small = geo([dots(month)], 340, 220, 15)
   const large = geo([dots(month)], 340, 220, 32) // the reader's text at 200%
-  expect(small.xLabels).toHaveLength(5)
+  expect(small.xLabels).toHaveLength(4)
   expect(small.yTicks).toHaveLength(4)
   expect(large.xLabels.length).toBeLessThan(small.xLabels.length)
   expect(large.yTicks).toHaveLength(2)
-  // Whatever the size, the labels fit between the axis and the right edge without overlapping.
-  for (const g of [small, large]) {
-    const gap = (g.xLabels[1]?.x ?? g.frame.x1) - (g.xLabels[0]?.x ?? 0)
-    expect(gap).toBeGreaterThan(5 * 0.6 * (g === small ? 15 : 32))
-    expect(g.xLabels[g.xLabels.length - 1]?.x).toBeLessThanOrEqual(g.frame.x1)
+  // Boxes, not centres. The first label is start-anchored at x0 and the last end-anchored at x1, so each of those
+  // takes a whole label width inside the frame rather than half; budgeting as though every label were centred left
+  // the final gap at about a quarter of the others and the last two dates read as one run ("9/17 9/20").
+  for (const [g, font] of [[small, 15], [large, 32]] as const) {
+    const boxes = g.xLabels.map((l) => {
+      const w = l.label.length * 0.6 * font
+      const left = l.anchor === 'start' ? l.x : l.anchor === 'end' ? l.x - w : l.x - w / 2
+      return { left, right: left + w }
+    })
+    expect(boxes[0]?.left).toBeGreaterThanOrEqual(g.frame.x0)
+    expect(boxes[boxes.length - 1]?.right).toBeLessThanOrEqual(g.frame.x1 + 0.1)
+    boxes.forEach((box, i) => {
+      const next = boxes[i + 1]
+      if (next !== undefined) expect(next.left - box.right).toBeGreaterThanOrEqual(0.6 * font)
+    })
   }
 })
 

@@ -30,11 +30,13 @@ const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 // The message is shown at the field it is about (aria-describedby), not as one message at the foot of the form.
 interface Invalid { field: 'weight' | 'date' | 'form'; message: string }
 
+// Value first in the DOM because the tile prints it first. The order used to be label-then-value flipped back by
+// `flex-direction: column-reverse`, which is exactly the reading-order-against-visual-order split WCAG 1.3.2 is about.
 function Stat({ label, value, unit }: { label: string; value: string | null; unit: string }) {
   return (
     <div class="stat">
-      <span class="stat-label">{label}</span>
       <span class="stat-value">{value === null ? '—' : <>{value}<small> {unit}</small></>}</span>
+      <span class="stat-label">{label}</span>
     </div>
   )
 }
@@ -113,18 +115,13 @@ export function ProgressScreen() {
       <section aria-label={t.t('progress.chart')}>
         {/* The masthead already names the page; this heading is here so VO-Cmd-H skims the screen like the others. */}
         <h2 class="visually-hidden">{t.t('progress.chart')}</h2>
-        <label class="field chart-pick">
-          {t.t('progress.chart')}
-          <select value={view} onChange={(ev) => {
-            const v = VIEWS.find((o) => o === ev.currentTarget.value)
-            if (v) setView(v)
-          }}>
-            {VIEWS.map((v) => <option key={v} value={v}>{t.t(VIEW_LABEL[v])}</option>)}
-          </select>
-        </label>
-        <Chips legend={t.t('progress.range')} name="range"
+        {/* Both one-of-three picks are printed stamps. A native select for the view above chip stamps for the range
+            put two idioms for the same job one on top of the other; the section speaks one now. */}
+        <Chips wrap legend={t.t('progress.view')} name="view"
+          options={VIEWS.map((v) => ({ value: v, label: t.t(VIEW_LABEL[v]) }))} value={view} onSelect={setView} />
+        <Chips wrap legend={t.t('progress.range')} name="range"
           options={RANGES.map((r) => ({ value: r, label: t.t(RANGE_LABEL[r]) }))} value={range} onSelect={setRange} />
-        {view === 'predicted' && <p class="chart-note">{predictionNote(maint, t)}</p>}
+        {view === 'predicted' && <p class="chart-note">{predictionNote(maint, profile?.tdeeEstimate != null, t)}</p>}
         {weights && allLog && (drawable
           ? <InkChart title={title} series={chart.series} yPad={chart.yPad} format={chart.format} />
           : <div class="empty"><ScaleDoodle /><p>{t.t(VIEW_EMPTY[view])}</p></div>)}

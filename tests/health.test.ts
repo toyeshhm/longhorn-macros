@@ -186,26 +186,40 @@ test('todayRead: left, over, and both empty states', () => {
 
 // ----------------------------------------------------------------------------------------------------- report
 
-test('healthReport keeps to the last 7 days and skips deleted rows', () => {
-  const report = healthReport({
-    today: '2026-09-19',
-    targets,
-    legends: new Map([['7', ['Vegetarian']]]),
-    entries: [
-      entry({ date: '2026-09-19', recipeNumber: '7', perServing: nutrients({ calories: 1000, protein: 50, fiber: 5, sodium: 6000, sugar: 60 }) }),
-      entry({ date: '2026-09-13', name: 'edge', perServing: nutrients({ calories: 1000 }) }),
-      entry({ date: '2026-09-12', name: 'old', perServing: nutrients({ calories: 5000 }) }),
-      entry({ date: '2026-09-20', name: 'ahead', perServing: nutrients({ calories: 5000 }) }),
-      entry({ date: '2026-09-18', name: 'gone', deletedAt: '2026-09-18T13:00:00.000Z', perServing: nutrients({ calories: 5000 }) }),
-    ],
-  })
-  expect(report.adherence.daysLogged).toBe(2)
+const weekEntries = [
+  // Today is still being eaten. Counted as a finished day it printed a fabricated deficit and three "Short"
+  // verdicts for most of every day; it has its own section, which is where it belongs.
+  entry({ date: '2026-09-19', name: 'today', perServing: nutrients({ calories: 400 }) }),
+  entry({ date: '2026-09-18', recipeNumber: '7', perServing: nutrients({ calories: 1000, protein: 50, fiber: 5, sodium: 9000, sugar: 60 }) }),
+  entry({ date: '2026-09-14', name: 'mid', perServing: nutrients({ calories: 1000 }) }),
+  entry({ date: '2026-09-12', name: 'edge', perServing: nutrients({ calories: 1000 }) }),
+  entry({ date: '2026-09-11', name: 'old', perServing: nutrients({ calories: 5000 }) }),
+  entry({ date: '2026-09-20', name: 'ahead', perServing: nutrients({ calories: 5000 }) }),
+  entry({ date: '2026-09-17', name: 'gone', deletedAt: '2026-09-17T13:00:00.000Z', perServing: nutrients({ calories: 5000 }) }),
+]
+
+test('healthReport reads the seven complete days behind today, skipping today and deleted rows', () => {
+  const report = healthReport({ today: '2026-09-19', targets, legends: new Map([['7', ['Vegetarian']]]), entries: weekEntries })
+  expect(report.adherence.daysLogged).toBe(3)
   expect(report.adherence.avgCalories).toBe(1000)
   expect(report.sodiumHigh).toBe(true)
   expect(report.fiberLow).toBe(true)
-  expect(report.today.line).toContain('1,000 of 2,000 kcal today')
+  expect(report.today.line).toContain('400 of 2,000 kcal today')
   expect(report.macros).toHaveLength(3)
   expect(report.signals[3]?.fact).toContain('100% of labelled calories')
+})
+
+test('a diet signal prints on any number of days but only moves the suggestions once it rests on a few', () => {
+  const report = healthReport({
+    today: '2026-09-19', targets, legends: new Map(),
+    entries: weekEntries.filter((e) => e.date !== '2026-09-12' && e.date !== '2026-09-14'),
+  })
+  expect(report.adherence.daysLogged).toBe(1)
+  // The figures still print, with the day count beside them; they simply do not get to re-rank the food.
+  expect(report.signals[1]?.fact).toContain('9,000 mg a day')
+  expect(report.signals[1]?.flag).toBe('high')
+  expect(report.sodiumHigh).toBe(false)
+  expect(report.fiberLow).toBe(false)
 })
 
 // ------------------------------------------------------------------------------------------------ what to eat
@@ -261,11 +275,21 @@ test('pickFoods ranks by the gap it closes, names the macro, and drops what clos
     item({ recipeNumber: 'feast', name: 'Chicken Fried Steak', nutrients: nutrients({ calories: 1900, protein: 40, fat: 90 }) }),
   ] }] }])
   const picks = pick(menu)
-  // The condiment is under the plate floor; the 1,900 kcal platter is 1,100 past what is left.
-  expect(picks.map((p) => p.item.name)).toEqual(['Grilled Chicken', 'Baked Salmon', 'Cheddar Cubes'])
+  // Protein is the widest open gap, so it is the only macro credited: the condiment is under the plate floor, the
+  // 1,900 kcal platter is 1,100 past what is left, and 7 g of protein does not carry the cheese over the bar.
+  expect(picks.map((p) => p.item.name)).toEqual(['Grilled Chicken', 'Baked Salmon'])
   expect(picks[0]).toMatchObject({ ink: 'protein', hall: 'J2', meal: 'Lunch', when: 'now' })
   expect(picks[0]?.reason).toBe('45 g protein toward the 60 g left')
-  expect(picks[2]).toMatchObject({ ink: 'fat', reason: '9 g fat toward the 20 g left' })
+})
+
+test('once protein is met, fat and carbohydrate are what is left, and they are credited and named', () => {
+  // The rule reverses itself: the same cheese that earned nothing while protein was owed is now a fat suggestion,
+  // and it is headlined as fat. While protein was the gap it would have been headlined as protein or not at all.
+  const menu = menuOf([{ hall: 'J2', meals: [{ name: 'Lunch', items: [
+    item({ recipeNumber: 'cheese', name: 'Cheddar Cubes', nutrients: nutrients({ calories: 110, protein: 7, fat: 9 }) }),
+  ] }] }])
+  const picks = pick(menu, { gap: { remaining: { calories: 800, protein: 0, carbs: 80, fat: 20 }, targets } })
+  expect(picks[0]).toMatchObject({ ink: 'fat', reason: '9 g fat toward the 20 g left' })
 })
 
 test('pickFoods ranks by the gap closed per calorie, not by the size of the plate', () => {
@@ -287,13 +311,17 @@ test('pickFoods lets a low-fiber week and a high-sodium week move the list', () 
   expect(pick(menu).map((p) => p.item.name)).toEqual(['Grilled Tilapia', 'Salty Ham'])
   // While the week's sodium runs high, a 900 mg serving stops being worth suggesting at all.
   expect(pick(menu, { sodiumHigh: true }).map((p) => p.item.name)).toEqual(['Grilled Tilapia'])
+  // While the week's fiber runs low the bean plate is worth suggesting again — behind the lean proteins, because
+  // protein is still the widest gap, but on a list it was off entirely without the flag.
   const fiberFirst = pick(menu, { fiberLow: true })
-  expect(fiberFirst.map((p) => p.item.name)).toEqual(['Black Beans', 'Grilled Tilapia', 'Salty Ham'])
-  expect(fiberFirst[0]).toMatchObject({ ink: null, reason: '12 g of fiber' })
+  expect(fiberFirst.map((p) => p.item.name)).toEqual(['Grilled Tilapia', 'Salty Ham', 'Black Beans'])
+  expect(fiberFirst[2]).toMatchObject({ ink: null, reason: '12 g of fiber' })
 })
 
 test('pickFoods: a met macro earns nothing, a zero target is skipped, and only 6 are offered', () => {
-  const met: Gap = { remaining: { calories: 800, protein: -10, carbs: 0, fat: 20 }, targets: { ...targets, fat: 0 } }
+  // A zero protein target too: the protein shortfall is what carbohydrate and fat are measured against, and
+  // dividing the day by nothing is not a share of it.
+  const met: Gap = { remaining: { calories: 800, protein: -10, carbs: 0, fat: 20 }, targets: { ...targets, protein: 0, fat: 0 } }
   const menu = menuOf([{ hall: 'J2', meals: [{ name: 'Lunch', items: [item({ recipeNumber: 'x', nutrients: nutrients({ calories: 300, protein: 30, carbs: 20, fat: 9 }) })] }] }])
   expect(pick(menu, { gap: met })).toEqual([])
   const many = menuOf([{ hall: 'J2', meals: [{ name: 'Lunch', items: Array.from({ length: 9 }, (_, i) =>
@@ -301,15 +329,20 @@ test('pickFoods: a met macro earns nothing, a zero target is skipped, and only 6
   expect(pick(many).map((p) => p.item.name)).toEqual(['Plate 8', 'Plate 7', 'Plate 6', 'Plate 5', 'Plate 4', 'Plate 3'])
 })
 
-test('pickFoods keeps one row per recipe and breaks ties by name', () => {
-  const both = (hall: 'J2' | 'JCL'): HallMenu => ({ hall, meals: [{ name: 'Lunch', items: [
-    item({ recipeNumber: 'same', name: 'Shared Dish', nutrients: nutrients({ calories: 100, protein: 20 }) }),
-    item({ recipeNumber: hall === 'J2' ? 'a' : 'b', name: hall === 'J2' ? 'Zebra Cake' : 'Apple Crisp', nutrients: nutrients({ calories: 100, protein: 20 }) }),
-  ] }] })
-  const picks = pick(menuOf([both('J2'), both('JCL')]))
-  expect(picks.map((p) => p.item.name)).toEqual(['Apple Crisp', 'Shared Dish', 'Zebra Cake'])
-  expect(picks.filter((p) => p.item.key === 'r:same')).toHaveLength(1)
-  expect(picks.find((p) => p.item.key === 'r:same')?.hall).toBe('J2')
+test('pickFoods keeps one row per dish whatever UT numbered it, keeps the best, and breaks ties by name', () => {
+  // UT publishes the same dish under a different recipe number per station and per hall — one Sausage Link is
+  // 083003 at Breakfast Offerings and 010407 at FAST Line, and JCL renumbers everything J2 serves — so the recipe
+  // number cannot answer "is this the same thing to eat". Keying the dedupe on it filled two of six slots with
+  // one food. The lightest serving of the dish is the one worth printing.
+  const dish = (recipeNumber: string, calories: number) =>
+    item({ recipeNumber, name: 'Shared Dish', nutrients: nutrients({ calories, protein: 20 }) })
+  const picks = pick(menuOf([
+    { hall: 'J2', meals: [{ name: 'Lunch', items: [dish('same-j2', 100), item({ recipeNumber: 'a', name: 'Zebra Cake', nutrients: nutrients({ calories: 100, protein: 20 }) })] }] },
+    { hall: 'JCL', meals: [{ name: 'Lunch', items: [dish('same-jcl', 80), dish('same-jcl-2', 120), item({ recipeNumber: 'b', name: 'Apple Crisp', nutrients: nutrients({ calories: 100, protein: 20 }) })] }] },
+  ]))
+  expect(picks.map((p) => p.item.name)).toEqual(['Shared Dish', 'Apple Crisp', 'Zebra Cake'])
+  expect(picks[0]).toMatchObject({ hall: 'JCL' })
+  expect(picks[0]?.item.key).toBe('r:same-jcl') // the recipe number stays the item's identity everywhere else
 })
 
 test('pickFoods skips a row whose macros cannot fit inside its calories', () => {

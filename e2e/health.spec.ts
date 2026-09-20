@@ -49,8 +49,8 @@ test('a brand-new account reads as a page, not a wall of zeros', async ({ page }
 
   await expect(page.getByRole('region', { name: 'Today' })).toContainText('Nothing logged today, and no targets set yet.')
   await expect(page.getByRole('button', { name: 'Set up your goals' })).toBeVisible()
-  await expect(page.getByRole('region', { name: 'Goal adherence' })).toContainText('0 of 7 days logged')
-  await expect(page.getByRole('region', { name: 'Goal adherence' })).toContainText('Nothing logged in the last 7 days, so there is no average to read yet.')
+  await expect(page.getByRole('region', { name: 'Last 7 days' })).toContainText('0 of 7 days logged')
+  await expect(page.getByRole('region', { name: 'Last 7 days' })).toContainText('Nothing logged in the last 7 days, so there is no average to read yet.')
   // Each block says what it will read once there is something to read, instead of printing three or four zeros.
   await expect(page.getByRole('region', { name: 'Macro balance' })).toContainText('Log a few days and this reads protein, carbs and fat')
   await expect(page.getByRole('region', { name: 'Diet quality' })).toContainText('Log a few days and this reads fiber, sodium, sugar')
@@ -94,7 +94,7 @@ test('a logged week reads back in plain sentences, and a suggestion can be added
   await tabs.getByRole('button', { name: 'Health' }).click()
 
   await expect(page.getByRole('region', { name: 'Today' })).toContainText('Nothing logged today. 2,000 kcal and 150 g of protein to go.')
-  const week = page.getByRole('region', { name: 'Goal adherence' })
+  const week = page.getByRole('region', { name: 'Last 7 days' })
   await expect(week).toContainText('3 of 7 days logged')
   await expect(week).toContainText('Averaging 1,500 kcal on the 3 days you logged against 2,000. About 500 under.')
 

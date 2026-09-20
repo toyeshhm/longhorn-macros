@@ -40,6 +40,16 @@ describe('the dictionaries', () => {
     expect(dropped).toEqual(['health.per.one'])
   })
 
+  test('no dictionary string carries a grouped number: every figure goes through t.n()', () => {
+    // The Spanish fiber line used to spell "1.000" into the template while every figure beside it came out of
+    // es-ES CLDR ungrouped below 10,000, so one paragraph printed four-digit numbers two ways. A number a
+    // template writes is a number no locale gets to format, so no template writes one.
+    const grouped = /\d[.,]\d{3}(?!\d)/
+    for (const [key, value] of [...Object.entries(en), ...Object.entries(es)]) {
+      expect(grouped.test(value), `${key}: ${value}`).toBe(false)
+    }
+  })
+
   test('English is the default and only the two published locales are accepted from storage', () => {
     expect(DEFAULT_LOCALE).toBe('en')
     expect(LOCALES).toEqual(['en', 'es'])
@@ -191,7 +201,7 @@ describe('Spanish across the app', () => {
 
     const [fiber, sodium] = qualitySignals(days, plantShare([], new Map()), spanish)
     expect(fiber?.label).toBe('Fibra')
-    expect(fiber?.fact).toBe('6,7 g por cada 1.000 kcal, frente a la marca de 14 g.')
+    expect(fiber?.fact).toBe('6,7 g por cada 1000 kcal, frente a la marca de 14 g.')
     expect(sodium?.fact).toBe('3000 mg al día, frente a la marca de 2300 mg.')
 
     const today = todayRead([entry('2026-09-19', { calories: 600, protein: 40.5 })], targets, '2026-09-19', spanish)
@@ -203,15 +213,17 @@ describe('Spanish across the app', () => {
   test('Progress prints its figures, its dates and its prompts in Spanish', () => {
     expect(signed(1.3, spanish)).toBe('+1,3')
     expect(signed(-2.4, spanish)).toBe('-2,4')
-    expect(summarize({ trend: [], calories: [], range: '30', t: spanish }).changeLabel).toBe('Cambio')
+    expect(summarize({ trend: [], calories: [], range: '30', t: spanish }).changeLabel).toBe('Cambio (suavizado)')
     expect(summarize({
       trend: [{ date: '2026-09-18', value: 170 }, { date: '2026-09-19', value: 170.5 }],
       calories: [], range: '30', t: spanish,
-    }).changeLabel).toBe('Cambio en un día')
+    }).changeLabel).toBe('Cambio en un día (suavizado)')
 
-    expect(predictionNote(2400, spanish))
+    expect(predictionNote(2400, true, spanish))
       .toContain('con un mantenimiento de 2400 kcal al día y 3500 kcal por libra')
-    expect(predictionNote(null, spanish)).toBe(
+    expect(predictionNote(2400, false, spanish))
+      .toContain('con un mantenimiento estimado de 2400 kcal al día calculado a partir de tu altura')
+    expect(predictionNote(null, false, spanish)).toBe(
       'Aún no hay estimación de mantenimiento, así que no hay de qué partir. Configura primero tus objetivos.',
     )
 

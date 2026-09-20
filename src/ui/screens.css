@@ -23,7 +23,6 @@
 .read-note.muted { font-size: 0.85rem; color: var(--ink-soft); }
 /* Progress: change over time, so the chart is the page. The weigh-in form keeps its place at the foot, where it
    cannot crowd the thing the screen is for. */
-.chart-pick { max-width: 20rem; margin-top: 2px; }
 .progress .chips { margin-top: 10px; }
 .chart-note { margin: 10px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
 .ink-chart { margin: 12px 0 0; }
@@ -45,13 +44,20 @@
 /* rem track minimums: at the user's largest text these rows drop to fewer columns instead of running off the page.
    No vertical rules between the cells: the block wraps to one, two or three columns depending on the text size,
    and a rule drawn per cell lands inside a row as often as between two. */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); row-gap: 10px; margin-top: 12px; padding: 10px 0; background: var(--mark-rule) no-repeat top / 100% 6px, var(--mark-rule) no-repeat bottom / 100% 6px; }
-.stat { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; padding: 2px 10px 2px 0; }
+/* Only a rule at the foot: the Summary heading already draws one at its own bottom edge, and a second copy of
+   the same mark 18px under it printed as a mistake rather than as misregistration. */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr)); row-gap: 10px; margin-top: 12px; padding: 2px 0 10px; background: var(--mark-rule) no-repeat bottom / 100% 6px; }
+/* Value over label, in that order in the DOM too: the pair used to be written label-first and flipped back with
+   column-reverse, so what was read and what was painted disagreed (WCAG 1.3.2). */
+.stat { display: flex; flex-direction: column; justify-content: flex-start; gap: 2px; padding: 2px 10px 2px 0; }
 .stat-label { color: var(--ink-soft); font-size: 0.8rem; }
 .stat-value { font-family: var(--display); font-weight: 400; font-size: 1.25rem; color: var(--ink-deep); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .stat-value small { font-family: var(--text); font-weight: 700; font-size: 0.8rem; }
 .adaptive-status { margin: 10px 0 0; font-size: 0.9rem; }
-.weight-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 12px; align-items: end; margin-top: 10px; }
+/* 11rem, not 8.5: a Chromium date input at 16px Courier needs about 160px for "09/20/2026" plus its padding and
+   its 22px picker mark, and a narrower track clipped the date under the glyph at 320px and again in landscape.
+   `min(11rem, 100%)`, because at 200% text 11rem is wider than the page and a bare track minimum overflows it. */
+.weight-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(11rem, 100%), 1fr)); gap: 12px; align-items: end; margin-top: 10px; }
 .weight-form .primary, .weight-form .error { grid-column: 1 / -1; }
 .weight-form input { width: 100%; min-width: 0; }
 
@@ -109,7 +115,9 @@
 .profile-section .goal-panel { margin: 12px 0; }
 .section-body > .muted { margin: 0; font-size: 0.9rem; }
 
-.account-id { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 4px 12px; margin: 0; }
+/* The label track is capped rather than max-content: the Spanish label is two thirds longer than the English one
+   and squeezed the address into a quarter of a 320px page, breaking it over five lines mid-token. */
+.account-id { display: grid; grid-template-columns: minmax(0, 12ch) minmax(0, 1fr); gap: 4px 12px; margin: 0; }
 .account-id dt { color: var(--ink-soft); }
 .account-id dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; color: var(--ink-deep); }
 .sync-counts { margin: 0; font-size: 0.95rem; font-variant-numeric: tabular-nums; }

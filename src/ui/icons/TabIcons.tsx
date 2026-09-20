@@ -26,13 +26,17 @@ function Tracker() {
   )
 }
 
-// Health: a hand-inked heart with a pulse run across it. The plate is a second, smaller heart, off register.
+// Health: a vitals card, drawn as an object inside the same hand-ruled frame the other four tabs carry (the menu
+// card, the calendar, the gauge plate, the ID card) — a pulse run under a header rule, the plate on the header
+// band. What was here before was the stock heart-plus-ECG glyph: no frame, so the bar read as four drawn objects
+// and one pictogram, and it was the only mark whose halves reflected onto each other to within 0.2 user units.
 function Health() {
   return (
     <>
-      <path class="plate" d="M15.6 22.6C12.6 20.1 9.1 17.5 8.1 14.6 7.3 12.1 8.9 9.7 11.2 9.8 12.9 9.9 14.4 10.9 15.3 12.4 16.2 10.9 17.6 9.8 19.3 9.9 21.7 10 23.3 12.4 22.4 15 21.4 18 17.9 20.3 15.6 22.6Z" />
-      <path class="line" {...LINE} stroke-width="1.8" d="M15.2 25.4C11.2 21.9 6.4 18.4 5.1 14.2 3.9 10.6 6.3 7.1 9.5 7.2 11.9 7.3 13.9 8.7 15.1 10.7 16.4 8.6 18.5 7.1 20.9 7.2 24.2 7.3 26.5 10.7 25.2 14.4 23.8 18.6 19.2 21.9 15.2 25.4Z" />
-      <path class="line" {...LINE} stroke-width="1.5" d="M7.4 15.4c2.3.3 3.6-.1 4.4-1.5 1 2.7 1.6 4.4 2.6 6.6 1.2-4.5 2-7.8 3.3-11.6.9 2.9 1.5 4.7 2.3 6.7 1.3-.2 2.5-.3 3.8-.2" />
+      <path class="plate" d="M5.6 6.8C9.4 6.4 13.6 6.8 16.8 6.6 16.6 8.4 17.2 9.6 16.6 10.9 13 11.1 9 10.6 5.4 11 5.7 9.2 5.2 8.1 5.6 6.8Z" />
+      <path class="line" {...LINE} stroke-width="1.8" d="M3.4 6.8C10.2 5.6 19.8 6.2 26.8 5.4 27.4 12.4 26.6 19.8 27.2 26.4 19.6 27.2 10.4 26.4 3.8 26.8 3.2 20 4 12.8 3 6.2" />
+      <path class="line" {...LINE} stroke-width="1.3" d="M3.6 11.4C11.4 10.6 19.6 11.2 26.8 11.6M9.6 5.8l-.4 5.3" />
+      <path class="line" {...LINE} stroke-width="1.6" d="M5.4 18.4c2.5.4 3.7-.3 4.5-2 1.1 3.4 1.8 5.5 3.1 8.1 1.4-5.5 2.4-9.3 3.9-13.4 1 3.6 1.8 5.8 2.7 8.1 1.7-.3 3.1-.5 4.7-.1" />
     </>
   )
 }

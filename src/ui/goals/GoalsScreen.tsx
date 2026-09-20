@@ -157,7 +157,7 @@ function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
     <div class="goals">
       {firstRun && <p class="notice">{t.t('goals.welcome')}</p>}
       <form class="goals-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
-        <Chips legend={t.t('goals.sex')} name="sex"
+        <Chips wrap legend={t.t('goals.sex')} name="sex"
           options={SEX_OPTIONS.map((o) => ({ value: o.value, label: t.t(o.label) }))} value={sex} onSelect={setSex} />
         <label class="field">
           {t.t('goals.birthYear')}
@@ -198,7 +198,7 @@ function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
             {ACTIVITY_OPTIONS.map((o) => <option key={o.value} value={o.value}>{t.t(o.label)}</option>)}
           </select>
         </label>
-        <Chips legend={t.t('goals.goal')} name="goal"
+        <Chips wrap legend={t.t('goals.goal')} name="goal"
           options={GOAL_OPTIONS.map((o) => ({ value: o.value, label: t.t(o.label) }))} value={goal} onSelect={(g) => {
           setGoal(g)
           if (!RATE_OPTIONS[g].includes(rate)) setRate(RATE_OPTIONS[g][0] ?? 0)

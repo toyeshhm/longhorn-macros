@@ -22,7 +22,10 @@ import { fromMenuItem, type SearchItem } from './search'
  * are ones UT publishes (fiber, sodium, sugar, the Vegan/Vegetarian labels), said as plain facts with the number.
  */
 
+/** The complete days behind today that the weekly read covers. Today is not one of them: it is not over. */
 export const WINDOW_DAYS = 7
+/** Logged days a diet signal needs before it may move the suggestion ranking. Below this it only prints. */
+export const MIN_SIGNAL_DAYS = 3
 /** The Dietary Guidelines fiber mark. UT prints fiber per serving, so per 1,000 kcal is the only scale it reads on. */
 export const FIBER_PER_1000_KCAL = 14
 /** The Dietary Guidelines sodium ceiling, per day. */
@@ -207,7 +210,7 @@ export function qualitySignals(days: readonly DayTotal[], plants: PlantShare, t:
       id: 'fiber', label: t.t('nutrient.fiber'),
       fact: perThousand === null
         ? t.t('health.signal.fiberNoCalories')
-        : t.t('health.signal.fiber', { value: t.d(perThousand), mark: t.n(FIBER_PER_1000_KCAL) }),
+        : t.t('health.signal.fiber', { value: t.d(perThousand), per: t.n(1000), mark: t.n(FIBER_PER_1000_KCAL) }),
       note: null,
       flag: perThousand === null ? 'unknown' : perThousand < FIBER_PER_1000_KCAL ? 'low' : 'none',
     },
@@ -290,17 +293,22 @@ export function healthReport(input: {
   t: T
 }): HealthReport {
   const { t } = input
-  const from = addDays(input.today, -(WINDOW_DAYS - 1))
-  const live = input.entries.filter((e) => e.deletedAt === null && e.date >= from && e.date <= input.today)
+  // Complete days only. Today is still being eaten, and counting it as a finished day reported a fabricated
+  // deficit and three "Short" verdicts for most of every day. Today has its own section, which is where it belongs.
+  const from = addDays(input.today, -WINDOW_DAYS)
+  const live = input.entries.filter((e) => e.deletedAt === null && e.date >= from && e.date < input.today)
   const days = dailyTotals(live)
   const signals = qualitySignals(days, plantShare(live, input.legends), t)
+  // A signal is allowed to re-rank the food suggestions only once it rests on more than a day or two: one light
+  // day is enough to read "low fiber" and turn the whole list into fruit.
+  const enough = days.length >= MIN_SIGNAL_DAYS
   return {
     adherence: adherence(days, input.targets, t),
     macros: macroReads(days, input.targets, t),
     signals,
     today: todayRead(input.entries, input.targets, input.today, t),
-    sodiumHigh: signals.some((s) => s.id === 'sodium' && s.flag === 'high'),
-    fiberLow: signals.some((s) => s.id === 'fiber' && s.flag === 'low'),
+    sodiumHigh: enough && signals.some((s) => s.id === 'sodium' && s.flag === 'high'),
+    fiberLow: enough && signals.some((s) => s.id === 'fiber' && s.flag === 'low'),
   }
 }
 
@@ -357,18 +365,23 @@ export function availableItems(menu: Menu | null, hours: Hours | null, now: Date
  * the macro a dining hall makes hardest to hit and the one this app leads with. Fiber earns a term only while the
  * week's fiber runs low, and sodium costs only while the week's sodium runs high, so a signal that is fine never
  * pushes the list around. Both are weighted like carbs and fat rather than like protein: one serving can only ever
- * be a fraction of a day, and fiber at anything like a macro weight turns the whole list into fruit even on a week whose real problem is protein.
+ * be a fraction of a day, and fiber at a macro weight turns the whole list into fruit on a week whose real
+ * problem is protein.
  *
- * Calories are charged twice, and both charges matter.
+ * **Only the macros that are actually the gap are credited.** A macro counts only while it is proportionally
+ * shorter than protein is, so while protein is the widest open gap carbohydrate and fat earn nothing; once
+ * protein is met the rule reverses and they are credited normally, which is right, because by then they are what
+ * is left. Without it a fresh day credits all three equally, and since fat targets are small (50-76 g) next to
+ * protein targets (136-150 g), fat won the "why" line on most real dishes — the app's stated reason for
+ * suggesting a 35 g chicken breast was its 30 g of fat — and two apples and two oranges outranked every protein
+ * source on a day with 150 g of protein still owed.
  *
- * The first charge is the bar every item has to clear. One calorie of the reader's own target diet earns exactly
- * `sum of the macro weights / target calories` under the gains above (the macro split cancels out), so charging
- * that much per calorie means an item scores only when it closes the gap *better than an average bite of the day
- * would*. Without it, size wins: a 971 kcal cupcake closes more of the carb gap than anything else UT serves, and
- * a health screen opens with cake. With it, the list is what it should be, lean protein and, while the week's
- * fiber runs low, the high-fiber plates. Carbohydrate is still credited and can still tip a close call, but it
- * rarely wins on its own, which is right: at a dining hall carbohydrate is the easy macro.
- *
+ * Calories are charged twice. The first charge is the bar every item has to clear: one calorie of the reader's own
+ * target diet earns exactly `sum of the credited macro weights / target calories` under the gains above (the macro
+ * split cancels out), so charging that much per calorie means an item scores only when it closes the gap *better
+ * than an average bite of the day would*. The sum is over the credited macros, not all three, or the bar is priced
+ * for a gain the item is not allowed to earn and nothing on the menu clears it. Without the charge, size wins: a
+ * 971 kcal cupcake closes more of the carb gap than anything else UT serves, and a health screen opens with cake.
  * The second charge is the calories past what is actually left today, a quarter of the day's target costing a
  * whole point, which is what keeps a 900 kcal plate off a 300 kcal gap.
  */
@@ -376,18 +389,17 @@ const MACRO_WEIGHT: Readonly<Record<MacroKey, number>> = { protein: 1, carbs: 0.
 const FIBER_WEIGHT = 0.12
 const SODIUM_WEIGHT = 0.5
 const FIBER_FULL_G = 10
-const WEIGHT_SUM = MACRO_KEYS.reduce((sum, k) => sum + MACRO_WEIGHT[k], 0)
 const OVERSHOOT_SHARE = 0.25
 /** Under this an item is a condiment, not something to eat: it would win on protein per calorie and feed nobody. */
 const MIN_KCAL = 40
 /**
- * UT's own rows are sometimes not internally consistent, and the scoring is only as honest as its input: the
- * J2 Rum Cake is published as 200.6 kcal carrying 26.1 g of fat, 26.8 g of carbohydrate and 1.7 g of protein,
- * which is 348 kcal of macros inside a 200 kcal serving. Scored as written it clears the bar on fat alone and a
- * health screen opens by suggesting cake. A row whose macros cannot fit inside its calories is not something to
- * hand anyone as advice, so it is skipped here (it is still searchable, loggable and shown on the Menu, exactly
- * as UT published it; this is about what the app volunteers, not about hiding UT's numbers). The tolerance is
- * loose because fiber sits inside the carbohydrate figure and yields about 2 kcal/g rather than 4.
+ * UT's own rows are sometimes not internally consistent, and the scoring is only as honest as its input: the J2
+ * Rum Cake is published as 200.6 kcal carrying 26.1 g of fat, 26.8 g of carbohydrate and 1.7 g of protein, which
+ * is 348 kcal of macros inside a 200 kcal serving. Scored as written it clears the bar on fat alone and a health
+ * screen opens by suggesting cake. A row whose macros cannot fit inside its calories is not something to hand
+ * anyone as advice, so it is skipped here — it is still searchable, loggable and on the Menu exactly as UT
+ * published it; this is about what the app volunteers. The tolerance is loose because fiber sits inside the
+ * carbohydrate figure and yields about 2 kcal/g rather than 4.
  */
 const MACRO_KCAL_TOLERANCE = 1.25
 
@@ -398,15 +410,25 @@ const MAX_PICKS = 6
 
 interface Scored { readonly score: number; readonly ink: MacroKey | null; readonly reason: string }
 
+/** How much of a macro's day is still owed, as a share of its target: the one scale the three macros compare on. */
+function shortfall(gap: Gap, key: MacroKey): number {
+  const target = gap.targets[key]
+  return target <= 0 ? 0 : Math.max(gap.remaining[key], 0) / target
+}
+
 function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow: boolean, t: T): Scored {
   let score = 0
   let bestTerm = 0
+  let credited = 0
   let ink: MacroKey | null = null
   let reason = ''
+  const proteinShare = shortfall(gap, 'protein')
   for (const key of MACRO_KEYS) {
     const need = gap.remaining[key]
     const target = gap.targets[key]
     if (need <= 0 || target <= 0) continue
+    if (key !== 'protein' && proteinShare >= shortfall(gap, key)) continue
+    credited += MACRO_WEIGHT[key]
     const term = (Math.min(nut[key], need) / target) * MACRO_WEIGHT[key]
     score += term
     if (term > bestTerm) {
@@ -426,7 +448,7 @@ function scoreAgainstGap(nut: Nutrients, gap: Gap, sodiumHigh: boolean, fiberLow
   }
   const day = Math.max(gap.targets.calories, 1)
   const budget = Math.max(gap.remaining.calories, 0)
-  score -= (nut.calories * WEIGHT_SUM) / day
+  score -= (nut.calories * credited) / day
   score -= Math.max(0, nut.calories - budget) / (day * OVERSHOOT_SHARE)
   if (sodiumHigh) score -= (nut.sodium / SODIUM_LIMIT_MG) * SODIUM_WEIGHT
   return { score, ink, reason }
@@ -463,11 +485,16 @@ export function pickFoods(input: {
     if (s.score <= 0) continue
     scored.push({ ...c, ...s })
   }
-  // One row per recipe: the same dish served at two halls is one suggestion, kept where it scores best.
+  // One row per dish, kept where it scores best — not one row per recipe number. UT publishes the same dish under
+  // a different number per station and per hall (one Sausage Link is 083003 at Breakfast Offerings and 010407 at
+  // FAST Line; JCL renumbers everything J2 serves), so keying on the number filled two of six slots with one food.
+  // `SearchItem.key` stays the recipe number, the right identity for search and logging; this map only has to
+  // answer "is this the same thing to eat".
   const best = new Map<string, Pick>()
   for (const p of scored) {
-    const prev = best.get(p.item.key)
-    if (prev === undefined || p.score > prev.score) best.set(p.item.key, p)
+    const id = `${p.item.name.toLowerCase()}|${p.item.portion}`
+    const prev = best.get(id)
+    if (prev === undefined || p.score > prev.score) best.set(id, p)
   }
   return [...best.values()].sort(compare).slice(0, MAX_PICKS)
 }

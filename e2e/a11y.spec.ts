@@ -21,6 +21,14 @@ test('mobile and screen reader basics: 320px layout, big text, dialogs, focus re
       - button "Profile"
   `)
 
+  // A link that switches tabs unmounts the control that had focus. The new screen claims it back rather than
+  // letting it fall to <body>, which is silent: a screen-reader user would be dropped at the top of the document
+  // with no word that the page had changed.
+  await tabs.getByRole('button', { name: 'Health' }).click()
+  await page.getByRole('button', { name: 'Set up your goals' }).click()
+  await expect(page.getByRole('heading', { name: 'Profile', level: 1 })).toBeVisible()
+  await expect(page.locator('main.screen')).toBeFocused()
+
   // Custom food: every message is tied to the input it is about, not pooled at the foot of the form.
   await tabs.getByRole('button', { name: 'Menu' }).click()
   await page.getByRole('button', { name: 'Custom food', exact: true }).click()
@@ -109,4 +117,53 @@ test.describe(() => {
       }
     })).toEqual({ boil: 'none', frame2: 'hidden', button: '0s' })
   })
+})
+
+test('at 320px with 200% text nothing runs off the page and nothing overprints, in Spanish too', async ({ page }) => {
+  // Two failures the English sweep above cannot see. The Spanish empty state ran 22px past a 320px viewport,
+  // which widens the layout viewport and drags the fixed tab bar out with it on every screen in the session; and
+  // the Tracker's macro rows printed the macro name on top of its own number, which is the app's main readout.
+  // The second is entirely inside the page, so window.innerWidth never notices it.
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  // Targets, so the Tracker prints its macro rows; nothing logged, so it also prints its empty state.
+  await page.getByLabel('Female', { exact: true }).check()
+  await page.getByLabel('Birth year').fill('2005')
+  await page.getByLabel('Feet').fill('5')
+  await page.getByLabel('Inches').fill('5')
+  await page.getByLabel('Current weight (lb)').fill('170')
+  await page.getByLabel('Activity').selectOption({ label: 'Moderate: exercise 3–5×/wk' })
+  await page.getByRole('button', { name: 'Save', exact: true }).click()
+  await expect(page.getByText('Welcome! Set up your profile')).toHaveCount(0)
+
+  await page.getByRole('heading', { name: 'Appearance' }).click()
+  await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio', { name: 'Español' }).check()
+  await expect(page.locator('html')).toHaveAttribute('lang', 'es')
+
+  await page.setViewportSize({ width: 320, height: 780 })
+  await page.addStyleTag({ content: 'html { font-size: 32px }' })
+  const tabs = page.getByRole('navigation', { name: 'Principal' })
+  for (const s of ['Menú', 'Diario', 'Salud', 'Progreso', 'Perfil']) {
+    await tabs.getByRole('button', { name: s }).click()
+    expect(await page.evaluate(layoutWidth), `${s} at 320px with 32px root text, in Spanish`).toBe(320)
+    expect(await page.evaluate(() => Math.round(document.querySelector('nav.tabbar')?.getBoundingClientRect().right ?? -1)),
+      `the tab bar still ends at the page edge on ${s}`).toBe(320)
+  }
+
+  await tabs.getByRole('button', { name: 'Diario' }).click()
+  await expect(page.locator('.empty')).toBeVisible()
+  // The painted text, not the box: a grid item whose track resolves narrower than the word inside it paints its
+  // glyphs outside its own area, so the element's rect can look fine while the reader sees one word over another.
+  expect(await page.evaluate(() => [...document.querySelectorAll('.macro')].map((row) => {
+    const name = row.querySelector('.macro-name')
+    const num = row.querySelector('.macro-num')
+    if (name === null || num === null) return 'a macro row is missing its name or its number'
+    const range = document.createRange()
+    range.selectNodeContents(name)
+    const right = Math.max(...[...range.getClientRects()].map((r) => r.right))
+    const left = num.getBoundingClientRect().left
+    return left >= right ? 'clear' : `${name.textContent} overprints its number by ${String(Math.round(right - left))}px`
+  }))).toEqual(['clear', 'clear', 'clear'])
 })
