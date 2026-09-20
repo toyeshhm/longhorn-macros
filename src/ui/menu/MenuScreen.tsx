@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
-import { daysBetween, localDateKey } from '../../dates'
+import { dateLabel, localDateKey } from '../../dates'
 import { log } from '../../log'
 import type { HallId } from '../../menu/feed'
+import { dayIndex, dayText, hallStatus, statusText, UNKNOWN_HOURS, type Week } from '../../menu/hours'
 import { currentMeal, groupByStation, HALLS } from '../../menu/select'
 import { round1 } from '../../nutrition'
 import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem } from '../../search'
@@ -10,20 +11,13 @@ import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
 import { UtensilsDoodle } from '../icons/Doodles'
 import { PlusMark, Swatch } from '../icons/Marks'
-import { useLive, useMenu } from '../hooks'
+import { useHours, useLive, useMenu } from '../hooks'
 import { CustomFoodForm } from './CustomFoodForm'
 import { FoodSheet } from './FoodSheet'
 
 // Row hint shows diet legends only; allergens are listed in the sheet.
 const DIET_HINTS: ReadonlyMap<string, string> = new Map([['Vegan', 'Vegan'], ['Vegetarian', 'Vegetarian'], ['Halal Friendly', 'Halal']])
 const TOAST_MS = 3000
-
-function dayLabel(key: string, today: string): string {
-  const offset = daysBetween(today, key)
-  if (offset === 0) return 'Today'
-  if (offset === 1) return 'Tomorrow'
-  return new Date(`${key}T12:00:00`).toLocaleDateString(undefined, { weekday: 'short' })
-}
 
 // Feed `last_cached` is "YYYY-MM-DD HH:MM:SS" in Austin local time, which is also the user's zone.
 function savedAgo(cachedAt: string, now: Date): string {
@@ -36,16 +30,23 @@ function savedAgo(cachedAt: string, now: Date): string {
   return rtf.format(-Math.round(minutes / 1440), 'day')
 }
 
+// `sub` stacks a smaller second line under the label (the day chips' weekday); `spoken`, when given, is the whole
+// accessible name, so a chip can print "9/19" and still say "Saturday, September 19".
+export interface ChipOption<T extends string> { value: T; label: string; sub?: string; spoken?: string }
+
 export function Chips<T extends string>({ legend, name, options, value, onSelect }: {
-  legend: string; name: string; options: readonly { value: T; label: string }[]; value: T | null; onSelect: (v: T) => void
+  legend: string; name: string; options: readonly ChipOption<T>[]; value: T | null; onSelect: (v: T) => void
 }) {
   return (
     <fieldset class="chips" role="radiogroup">
       <legend class="visually-hidden">{legend}</legend>
       {options.map((o) => (
-        <label key={o.value} class="chip">
-          <input type="radio" name={name} value={o.value} checked={o.value === value} onChange={() => { onSelect(o.value) }} />
-          {o.label}
+        <label key={o.value} class={o.sub === undefined ? 'chip' : 'chip chip-stack'}>
+          <input type="radio" name={name} value={o.value} checked={o.value === value} aria-label={o.spoken}
+            onChange={() => { onSelect(o.value) }} />
+          {/* A plain chip keeps its bare text node: wrapping it in a span puts the invisible input over the click
+              target, and a click aimed at the span is then reported as intercepted. */}
+          {o.sub === undefined ? o.label : <><span>{o.label}</span><span class="chip-sub">{o.sub}</span></>}
         </label>
       ))}
     </fieldset>
@@ -68,6 +69,16 @@ function FoodRow({ item, badge, hints, onOpen }: { item: SearchItem; badge: stri
   )
 }
 
+// Whether the hall is serving right now, then today's windows in full: the status word is never carried by ink alone.
+function HallHours({ week, now }: { week: Week; now: Date }) {
+  return (
+    <p class="hall-hours">
+      <strong>{statusText(hallStatus(week, now))}</strong>
+      <span class="muted">Today {dayText(week[dayIndex(now)] ?? null)}</span>
+    </p>
+  )
+}
+
 function dietHints(legends: readonly string[]): string[] {
   return legends.flatMap((l) => { const h = DIET_HINTS.get(l); return h === undefined ? [] : [h] })
 }
@@ -81,6 +92,7 @@ function sourceBadge(item: SearchItem): string {
 export function MenuScreen() {
   const { store } = useApp()
   const { menu, stale, error, cachedAt, retry } = useMenu()
+  const { hours } = useHours()
   const history = useLive(() => store.all('food_log'), [])
   const customFoods = useLive(() => store.all('custom_foods'), [])
   const [hall, setHall] = useState<HallId>('J2')
@@ -168,7 +180,11 @@ export function MenuScreen() {
       ) : (
         <>
           <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
-          <Chips legend="Day" name="day" options={dates.map((d) => ({ value: d, label: dayLabel(d, today) }))} value={activeDay} onSelect={setDay} />
+          <HallHours week={hours?.[hall] ?? UNKNOWN_HOURS[hall]} now={now} />
+          <Chips legend="Day" name="day" options={dates.map((d) => {
+            const { date, weekday, full } = dateLabel(d)
+            return { value: d, label: date, sub: weekday, spoken: full }
+          })} value={activeDay} onSelect={setDay} />
           <Chips legend="Meal" name="meal" options={mealNames.map((m) => ({ value: m, label: m }))} value={activeMeal} onSelect={setMeal} />
           {stations.length === 0 && <div class="empty"><UtensilsDoodle /><p>No menu posted for this hall and day.</p></div>}
           {stations.map((s) => (

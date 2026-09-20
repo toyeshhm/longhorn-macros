@@ -1,7 +1,7 @@
 import type { JSX } from 'preact'
 import type { Tab } from '../components/TabBar'
 
-// Hand-inked tab icons: blue linework plus an orange plate that prints only on the active tab.
+// Hand-inked tab icons: ink linework plus an orange plate that prints only on the active tab.
 // Path data is drawn by hand (no icon set); the wobble is the point, don't "clean it up".
 const LINE = { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' } as const
 
@@ -37,18 +37,19 @@ function Progress() {
   )
 }
 
-function Goals() {
+function Profile() {
   return (
     <>
-      <path class="plate" d="M9.6 5.6C14 4.6 17 7.4 21 6.2 23 5.8 24.4 6.2 25.4 6.6 24 9 24.8 12 26 14.6 22 15.6 18.6 13.8 14.8 14.8 12.6 15.2 11 15.4 9.8 15 9.8 12 9.4 8.6 9.6 5.6Z" />
-      <path class="line" {...LINE} stroke-width="2" d="M7.6 27.2C8 19 7.4 11 8 3" />
-      <path class="line" {...LINE} stroke-width="1.6" d="M8.2 4.2C12.6 2.8 16 5.8 20 4.6 22.2 4 24 4.2 25.4 4.8 23.8 7.6 24.4 10.8 25.8 13.4 21.6 14.6 18 12.6 14 13.6 11.6 14.2 9.8 14.4 8.2 13.8" />
-      <path class="line" {...LINE} stroke-width="1.6" d="M4 27.4c3.2-.6 6.8-.4 9.4.2" />
+      <path class="plate" d="M11.4 9.2C13.4 7.6 16.6 7.8 18 9.8 19.2 11.6 18.6 14.4 16.6 15.4 14.4 16.6 11.8 15.6 11 13.4 10.4 11.8 10.6 10.2 11.4 9.2Z" />
+      <path class="line" {...LINE} stroke-width="1.8" d="M3.6 6.2C10.4 5.2 19.6 5.6 26.6 5.4 27 12 26.4 19.4 26.8 25.6 19.4 26.4 10.6 25.8 3.8 26.2 3.2 19.6 3.8 12.6 3.2 5.8" />
+      <path class="line" {...LINE} stroke-width="1.5" d="M11.6 11.4C11.8 9.4 13.4 8.2 15.2 8.4 17.1 8.5 18.4 10 18.3 11.9 18.2 13.8 16.6 15 14.8 14.9 12.9 14.8 11.5 13.4 11.6 11.4Z" />
+      <path class="line" {...LINE} stroke-width="1.6" d="M9.6 21.8C10.4 18.6 12.6 17 15.2 17.1 17.8 17.2 19.8 18.9 20.6 22" />
+      <path class="line" {...LINE} stroke-width="1.2" d="M7.4 23.8c4.6-.6 10.4-.4 15.4.2" />
     </>
   )
 }
 
-const ICONS: Readonly<Record<Tab, () => JSX.Element>> = { Menu, Today, Progress, Goals }
+const ICONS: Readonly<Record<Tab, () => JSX.Element>> = { Menu, Today, Progress, Profile }
 
 export function TabIcon({ tab }: { tab: Tab }) {
   const Icon = ICONS[tab]

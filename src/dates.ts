@@ -20,3 +20,15 @@ export function feedDateToKey(s: string): string {
   const year = Number(m[3])
   return `${String(year)}-${pad(month)}-${pad(day)}`
 }
+
+// Menu day chips print the date, not "Today"/"Tomorrow": a relative word is ambiguous on a phone left open
+// overnight, and the weekday alone does not say which week. The full date stays the accessible name.
+export function dateLabel(key: string): { date: string; weekday: string; full: string } {
+  const [y, m, d] = parts(key)
+  const at = new Date(y, m - 1, d, 12)
+  return {
+    date: at.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
+    weekday: at.toLocaleDateString(undefined, { weekday: 'short' }),
+    full: at.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }),
+  }
+}

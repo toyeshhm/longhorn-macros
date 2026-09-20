@@ -16,6 +16,22 @@
   --mustard: #E0A800;
   --over: #9A3412;
   --wash: rgb(30 52 112 / 0.35);
+  --orange-rgb: 191 87 0;
+  --paper-rgb: 247 243 234;
+  /* The orange drum is laid over the blue one. On dark stock ink does not darken what it lands on, it lightens it. */
+  --blend: multiply;
+  --grain-strength: 0.4;
+  /* Hand-inked art referenced from CSS cannot read these tokens (an image has no access to them), so each press
+     gets its own file and the token picks the press. Keep the pair in step: see DESIGN.md §2. */
+  --mark-rule: url('./ink/rule.svg');
+  --mark-rule-thick: url('./ink/rule-thick.svg');
+  --mark-rule-pencil: url('./ink/rule-pencil.svg');
+  --mark-chevron: url('./ink/chevron.svg');
+  --mark-box: url('./ink/box.svg');
+  --mark-box-checked: url('./ink/box-checked.svg');
+  --mark-search: url('./ink/search.svg');
+  --mark-calendar: url('./ink/calendar.svg');
+  --mark-grain: url('./ink/grain.svg');
   --display: 'Bungee', 'Arial Black', Impact, sans-serif;
   --text: 'Courier Prime', 'Courier New', ui-monospace, monospace;
   --wobble: 255px 12px 225px 10px / 12px 225px 10px 255px;
@@ -24,6 +40,38 @@
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
   color-scheme: light;
   font-family: var(--text);
+}
+
+/* The night press. Same plates, different stock and inks: nothing below this block re-states a component rule,
+   it only re-inks the tokens. `data-theme` is set by src/ui/theme.ts, which also resolves "Match phone". */
+:root[data-theme='night'] {
+  --paper: #141A33;
+  --paper-raised: #1E2647;
+  --paper-shade: #0D1226;
+  --blue: #8AA6EE;
+  --ink: #EFE8D8;
+  --ink-deep: #FFFDF6;
+  --ink-soft: #9AA3C6;
+  --orange: #FF9147;
+  --teal: #46CFC6;
+  --mustard: #F5CE5A;
+  --over: #FF8878;
+  --wash: rgb(4 7 18 / 0.66);
+  --orange-rgb: 255 145 71;
+  --paper-rgb: 20 26 51;
+  --blend: screen;
+  /* Dark specks on dark stock only make mud: the night grain is pale, and lighter-handed so it stays a texture. */
+  --grain-strength: 0.28;
+  --mark-rule: url('./ink/rule-night.svg');
+  --mark-rule-thick: url('./ink/rule-thick-night.svg');
+  --mark-rule-pencil: url('./ink/rule-pencil-night.svg');
+  --mark-chevron: url('./ink/chevron-night.svg');
+  --mark-box: url('./ink/box-night.svg');
+  --mark-box-checked: url('./ink/box-checked-night.svg');
+  --mark-search: url('./ink/search-night.svg');
+  --mark-calendar: url('./ink/calendar-night.svg');
+  --mark-grain: url('./ink/grain-night.svg');
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 /* Print has no hover, and iOS's blue tap flash is not one of our two inks: every target says it was pressed itself. */
@@ -37,16 +85,17 @@ body {
   padding: env(safe-area-inset-top) env(safe-area-inset-right) 0 env(safe-area-inset-left);
 }
 /* Paper grain: one fixed layer, rasterised once from a tiled SVG and kept on its own compositor layer.
-   ponytail: the tile's specks are dark with alpha, so plain alpha-over reads as multiply without a full-screen
-   blend (mix-blend-mode here made every repaint re-blend the whole viewport and doubled e2e time). */
+   ponytail: the tile's specks carry alpha (dark on the day press, pale on the night one), so plain alpha-over
+   reads as ink without a full-screen blend (mix-blend-mode here made every repaint re-blend the whole viewport
+   and doubled e2e time). */
 body::after {
   content: '';
   position: fixed;
   inset: 0;
   z-index: 30;
   pointer-events: none;
-  background: url('./ink/grain.svg') repeat;
-  opacity: 0.4;
+  background: var(--mark-grain) repeat;
+  opacity: var(--grain-strength);
   will-change: transform;
 }
 h1, h2, h3 { text-wrap: balance; }
@@ -63,13 +112,13 @@ input, select, textarea {
   color: var(--ink-deep);
 }
 input::placeholder { color: var(--ink-soft); opacity: 1; }
-select { appearance: none; padding-right: 36px; background: var(--paper-raised) url('./ink/chevron.svg') no-repeat right 10px center / 20px; }
+select { appearance: none; padding-right: 36px; background: var(--paper-raised) var(--mark-chevron) no-repeat right 10px center / 20px; }
 input[type='checkbox'] {
   appearance: none; width: 44px; height: 44px; min-height: 0; padding: 0; margin: 0 -8px; flex: none;
-  border: 0; border-radius: 0; background: url('./ink/box.svg') center / 28px no-repeat; cursor: pointer;
+  border: 0; border-radius: 0; background: var(--mark-box) center / 28px no-repeat; cursor: pointer;
 }
-input[type='checkbox']:checked { background-image: url('./ink/box-checked.svg'); }
-input[type='date']::-webkit-calendar-picker-indicator { width: 22px; height: 22px; background: url('./ink/calendar.svg') center / 22px no-repeat; color: transparent; opacity: 1; cursor: pointer; }
+input[type='checkbox']:checked { background-image: var(--mark-box-checked); }
+input[type='date']::-webkit-calendar-picker-indicator { width: 22px; height: 22px; background: var(--mark-calendar) center / 22px no-repeat; color: transparent; opacity: 1; cursor: pointer; }
 input[aria-invalid='true'] { border-color: var(--over); border-width: 2px; }
 
 button {
@@ -95,7 +144,7 @@ button.link {
   min-width: 0; padding: 0 4px; color: var(--ink);
   text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px;
 }
-button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: 1.5px 1px 0 rgb(191 87 0 / 0.55); }
+button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / 0.55); }
 button.icon-btn { display: inline-grid; place-items: center; padding: 0; border: 0; background: none; }
 :focus-visible { outline: 2.5px solid var(--orange); outline-offset: 2px; }
 .toast :focus-visible { outline-color: var(--paper); }
@@ -103,8 +152,8 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .mark { width: 26px; height: 26px; overflow: visible; }
 .line { stroke: var(--ink); }
 .line-blue { stroke: var(--blue); }
-.plate { fill: var(--orange); mix-blend-mode: multiply; }
-.plate-line { stroke: var(--orange); mix-blend-mode: multiply; }
+.plate { fill: var(--orange); mix-blend-mode: var(--blend); }
+.plate-line { stroke: var(--orange); mix-blend-mode: var(--blend); }
 .swatch { width: 16px; height: 12px; margin-right: 6px; vertical-align: -1px; flex: none; }
 .ink-protein .ink-fill { fill: var(--blue); }
 .ink-carbs .ink-fill { fill: var(--teal); }
@@ -136,11 +185,11 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .screen { padding: 12px 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); max-width: 640px; margin: 0 auto; }
 .masthead {
   margin: 4px 0 14px; font-family: var(--display); font-weight: 400; font-size: min(1.75rem, 9vw); line-height: 1.1;
-  color: var(--ink); text-shadow: 2px 1.5px 0 rgb(191 87 0 / 0.55);
+  color: var(--ink); text-shadow: 2px 1.5px 0 rgb(var(--orange-rgb) / 0.55);
 }
 
 /* Banners: slips of paper tucked above the page. */
-.banner { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 16px; font-size: 0.95rem; background: var(--paper-shade) url('./ink/rule-thick.svg') no-repeat bottom / 100% 6px; }
+.banner { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 16px; font-size: 0.95rem; background: var(--paper-shade) var(--mark-rule-thick) no-repeat bottom / 100% 6px; }
 .banner.error { color: var(--over); }
 .banner.error::before { content: '!'; font-family: var(--display); font-size: 1.1rem; color: var(--over); }
 /* Sync banners are mounted from the first paint so their live regions are already in the accessibility tree
@@ -155,7 +204,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   position: fixed; inset: auto 0 0 0; z-index: 10;
   display: grid; grid-template-columns: repeat(4, 1fr);
   padding: 4px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  background: var(--paper) url('./ink/rule-thick.svg') no-repeat top / 100% 6px;
+  background: var(--paper) var(--mark-rule-thick) no-repeat top / 100% 6px;
 }
 /* min-height, not height: at the user's largest text the icon and a wrapped label need more than the token, and a
    fixed box printed the icon above the bar's rule and cut the label off the bottom of the screen. The bar grows
@@ -175,7 +224,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .tabbar button[aria-current='page'] span { text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 /* Menu */
-.menu .search { width: 100%; padding-left: 42px; background: var(--paper-raised) url('./ink/search.svg') no-repeat 12px center / 22px; }
+.menu .search { width: 100%; padding-left: 42px; background: var(--paper-raised) var(--mark-search) no-repeat 12px center / 22px; }
 .menu > button.link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; min-height: 44px; }
 .menu > button.link .mark { width: 18px; height: 18px; }
 .chips { display: flex; gap: 8px; overflow-x: auto; min-inline-size: 0; margin: 10px -16px 0; padding: 4px 16px 6px; border: 0; scrollbar-width: none; }
@@ -194,12 +243,12 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .station h2 {
   position: sticky; top: 0; z-index: 2; margin: 18px 0 0; padding: 10px 0 8px;
   font-family: var(--display); font-weight: 400; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink);
-  background: var(--paper) url('./ink/rule.svg') no-repeat bottom / 100% 6px;
+  background: var(--paper) var(--mark-rule) no-repeat bottom / 100% 6px;
 }
 .food-list { list-style: none; margin: 0; padding: 0; }
 .food-row {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 10px 0;
-  border: 0; border-radius: 0; background: url('./ink/rule-pencil.svg') no-repeat bottom / 100% 4px; text-align: left; font-weight: 400;
+  border: 0; border-radius: 0; background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; text-align: left; font-weight: 400;
 }
 .food-row:active { background-color: var(--paper-shade); }
 .food-name { font-weight: 700; overflow-wrap: break-word; color: var(--ink-deep); }
@@ -220,7 +269,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   width: 100%; max-width: 560px; max-height: 90dvh; overflow: hidden;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
   /* Same grain strength as the page layer: a 60% paper veil over the tile equals the page's grain at 40% opacity. */
-  background: linear-gradient(rgb(247 243 234 / 0.6), rgb(247 243 234 / 0.6)), url('./ink/grain.svg') repeat, var(--paper); color: var(--ink);
+  background: linear-gradient(rgb(var(--paper-rgb) / 0.6), rgb(var(--paper-rgb) / 0.6)), var(--mark-grain) repeat, var(--paper); color: var(--ink);
 }
 /* The column lives on [open], never on .sheet: a bare `display` here would beat the browser's own
    `dialog:not([open]) { display: none }` and print every closed sheet into the page. */
@@ -239,7 +288,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet-foot {
   display: flex; flex-direction: column; gap: 10px;
   padding: 12px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
-  background: url('./ink/rule.svg') no-repeat top / 100% 6px;
+  background: var(--mark-rule) no-repeat top / 100% 6px;
 }
 .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-top: 6px; }
 .sheet-head .icon-btn { flex: none; }
@@ -247,7 +296,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
    fold on a short viewport. The full name is still the dialog's accessible name. */
 .sheet-head h2 {
   min-width: 0; margin: 8px 0 0; overflow-wrap: break-word; font-family: var(--display); font-weight: 400;
-  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(191 87 0 / 0.45);
+  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / 0.45);
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .sheet p { margin: 0; }
@@ -263,7 +312,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .nutrients caption { text-align: left; font-family: var(--display); font-size: 0.9rem; padding-bottom: 6px; color: var(--ink); }
 .nutrients tbody th { text-align: left; font-weight: 400; display: flex; align-items: center; }
 .nutrients td { text-align: right; font-weight: 700; color: var(--ink-deep); }
-.nutrients tr { background: url('./ink/rule-pencil.svg') no-repeat bottom / 100% 4px; }
+.nutrients tr { background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
 .nutrients th, .nutrients td { padding: 7px 0; }
 .nutrients td + td, .nutrients thead th + th { padding-left: 12px; }
 .nutrients thead th { text-align: right; font-size: 0.8rem; font-weight: 700; color: var(--ink-soft); }
@@ -301,7 +350,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   position: relative; font-family: var(--display); font-size: min(4.5rem, 20vw); line-height: 0.95; font-variant-numeric: tabular-nums;
   color: transparent; -webkit-text-stroke: 2px var(--blue); paint-order: stroke; transform: translate(-1px, 1px) rotate(0.4deg);
 }
-.big::before { content: attr(data-ink); content: attr(data-ink) / ''; position: absolute; inset: 0; color: var(--orange); -webkit-text-stroke: 0; mix-blend-mode: multiply; transform: translate(2.5px, -2px) rotate(-1deg); }
+.big::before { content: attr(data-ink); content: attr(data-ink) / ''; position: absolute; inset: 0; color: var(--orange); -webkit-text-stroke: 0; mix-blend-mode: var(--blend); transform: translate(2.5px, -2px) rotate(-1deg); }
 .hero-num.over .big { -webkit-text-stroke-color: var(--ink); }
 .hero-num.over .big::before { color: var(--over); }
 .over-word { position: relative; font-family: var(--display); font-size: 1.6rem; color: var(--over); }
@@ -311,7 +360,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .calories .ink-bar { margin: 10px 0 2px; }
 .bar-outline { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .bar-hatch { fill: none; stroke: var(--blue); stroke-width: 1; stroke-linecap: round; opacity: 0.8; vector-effect: non-scaling-stroke; }
-.bar-fill { mix-blend-mode: multiply; }
+.bar-fill { mix-blend-mode: var(--blend); }
 .ink-calories .bar-fill { fill: var(--orange); }
 /* Protein is a solid blue plate; the blue hatch beside it is line-only, so filled and left never read alike. */
 .ink-protein .bar-fill { fill: var(--blue); }
@@ -340,7 +389,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .meal-group h3 {
   display: flex; flex-wrap: wrap; column-gap: 10px; justify-content: space-between; align-items: baseline; margin: 20px 0 0; padding-bottom: 6px;
   font-family: var(--display); font-weight: 400; font-size: 1rem; color: var(--ink);
-  background: url('./ink/rule.svg') no-repeat bottom / 100% 6px;
+  background: var(--mark-rule) no-repeat bottom / 100% 6px;
 }
 .meal-kcal { font-family: var(--text); font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
 .entry-row { flex-direction: row; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 2px 12px; }
@@ -359,14 +408,14 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .weight-chart .tick path { fill: none; stroke: var(--blue); stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 14 3 22 4 9 3; }
 .weight-chart .axis { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
 .weight-chart text { fill: var(--ink-soft); }
-.weight-chart .trend { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: multiply; }
+.weight-chart .trend { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: var(--blend); }
 .weight-chart .dot { fill: var(--blue); }
 .chart-key { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 0; font-size: 0.8rem; color: var(--ink-soft); }
 .chart-key span { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .chart-key svg { width: 14px; height: 14px; overflow: visible; }
 .chart-key .key-line { width: 26px; }
 /* rem track minimums: at the user's largest text these rows drop to fewer columns instead of running off the page. */
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); margin-top: 20px; padding: 10px 0; background: url('./ink/rule.svg') no-repeat top / 100% 6px, url('./ink/rule.svg') no-repeat bottom / 100% 6px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(5.5rem, 1fr)); margin-top: 20px; padding: 10px 0; background: var(--mark-rule) no-repeat top / 100% 6px, var(--mark-rule) no-repeat bottom / 100% 6px; }
 .stat { display: flex; flex-direction: column-reverse; justify-content: flex-end; gap: 2px; padding: 4px 8px; }
 .stat + .stat { border-left: 1px dashed var(--blue); }
 /* Inline, not flex: the macro swatch then wraps as part of the words instead of sitting on a line of its own. */
@@ -385,10 +434,10 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .goals-form .toggle { display: flex; gap: 4px; align-items: center; font-weight: 700; }
 .overrides summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .overrides[open] .nutrient-grid { margin-top: 10px; }
-.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(191 87 0 / 0.55); }
+.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(var(--orange-rgb) / 0.55); }
 .goal-panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; }
 .goal-panel dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); margin: 8px 0; font-variant-numeric: tabular-nums; }
-.goal-panel dt, .goal-panel dd { padding: 7px 0; background: url('./ink/rule-pencil.svg') no-repeat bottom / 100% 4px; }
+.goal-panel dt, .goal-panel dd { padding: 7px 0; background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
 .goal-panel dt { display: flex; align-items: center; color: var(--ink-soft); }
 .goal-panel dd { margin: 0; text-align: end; font-weight: 700; color: var(--ink-deep); }
 .goal-panel .target { color: var(--ink-deep); }
@@ -399,9 +448,46 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 /* Login masthead */
 .login { max-width: 420px; margin: 0 auto; padding: 40px 20px; }
 .login-mast { margin-bottom: 28px; }
-.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(191 87 0 / 0.6); }
+.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(var(--orange-rgb) / 0.6); }
 .login-mast h1 span { display: block; }
 .login-mast h1 span + span { margin-left: 0.6em; }
 .login-mast p { margin: 0; max-width: 32ch; }
 .login form, .login label { display: flex; flex-direction: column; gap: 14px; }
 .login label { gap: 4px; font-weight: 700; }
+
+/* Day chips print the date over its weekday; the full date is the chip's accessible name. */
+.chip-stack { flex-direction: column; justify-content: center; gap: 0; padding: 4px 12px; line-height: 1.15; }
+.chip-sub { font-weight: 400; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Hall hours: state first in words, then today's windows. */
+.hall-hours { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 8px 0 0; font-size: 0.9rem; }
+.hall-hours strong { color: var(--ink-deep); }
+
+/* Profile: folded pages. Only the section you came for is unfolded; each keeps its heading in the tree. */
+.profile-section { margin: 0 -16px; padding: 0 16px; background: var(--mark-rule) no-repeat bottom / 100% 6px; }
+.profile-section > summary { display: flex; align-items: center; gap: 8px; min-height: 52px; cursor: pointer; list-style: none; }
+.profile-section > summary::-webkit-details-marker { display: none; }
+/* Hand-drawn chevron, turned down when the page is unfolded. */
+.profile-section > summary::after {
+  content: ''; flex: none; width: 22px; height: 22px; margin-left: auto;
+  background: var(--mark-chevron) center / 22px no-repeat; transform: rotate(-90deg); transition: transform 160ms var(--ease);
+}
+.profile-section[open] > summary::after { transform: rotate(0deg); }
+.profile-section > summary h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; color: var(--ink); }
+.profile-section .section-body { display: flex; flex-direction: column; gap: 12px; padding-bottom: 18px; }
+.profile-section h3 { margin: 6px 0 0; font-family: var(--display); font-weight: 400; font-size: 0.9rem; color: var(--ink); }
+.profile-section .goal-panel { margin: 12px 0; }
+.section-body > .muted { margin: 0; font-size: 0.9rem; }
+
+.account-id { display: grid; grid-template-columns: minmax(0, auto) minmax(0, 1fr); gap: 4px 12px; margin: 0; }
+.account-id dt { color: var(--ink-soft); }
+.account-id dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; color: var(--ink-deep); }
+.sync-counts { margin: 0; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+.sync-counts strong { color: var(--ink-deep); }
+
+/* One small table per hall: two columns, so it still fits a 320px page. */
+.hours-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; }
+.hours-table caption { text-align: left; padding-bottom: 4px; font-family: var(--display); font-size: 0.85rem; color: var(--ink); }
+.hours-table tr { background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
+.hours-table th { text-align: left; font-weight: 400; color: var(--ink-soft); padding: 6px 0; width: 4em; }
+.hours-table td { text-align: right; font-weight: 700; padding: 6px 0; color: var(--ink-deep); overflow-wrap: anywhere; }

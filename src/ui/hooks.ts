@@ -2,7 +2,7 @@ import { useEffect, useState } from 'preact/hooks'
 import type { ProfileRow, WeightEntry } from '../db/types'
 import { computeTargets, type Targets } from '../goals'
 import { log } from '../log'
-import { loadMenu, type MenuState } from '../menu/cache'
+import { loadHours, loadMenu, type HoursState, type MenuState } from '../menu/cache'
 import type { LocalStore } from '../sync/store'
 import { useApp } from './context'
 
@@ -54,6 +54,29 @@ export function useMenu(): MenuState & { retry: () => void } {
     setAttempt((a) => a + 1)
   }
   return { ...state, retry }
+}
+
+// ponytail: same one-fetch-per-store deal as useMenu, minus the retry — a missing hours line is not worth a button.
+const hourLoads = new WeakMap<LocalStore, Promise<HoursState>>()
+const NO_HOURS: HoursState = { hours: null, stale: false, error: null }
+
+export function useHours(): HoursState {
+  const { store } = useApp()
+  const [state, setState] = useState<HoursState>(NO_HOURS)
+  useEffect(() => {
+    let alive = true
+    let load = hourLoads.get(store)
+    if (!load) {
+      load = loadHours(store, fetch)
+      hourLoads.set(store, load)
+    }
+    load.then(
+      (s) => { if (alive) setState(s) },
+      (e: unknown) => { log.error('ui.hours_load_failed', { error: String(e) }) },
+    )
+    return () => { alive = false }
+  }, [store])
+  return state
 }
 
 export function useProfile(): ProfileRow | null | undefined {

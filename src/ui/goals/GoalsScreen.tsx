@@ -6,7 +6,6 @@ import {
   type Activity, type Goal, type Profile, type Sex, type Targets,
 } from '../../goals'
 import { log } from '../../log'
-import { supabase } from '../../supabase/client'
 import { useApp } from '../context'
 import { n } from '../format'
 import { useLatestWeight, useProfile } from '../hooks'
@@ -224,7 +223,7 @@ function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
 
       {live ? (
         <section class="goal-panel" aria-label="Your targets">
-          <h2>Your daily targets</h2>
+          <h3>Your daily targets</h3>
           <dl>
             <dt>BMR</dt><dd>{n(bmr(draft, live.weightLb, year))} kcal</dd>
             <dt>Formula TDEE</dt><dd>{n(formulaTdee(draft, live.weightLb, year))} kcal</dd>
@@ -239,13 +238,6 @@ function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
       ) : (
         <p class="muted">Fill in your profile{firstRun ? ' and current weight' : ''} to see your targets.</p>
       )}
-
-      <button type="button" onClick={() => {
-        supabase.auth.signOut().then(
-          ({ error }) => { if (error) log.warn('auth.sign_out_failed', { userId, reason: error.message }) },
-          (e: unknown) => { log.error('auth.sign_out_failed', { userId, error: String(e) }) },
-        )
-      }}>Log out</button>
     </div>
   )
 }

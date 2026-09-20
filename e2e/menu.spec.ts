@@ -1,6 +1,7 @@
 import { expect, test } from './fixtures'
-import { localDateKey } from '../src/dates'
+import { dateLabel, localDateKey } from '../src/dates'
 import { fetchMenu } from '../src/menu/feed'
+import { dayText, fetchHours, hallStatus, parseHours, statusText } from '../src/menu/hours'
 import { currentMeal, groupByStation } from '../src/menu/select'
 
 // Live UT feed on both sides: the test derives the expected first row (default hall J2, today, current meal)
@@ -87,6 +88,26 @@ test('browse, add with servings, search, custom food', async ({ page }) => {
   await expect(logged).toContainText('160 kcal')
 })
 
+// The selected hall's state right now, and today's windows, printed next to the hall chips.
+test('the hall hours line says whether the selected hall is open, from the live hours feed', async ({ page }) => {
+  const hours = parseHours(await fetchHours(fetch), localDateKey(new Date()))
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+
+  const line = page.locator('p.hall-hours')
+  const now = new Date()
+  const today = (now.getDay() + 6) % 7
+  await expect(line).toContainText(statusText(hallStatus(hours.J2, now)))
+  await expect(line).toContainText(dayText(hours.J2[today] ?? null))
+  // Switching hall switches the line with it.
+  await page.getByRole('radiogroup', { name: 'Hall' }).getByRole('radio', { name: 'JCL' }).check()
+  await expect(line).toContainText(statusText(hallStatus(hours.JCL, now)))
+})
+
 // Hall choice survives a reload; day and meal chips pick what's shown (checked against the live feed).
 test('hall is remembered; day and meal chips switch the listing', async ({ page }) => {
   const menu = await fetchMenu(fetch)
@@ -114,6 +135,13 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
 
   const days = page.getByRole('radiogroup', { name: 'Day' }).getByRole('radio')
   await expect(days).toHaveCount(menu.dates.length)
+  // Chips print the date over its weekday; the whole date is what a screen reader hears.
+  const first = menu.dates[0]
+  if (first === undefined) throw new Error('UT feed has no dates')
+  const label = dateLabel(first)
+  await expect(days.first()).toHaveAccessibleName(label.full)
+  await expect(page.getByRole('radiogroup', { name: 'Day' }).locator('label').first()).toContainText(label.date)
+  await expect(page.getByRole('radiogroup', { name: 'Day' })).not.toContainText('Today')
   await days.last().check()
   await expect(days.last()).toBeChecked()
   const mealChips = page.getByRole('radiogroup', { name: 'Meal' }).getByRole('radio')

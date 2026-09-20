@@ -14,7 +14,7 @@ test('first-run profile → targets, manual override round trip, adaptive update
   const calories = page.getByRole('region', { name: 'Calories' })
   const panel = page.getByRole('region', { name: 'Your targets' })
 
-  // First run lands on Goals. Invalid input is reported inline, tied to its field.
+  // First run lands on Profile, Goals section unfolded. Invalid input is reported inline, tied to its field.
   await expect(page.getByText('Welcome! Set up your profile')).toBeVisible()
   await page.getByLabel('Birth year').fill('1800')
   await page.getByLabel('Feet').fill('3') // 36 in < 48
@@ -50,7 +50,7 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText(' eaten of 2,000')
-  await tabs.getByRole('button', { name: 'Goals' }).click()
+  await tabs.getByRole('button', { name: 'Profile' }).click()
   await page.getByLabel('Calories (kcal)').fill('')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
@@ -85,7 +85,7 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await expect(card).toContainText("Targets updated 2,270 → 2,135 kcal: you're losing slower than planned")
   await tabs.getByRole('button', { name: 'Today' }).click()
   await expect(calories).toContainText(' eaten of 2,135')
-  await tabs.getByRole('button', { name: 'Goals' }).click()
+  await tabs.getByRole('button', { name: 'Profile' }).click()
   await expect(panel).toContainText('Maintenance used2,635 kcal (learned from your data)')
 
   await card.getByRole('button', { name: 'Undo' }).click()
@@ -145,7 +145,7 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   await expect(calories).toContainText(' eaten of 2,270')
   await expect(card).toHaveCount(0)
 
-  await tabs.getByRole('button', { name: 'Goals' }).click()
+  await tabs.getByRole('button', { name: 'Profile' }).click()
   const toggle = page.getByLabel(/Adaptive TDEE/)
   await expect(toggle).not.toBeChecked()
   await toggle.check()

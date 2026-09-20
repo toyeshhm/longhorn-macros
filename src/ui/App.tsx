@@ -9,10 +9,10 @@ import { SyncBanner } from './components/Banner'
 import { TabBar, type Tab } from './components/TabBar'
 import { AppContext } from './context'
 import { AdaptiveCard, runAdaptive, type AdaptiveUpdate } from './goals/AdaptiveCard'
-import { GoalsScreen } from './goals/GoalsScreen'
 import { useProfile } from './hooks'
 import { Login } from './Login'
 import { MenuScreen } from './menu/MenuScreen'
+import { ProfileScreen } from './profile/ProfileScreen'
 import { ProgressScreen } from './progress/ProgressScreen'
 import { TodayScreen } from './today/TodayScreen'
 
@@ -108,8 +108,9 @@ function Shell({ session }: { session: Session }) {
 function Tabs() {
   const profile = useProfile()
   const [tab, setTab] = useState<Tab>('Menu')
-  // First run (no profile yet) lands on Goals. A profile arriving by pull later just hides the notice.
-  useEffect(() => { if (profile === null) setTab('Goals') }, [profile === null])
+  // First run (no profile yet) lands on Profile, whose Goals section is the one that is unfolded.
+  // A profile arriving by pull later just hides the notice.
+  useEffect(() => { if (profile === null) setTab('Profile') }, [profile === null])
   return (
     <>
       <SyncBanner />
@@ -120,7 +121,7 @@ function Tabs() {
         {tab === 'Menu' && <MenuScreen />}
         {tab === 'Today' && <TodayScreen onGo={setTab} />}
         {tab === 'Progress' && <ProgressScreen />}
-        {tab === 'Goals' && <GoalsScreen />}
+        {tab === 'Profile' && <ProfileScreen />}
       </main>
       <TabBar tab={tab} onSelect={setTab} />
     </>

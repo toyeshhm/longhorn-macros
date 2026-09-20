@@ -1,6 +1,6 @@
 import { expect, test } from './fixtures'
 
-const SCREENS = ['Menu', 'Today', 'Progress', 'Goals'] as const
+const SCREENS = ['Menu', 'Today', 'Progress', 'Profile'] as const
 
 // A phone does not scroll sideways when something is too wide: it widens its own layout viewport and shrinks
 // everything to fit, so window.innerWidth staying at the viewport width is the tell that nothing overflowed.
@@ -17,7 +17,7 @@ test('mobile and screen reader basics: 320px layout, big text, dialogs, focus re
       - button "Menu"
       - button "Today"
       - button "Progress"
-      - button "Goals"
+      - button "Profile"
   `)
 
   // Custom food: every message is tied to the input it is about, not pooled at the foot of the form.

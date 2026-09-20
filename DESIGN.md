@@ -13,6 +13,18 @@ colors:
   riso-teal: "#00838A"
   riso-mustard: "#E0A800"
   over: "#9A3412"
+colorsNight:
+  paper: "#141A33"
+  paper-raised: "#1E2647"
+  paper-shade: "#0D1226"
+  riso-blue: "#8AA6EE"
+  ink: "#EFE8D8"
+  ink-deep: "#FFFDF6"
+  ink-soft: "#9AA3C6"
+  burnt-orange: "#FF9147"
+  riso-teal: "#46CFC6"
+  riso-mustard: "#F5CE5A"
+  over: "#FF8878"
 typography:
   display:
     fontFamily: "Bungee, Arial Black, Impact, sans-serif"
@@ -84,7 +96,10 @@ Every screen is a page of a two-ink risograph zine run off at the copy shop: fed
 
 Under the texture it is still a tool used standing in the J2 line with one thumb. The hero answers "how much is left today" at a glance; food rows put the name first and the portion second; state (over target, stale menu, sync failed) is always said in words, never only by ink. The system rejects the generic dark UI with a neon orange accent (rejected by the owner), MyFitnessPal clutter, SaaS card grids and the UT portal look.
 
-The theme is light only (`color-scheme: light`). A printed page does not invert; there is no dark mode.
+There are two presses of the same zine, never an inversion: the **day press** on warm stock and the **night press**
+on ink-navy stock. `:root[data-theme]` picks one, set by `src/ui/theme.ts` from the reader's choice (Light / Night /
+Match phone, default Match phone, kept per device in `localStorage`). Every component rule is written once against
+tokens; the night block re-inks the tokens and re-states nothing.
 
 **Key Characteristics:**
 - Two inks plus paper; two extra macro inks used only for carbs (teal) and fat (mustard). Protein prints in the blue drum as a solid fill, calories in the orange.
@@ -117,6 +132,26 @@ A two-ink riso palette on warm stock, with two extra macro inks that only ever m
 - **Paper Raised** (#FBF9F3): form boxes, buttons, the targets slip.
 - **Paper Shade** (#EDE7DA): banners.
 - **Over** (#9A3412): over-target amounts, errors, invalid fields (6.6:1). Always paired with words ("over", the error message).
+
+### The Night Press
+
+Same plates, different stock and inks. Dark navy stock (#141A33, raised #1E2647, shade #0D1226), cream linework and
+type (#EFE8D8, deep #FFFDF6, soft #9AA3C6 at 6.9:1). Every ink is lifted so it still prints: blue #8AA6EE (7.2:1),
+burnt orange #FF9147 (7.7:1), teal #46CFC6, mustard #F5CE5A, over #FF8878 (7.4:1). Nothing falls under 4.5:1 on any
+of the three stocks, and the blue plate carries stock-coloured type (7.2:1) exactly as it does by day.
+
+**Ink roles are unchanged by the press.** Calories orange, protein blue, carbs teal, fat mustard; blue is linework
+and the protein plate; orange is the second drum. What changes:
+
+- **`--blend`.** The second drum multiplies onto light stock and **screens** onto dark: ink on dark paper lightens
+  what it lands on. One token, swapped on the night root; no component re-states its blend mode.
+- **`--grain-strength`.** Dark specks on dark stock are mud, so the night grain tile is pale (`grain-night.svg`) and
+  runs at 0.28 against the day press's 0.4.
+- **The hand-inked art.** A CSS-referenced SVG cannot read a token, so every mark has a night twin next to it
+  (`rule-night.svg`, `chevron-night.svg`, `box-checked-night.svg`, …) and a `--mark-*` token picks the press. Draw
+  both, or draw neither: a day-only mark disappears on the night stock.
+- **`--orange-rgb` / `--paper-rgb`.** The off-register text-shadows and the sheet's paper veil are written as
+  `rgb(var(--…) / a)` so they follow the press at whatever alpha the component asked for.
 
 ### Named Rules
 **The Macro Ink Rule.** Calories are orange, protein blue, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
@@ -182,6 +217,24 @@ One slip of blue stock, gutter to gutter and then shrunk to its text (never pinn
 ### Chips (hall / day / meal / range / sex / goal)
 Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed.
 
+Day chips stack (`.chip-stack`): the numeric date over a smaller caps weekday ("9/19" / "SAT"). Never a relative word
+— "Today" is wrong on a phone left open past midnight and a bare weekday does not say which week. The chip's
+accessible name is the whole date ("Saturday, September 19"), carried by `aria-label` on the input, so the stack is a
+print decision and not an announcement. A chip with no `sub` keeps its bare text node: wrapping that label in a span
+puts the invisible input over the click target.
+
+### Hall hours line
+Under the hall chips: the state in words first (`Open until 2:00pm · reopens 4:30pm`, `Closed · opens 4:30pm`,
+`Closed today`, `Hours unavailable`), then today's windows in Soft Ink. Split windows are always printed in full;
+a window that runs past midnight keeps the hall open into the next calendar day. Parsing and wording live in
+`src/menu/hours.ts`; anything the feed writes in a way we cannot read is "unknown", never a guess and never a crash.
+
+### Profile sections
+Folded pages: a `<details>` per section with its `<h2>` inside the `<summary>`, so the heading is in the
+accessibility tree whether or not the page is unfolded, and the screen is never one run of unlabelled fields. Only
+Goals is unfolded on arrival. The fold marker is the hand-drawn chevron, turned 90 degrees when shut. The dining-hours
+week prints as one two-column table per hall (day, hours), which still fits a 320px page.
+
 ### Inputs
 Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`. Focus everywhere: 2.5px orange outline; on the blue toast plate it switches to paper (orange on blue is 1.75:1). Date inputs use a hand-drawn calendar (`ink/calendar.svg`) in place of the browser picker glyph.
 
@@ -195,10 +248,11 @@ Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per i
 
 - **Do** keep numbers the hero: one stamped numeral per screen at most.
 - **Do** say state in words: "over", "Couldn't reach UT dining", "changes waiting to sync".
-- **Do** check every new text color against paper at 4.5:1 with grain in mind.
+- **Do** check every new text color against paper at 4.5:1 with grain in mind, on **both** stocks.
 - **Do** let a mark grow with the user's text: reserve room with `min-height`, not `height`, and reflow a row before a track can collapse.
 - **Don't** put a clock on the only way to undo something, or `aria-label` on a paragraph (the role does not take a name; use a section).
-- **Don't** add dark mode or auto-invert.
+- **Don't** auto-invert. The night press is a second set of tokens, drawn on purpose; a filter over the day press is not it.
+- **Don't** add a colour, a blend mode or a CSS-referenced mark for one press only: both, or neither.
 - **Don't** use orange for text below 18px bold.
 - **Don't** use teal or mustard for anything but their macro, fill anything but protein with solid blue in a data mark, or show a macro ink without its name.
 - **Don't** pull icons from a library or draw marks with perfect primitives.

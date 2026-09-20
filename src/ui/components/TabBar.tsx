@@ -1,6 +1,6 @@
 import { TabIcon } from '../icons/TabIcons'
 
-export const TABS = ['Menu', 'Today', 'Progress', 'Goals'] as const
+export const TABS = ['Menu', 'Today', 'Progress', 'Profile'] as const
 export type Tab = (typeof TABS)[number]
 
 export function TabBar({ tab, onSelect }: { tab: Tab; onSelect: (t: Tab) => void }) {

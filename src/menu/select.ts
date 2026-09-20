@@ -1,9 +1,9 @@
 import type { HallId, MenuItem } from './feed'
 
-export const HALLS: readonly { id: HallId; label: string }[] = [
-  { id: 'J2', label: 'J2' },
-  { id: 'JCL', label: 'JCL' },
-  { id: 'Kins', label: 'Kins' },
+export const HALLS: readonly { id: HallId; label: string; full: string }[] = [
+  { id: 'J2', label: 'J2', full: 'J2 Dining' },
+  { id: 'JCL', label: 'JCL', full: 'Jester City Limits (JCL)' },
+  { id: 'Kins', label: 'Kins', full: 'Kins Dining' },
 ]
 
 export function groupByStation(items: readonly MenuItem[]): { station: string; items: MenuItem[] }[] {

@@ -8,7 +8,11 @@ function item(name: string, station: string): MenuItem {
 }
 
 test('HALLS lists the three dining halls', () => {
-  expect(HALLS).toEqual([{ id: 'J2', label: 'J2' }, { id: 'JCL', label: 'JCL' }, { id: 'Kins', label: 'Kins' }])
+  expect(HALLS).toEqual([
+    { id: 'J2', label: 'J2', full: 'J2 Dining' },
+    { id: 'JCL', label: 'JCL', full: 'Jester City Limits (JCL)' },
+    { id: 'Kins', label: 'Kins', full: 'Kins Dining' },
+  ])
 })
 
 test('groupByStation preserves feed order', () => {

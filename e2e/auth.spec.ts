@@ -8,8 +8,8 @@ test('create account, stay signed in across reload, log out', async ({ page }) =
 
   const tabs = page.getByRole('navigation', { name: 'Main' })
   await expect(tabs).toBeVisible()
-  // No profile yet: first run lands on Goals.
-  await expect(tabs.getByRole('button', { name: 'Goals' })).toHaveAttribute('aria-current', 'page')
+  // No profile yet: first run lands on Profile, with its Goals section unfolded.
+  await expect(tabs.getByRole('button', { name: 'Profile' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByText(/Set up your profile/)).toBeVisible()
 
   await page.reload()
@@ -17,7 +17,8 @@ test('create account, stay signed in across reload, log out', async ({ page }) =
 
   await tabs.getByRole('button', { name: 'Menu' }).click()
   await expect(tabs.getByRole('button', { name: 'Menu' })).toHaveAttribute('aria-current', 'page')
-  await tabs.getByRole('button', { name: 'Goals' }).click()
+  await tabs.getByRole('button', { name: 'Profile' }).click()
+  await page.getByRole('heading', { name: 'Account' }).click() // its section is folded shut
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
   await expect(tabs).toBeHidden()

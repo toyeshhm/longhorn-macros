@@ -1,8 +1,11 @@
+import { localDateKey } from '../dates'
 import { log } from '../log'
 import type { LocalStore } from '../sync/store'
 import { fetchFeed, parseFeed, type Menu } from './feed'
+import { fetchHours, parseHours, type Hours } from './hours'
 
 export interface MenuState { menu: Menu | null; stale: boolean; error: string | null; cachedAt: string | null }
+export interface HoursState { hours: Hours | null; stale: boolean; error: string | null }
 
 // The raw feed is cached (not the parsed Menu) so a parser fix applies to the cached copy too.
 export async function loadMenu(store: LocalStore, fetchFn: typeof fetch): Promise<MenuState> {
@@ -22,6 +25,28 @@ export async function loadMenu(store: LocalStore, fetchFn: typeof fetch): Promis
     } catch (cacheError) {
       log.error('menu.cache_unreadable', { error: String(cacheError) })
       return { menu: null, stale: false, error, cachedAt: null }
+    }
+  }
+}
+
+// Same shape as the menu cache, and for the same reason: the raw body is stored, so a parser fix applies to it too.
+export async function loadHours(store: LocalStore, fetchFn: typeof fetch): Promise<HoursState> {
+  const today = localDateKey(new Date())
+  try {
+    const body = await fetchHours(fetchFn)
+    const hours = parseHours(body, today)
+    await store.setMeta('hours', body)
+    return { hours, stale: false, error: null }
+  } catch (e) {
+    const error = String(e)
+    log.warn('hours.fetch_failed', { error })
+    const cached = await store.getMeta('hours')
+    if (cached === undefined) return { hours: null, stale: false, error }
+    try {
+      return { hours: parseHours(cached, today), stale: true, error }
+    } catch (cacheError) {
+      log.error('hours.cache_unreadable', { error: String(cacheError) })
+      return { hours: null, stale: false, error }
     }
   }
 }

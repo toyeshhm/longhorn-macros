@@ -93,7 +93,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         )}
       </section>
       {!targets && (
-        <p class="notice">No daily targets yet, so there's nothing to count down from. <button type="button" class="link" onClick={() => { onGo('Goals') }}>Set up your goals</button></p>
+        <p class="notice">No daily targets yet, so there's nothing to count down from. <button type="button" class="link" onClick={() => { onGo('Profile') }}>Set up your goals</button></p>
       )}
 
       <section class="macros" aria-label="Macros">
