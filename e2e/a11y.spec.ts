@@ -138,7 +138,7 @@ test('at 320px with 200% text nothing runs off the page and nothing overprints, 
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByText('Welcome! Set up your profile')).toHaveCount(0)
 
-  await page.getByRole('heading', { name: 'Appearance' }).click()
+  await page.getByRole('tab', { name: 'Appearance' }).click()
   await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio', { name: 'Español' }).check()
   await expect(page.locator('html')).toHaveAttribute('lang', 'es')
 

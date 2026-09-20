@@ -51,6 +51,8 @@ test('first-run profile → targets, manual override round trip, adaptive update
   await tabs.getByRole('button', { name: 'Tracker' }).click()
   await expect(calories).toContainText(' eaten of 2,000')
   await tabs.getByRole('button', { name: 'Profile' }).click()
+  // Profile opens on Achievements once there is a profile; Goals is one stamp away, and stays chosen from here on.
+  await page.getByRole('tab', { name: 'Goals' }).click()
   await page.getByLabel('Calories (kcal)').fill('')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Saved' })).toBeVisible()
@@ -146,6 +148,7 @@ test('adaptive toggle gates the update; Dismiss hides the card and keeps it', as
   await expect(card).toHaveCount(0)
 
   await tabs.getByRole('button', { name: 'Profile' }).click()
+  await page.getByRole('tab', { name: 'Goals' }).click()
   const toggle = page.getByLabel(/Adaptive TDEE/)
   await expect(toggle).not.toBeChecked()
   await toggle.check()

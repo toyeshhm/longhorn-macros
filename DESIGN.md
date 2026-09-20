@@ -197,7 +197,7 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 
 ### Hand-drawn marks
 - Tab icons: `src/ui/icons/TabIcons.tsx`, one per tab (Menu, Tracker, Health, Progress, Profile). Blue line always; orange plate prints only on the active tab, and its label gets an orange underline. **All five are an object drawn inside the same hand-ruled rectangular frame** — the menu card, the calendar, the gauge plate, the vitals card, the ID card — so the bar reads as one set of drawings rather than four drawings and a pictogram. Health was a stock heart-plus-ECG glyph with no frame and with halves that reflected onto each other to within 0.2 user units; it is a vitals card now, a pulse under a header rule with the plate on the header band. Five tabs leave 64px each on a 320px phone, so the bar's buttons carry no side padding and set their label a notch down: at the token's 16px gutters "Progress" wrapped onto three lines and pushed the bar over the page. At 200% text the labels break with `hyphens: auto`, not `overflow-wrap: anywhere`, so "Pro-greso" still reads as a word.
-- Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`.
+- Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`. Badge stamps: `src/ui/icons/Badges.tsx`, one hand-drawn mark per badge, never reused between two of them.
 - Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on the Tracker's empty state and Login; utensils on empty menu/search and on Health's What to eat; scale on no weigh-ins. A doodle's softer plates go through `--plate-k` like every other alpha plate (`.plate-soft`, `.plate-wash` in the stylesheet), never a bare SVG `opacity`: written as an attribute the utensils plate darkened to brown on the night stock instead of lifting, which is the exact failure the token exists for. An empty state wraps and its drawing may shrink — at 200% text the Spanish line could not fit beside a fixed 150px doodle and ran off the page, which widens the layout viewport and drags the fixed tab bar out with it.
 - CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, grain): `src/ui/ink/*.svg`. Colors are baked in as hex because an image cannot read CSS tokens; keep them in step with the tokens above.
 - **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things.
@@ -297,10 +297,37 @@ reads as "unknown", which the suggestions take as serving now, so the section pr
 unavailable" rather than quietly recommending food from a hall that is shut.
 
 ### Profile sections
-Folded pages: a `<details>` per section with its `<h2>` inside the `<summary>`, so the heading is in the
-accessibility tree whether or not the page is unfolded, and the screen is never one run of unlabelled fields. Only
-Goals is unfolded on arrival. The fold marker is the hand-drawn chevron, turned 90 degrees when shut. The dining-hours
-week prints as one two-column table per hall (day, hours), which still fits a 320px page.
+A row of printed section stamps over the page they open: Achievements, Goals, Account, Appearance, Dining hours,
+Data. The stamps are the same printed radio marks as every other one-of-N pick in the app (Courier 700, wobble
+border, blue plate with the orange offset when selected) rather than a second navigation bar, and the row is a
+real `role="tablist"`: one tab stop, arrow keys along it with a wrap, Home and End at its ends, `aria-selected`
+on the stamp and the panel named by it. Each panel keeps a visually-hidden `<h2>` so heading navigation still
+walks the tab's pages; the stamp above says the same word on screen.
+
+Which page opens: **Achievements**, unless this device was left on another one (`lm-profile-section` in
+`localStorage`, per device like the press and the language) — or unless there is no profile yet, because first
+run is the one arrival the app sends here on purpose, and it sends the reader to Goals. That decision is taken
+once per visit and then held, so saving the first profile does not move the page out from under the thumb.
+
+At 320px the row scrolls sideways with its scrollbar left on and a gutter at the end, so a stamp past the edge is
+visibly reachable; hiding the overflow is not an option. The dining-hours week still prints as one two-column
+table per hall (day, hours), which fits a 320px page.
+
+### Achievements
+Sixteen hand-inked **stamps** on a sheet, led by one plain line ("7 of 16 earned") and a note that says there is
+no streak to break. Earned stamps print in full: both drums, the card on raised paper with the hard orange
+offset plate, and the date they were earned underneath. Unearned ones are the same drawing left unprinted — key
+stroke in Soft Ink, no second drum, a dashed box, and honest progress under it ("4 of 7"). State is never ink
+alone: every card says its date or its count in words, so a new account reads as sixteen stamps waiting rather
+than as a broken screen.
+
+Each badge has its own mark in `src/ui/icons/Badges.tsx`, drawn under the same rules as every other mark: written
+by hand, nothing reused between two badges, no clip art and no emoji.
+
+The rules live in `src/achievements.ts`, pure and fully covered, and they follow PRODUCT.md's 2026-09-20 note:
+computed only from logged rows, weigh-ins and the profile (a badge whose rule cannot be checked from those is not
+there at all), never taken away, never a streak, and never paid for eating less — the cut badge is for landing on
+the plan, with a floor under it.
 
 ### Language
 Two languages, English and Spanish, chosen by a chip group in Profile > Appearance under the theme's: a language

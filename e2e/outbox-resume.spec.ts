@@ -14,7 +14,7 @@ test('outbox queued while signed out is pushed after sign-in', async ({ page }) 
   await page.getByRole('button', { name: 'Create account' }).click()
   const tabs = page.getByRole('navigation', { name: 'Main' })
   await expect(tabs).toBeVisible()
-  await page.getByRole('heading', { name: 'Account' }).click() // Profile's Account section is folded shut
+  await page.getByRole('tab', { name: 'Account' }).click() // Profile opens on its Goals section on first run
   await page.getByRole('button', { name: 'Log out' }).click()
   await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible()
 

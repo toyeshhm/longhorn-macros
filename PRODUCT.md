@@ -18,7 +18,20 @@ Handmade riso zine. The app should look printed and drawn by a person: two-ink r
 - MyFitnessPal: ads, clutter, dense menus, every screen shouting.
 - Generic SaaS dashboards: card grids, gradient accents, template feel, hero-metric blocks.
 - The official UT website: institutional portal look, heavy branding, bureaucratic layout.
-- Gamification: streaks, badges, confetti, guilt copy.
+- Pressure mechanics: streaks you can break, "don't lose your streak!" nudges, red marks for a missed day, confetti, guilt copy, anything that punishes a day off.
+
+## Achievements (changed 2026-09-20)
+Badges used to sit in the anti-references above, alongside streaks and confetti. The owner asked for them on
+2026-09-20, so badges are **in** and the rest of that line stays out. What changed is the mechanic, not the spirit:
+
+- Badges are **printed stamps for what has already happened**, earned from real logged data and never taken away.
+- Celebratory, never shaming. A badge says what was done; nothing on the screen says what was missed.
+- **No pressure mechanics.** No streak that can break, no countdown, no red mark on a day with nothing logged, no
+  nagging. A day off costs nothing and is never drawn.
+- **Nothing that rewards under-eating.** No "lowest calorie day", no badge for skipping a meal. A cut badge is for
+  landing on the plan, not under it.
+- Unearned badges print as faint unprinted stamps with honest progress ("4 of 7") — an empty sheet on a new
+  account reads as a sheet waiting to be printed, not as a scoreboard of failures.
 
 ## Design Principles
 - **Glanceable first.** Each screen answers one question at a glance (what's left today, what's being served, am I on pace) before offering detail.

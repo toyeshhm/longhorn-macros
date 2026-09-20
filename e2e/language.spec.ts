@@ -14,17 +14,14 @@ const signUp = async (page: Page): Promise<void> => {
   await expect(page.getByRole('navigation', { name: 'Main' })).toBeVisible()
 }
 
-// Unfolding by clicking the summary toggles it, so a second pass over the same section shuts it again. This
-// opens, whatever state it was in.
-const unfold = async (page: Page, heading: string): Promise<void> => {
-  await page.locator('details.profile-section')
-    .filter({ has: page.getByRole('heading', { name: heading, exact: true }) })
-    .evaluate((d) => { if (d instanceof HTMLDetailsElement) d.open = true })
+// The Profile tab's own sections are a tablist: opening one is selecting its stamp.
+const openSection = async (page: Page, name: string): Promise<void> => {
+  await page.getByRole('tab', { name, exact: true }).click()
 }
 
 const toSpanish = async (page: Page): Promise<void> => {
   await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Profile' }).click()
-  await page.getByRole('heading', { name: 'Appearance' }).click()
+  await openSection(page, 'Appearance')
   await page.getByRole('radiogroup', { name: 'Language' }).getByRole('radio', { name: 'Español' }).check()
   await expect(page.locator('html')).toHaveAttribute('lang', 'es')
 }
@@ -56,9 +53,10 @@ test('the app switches to Spanish, keeps the choice per device, and tells the do
       - button "Progreso"
       - button "Perfil"
   `)
-  for (const name of ['Objetivos', 'Cuenta', 'Apariencia', 'Horarios', 'Datos']) {
-    await expect(page.getByRole('heading', { name, exact: true })).toBeVisible()
+  for (const name of ['Logros', 'Objetivos', 'Cuenta', 'Apariencia', 'Horarios', 'Datos']) {
+    await expect(page.getByRole('tab', { name, exact: true })).toBeVisible()
   }
+  await openSection(page, 'Objetivos')
   await expect(page.getByLabel('Año de nacimiento')).toBeVisible()
 
   // Per device, like the press: it outlives a reload and never goes to the server.
@@ -68,10 +66,10 @@ test('the app switches to Spanish, keeps the choice per device, and tells the do
 
   // And back again, so the switch is not a one-way door for a reader who taps it by accident.
   await page.getByRole('navigation', { name: 'Principal' }).getByRole('button', { name: 'Perfil' }).click()
-  await page.getByRole('heading', { name: 'Apariencia' }).click()
+  await openSection(page, 'Apariencia')
   await page.getByRole('radiogroup', { name: 'Idioma' }).getByRole('radio', { name: 'English' }).check()
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
-  await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Appearance' })).toBeVisible()
 })
 
 test('the app still prints, in English, when the device blocks storage', async ({ page, context }) => {
@@ -81,15 +79,15 @@ test('the app still prints, in English, when the device blocks storage', async (
   await signUp(page)
   await expect(page.locator('html')).toHaveAttribute('lang', 'en')
   await toSpanish(page) // applied, just not remembered
-  await expect(page.getByRole('heading', { name: 'Apariencia' })).toBeVisible()
+  await expect(page.getByRole('tab', { name: 'Apariencia' })).toBeVisible()
 })
 
 test('Spanish moves the numbers, the dates and the clock, and leaves UT’s own words alone', async ({ page }) => {
   await signUp(page)
   await toSpanish(page)
 
-  // Targets, so the Tracker has a figure to count down from and a decimal to mark. The Goals page is the one
-  // already unfolded, so there is nothing to open first.
+  // Targets, so the Tracker has a figure to count down from and a decimal to mark.
+  await openSection(page, 'Objetivos')
   const draft: Profile = {
     sex: 'male', birthYear: 2006, heightIn: 70, activity: 'moderate', goal: 'maintain', rateLbPerWeek: 0,
     override: null, adaptiveEnabled: true, tdeeEstimate: null, tdeeUpdatedOn: null, tdeePrevious: null,
@@ -139,7 +137,7 @@ test('the longest Spanish lines still fit a 320px phone, in both presses', async
 
   for (const theme of ['light', 'night'] as const) {
     await tabs.getByRole('button', { name: 'Perfil' }).click()
-    await unfold(page, 'Apariencia')
+    await openSection(page, 'Apariencia')
     await page.getByRole('radiogroup', { name: 'Tema' })
       .getByRole('radio', { name: theme === 'light' ? 'Claro' : 'Noche' }).check()
     await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
@@ -150,11 +148,13 @@ test('the longest Spanish lines still fit a 320px phone, in both presses', async
       expect(await page.evaluate(layoutWidth), `${s} in ${theme} at 320px`).toBe(320)
     }
 
-    // Every folded page open at once, which is where the long notes are, and the widest of them all is the one
-    // that explains why the food names did not move.
+    // Every section of the Profile tab in turn, which is where the long notes are, and the widest of them all
+    // is the one that explains why the food names did not move.
     await tabs.getByRole('button', { name: 'Perfil' }).click()
-    for (const name of ['Cuenta', 'Horarios', 'Datos']) await unfold(page, name)
-    expect(await page.evaluate(layoutWidth), `Profile unfolded in ${theme} at 320px`).toBe(320)
+    for (const name of ['Logros', 'Cuenta', 'Horarios', 'Datos']) {
+      await openSection(page, name)
+      expect(await page.evaluate(layoutWidth), `Profile > ${name} in ${theme} at 320px`).toBe(320)
+    }
   }
 
   // The reader's text size doubled, in Spanish: still nothing hanging off the side.
