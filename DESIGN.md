@@ -231,7 +231,9 @@ One slip of blue stock, gutter to gutter and then shrunk to its text (never pinn
 ### Chips (hall / day / meal / chart view / range / sex / goal / theme / language)
 Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. **Every one-of-N pick in the app is a stamp**, including the chart view, which used to be a native `<select>` printed directly above the range stamps — two idioms for the same job, one on top of the other.
 
-Two behaviours. A **browsing strip** (hall, day, meal) scrolls horizontally, full-bleed: its length is the feed's, not a set the reader has to see all of. A **settings group** (`.chips-wrap`: chart view, range, sex, goal, theme, language) wraps to a second row instead, and its stamps give up `nowrap`. The strip hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish — was a setting with no cue that it existed at all. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
+Two behaviours. A **browsing strip** (hall, day, meal) scrolls horizontally, full-bleed: its length is the feed's, not a set the reader has to see all of. A **settings group** (`.chips-wrap`: chart view, range, sex, goal, theme, language) wraps to a second row instead, and its stamps give up `nowrap`.
+
+The two are also **printed at different sizes**, and only the strips are small: three of them stack on the Menu over the thing the screen is for, where a settings group is read once on its own page. A strip's stamp is 32px of ink at 0.85rem, and **the target is still 44x44** — carried by the radio itself (`block-size: 44px`, centred on the stamp, and `inset-inline: -1.5px` for the stamp's own border, since `inset` lands on the padding box and a 44px stamp was otherwise a 41px target). It is the input and not a pseudo-element because a transparent box laid over the control gets clicks reported as intercepted. The strip's 6px padding is exactly the 6px the target overhangs each way, so the scroller contains it instead of clipping it, and 6px between strips leaves two rows' targets touching rather than overlapping. Stated as a size, not as negative insets: insets made the overhang lopsided by the border's width and hung the last pixel of the meal strip under the sticky station header, which paints over it. The strip hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish — was a setting with no cue that it existed at all. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
 
 Day chips stack (`.chip-stack`): the numeric date over a smaller caps weekday ("9/19" / "SAT"). Never a relative word
 — "Today" is wrong on a phone left open past midnight and a bare weekday does not say which week. The chip's
@@ -239,6 +241,26 @@ accessible name starts with what the chip prints and then spells it out ("9/19 S
 carried by `aria-label` on the input. It must start with the visible text: a name that only spelled the date out
 failed WCAG 2.5.3, and "tap 9/19" and "tap Sat" both missed for anyone driving the app by voice. A chip with no `sub` keeps its bare text node: wrapping that label in a span
 puts the invisible input over the click target.
+
+### Menu head
+Everything above the first food is on a budget, because the food is what the screen is for. It was 500px of a
+390x844 phone — 59% of the viewport, four food rows — and it is 376px (44.6%, five rows) across every hall, day
+and meal the feed offers. `e2e/menu.spec.ts` holds it: the fixed part (search row, UT-names note, three strips)
+is asserted at 350px, and the hours line is measured out of that number because its length is the hall's.
+
+Two changes bought it, and both are cuts rather than compressions. The search field and the **`+ Custom food`
+stamp share one line** (`.menu-find`): both are how you reach a food that is not in front of you, and apart they
+were two blocks of chrome between the search and the filters belonging to neither. The field's basis is `10rem`
+and not `12rem` because the Spanish stamp is "Alimento propio" — at 12rem the row wrapped on a 390px phone in
+Spanish and cost exactly what putting them on one line saved. At 320px, and at the reader's larger text, it wraps
+on purpose. Then the three strips print small (see Chips), the hours line is set to match them at 0.8rem instead
+of 0.9, and the first station's header drops its 18px top margin, which only ever existed to separate it from the
+station above it.
+
+Hall, day and meal stay **three strips, not two**. Putting hall and meal on one row is the obvious saving and it
+does not survive the measurement: hall plus meal is ~416px of stamps against 358px of page, so "Dinner" sits off
+the right edge of a strip whose scrollbar is hidden — the exact failure `.chips-wrap` exists to prevent. A row
+saves 50px and hides a meal; the stamps themselves gave up 30px and hide nothing.
 
 ### Hall hours line
 Under the hall chips, for **the day the chips have selected** — never today's status over another day's menu. Today

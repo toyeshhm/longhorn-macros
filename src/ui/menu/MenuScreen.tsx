@@ -141,9 +141,15 @@ export function MenuScreen() {
 
   return (
     <div class="menu">
-      <input type="search" enterKeyHint="search" class="search" aria-label={t.t('menu.searchLabel')}
-        placeholder={t.t('menu.searchPlaceholder')} value={query}
-        onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
+      {/* Both ways to reach a food that is not in front of you, on one line: the field for one UT already knows,
+          the stamp for one it doesn't. Apart they were two blocks of chrome between the search and the filters,
+          belonging to neither. They wrap back to two lines at 320px and at the reader's larger text. */}
+      <div class="menu-find">
+        <input type="search" enterKeyHint="search" class="search" aria-label={t.t('menu.searchLabel')}
+          placeholder={t.t('menu.searchPlaceholder')} value={query}
+          onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
+        <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />{t.t('food.custom')}</button>
+      </div>
       {/* Said once, here, where a reader in Spanish first meets a screen full of English dish names. */}
       <p class="muted ut-names">{t.t('menu.utNames')}</p>
       {/* ponytail: announced on every keystroke, no debounce — a polite region only speaks once typing pauses. */}
@@ -159,7 +165,6 @@ export function MenuScreen() {
       <p class="visually-hidden" role="status">
         {hoursText === null ? '' : `${hall} ${hoursText.head}${hoursText.detail === null ? '' : `, ${hoursText.detail}`}`}
       </p>
-      <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />{t.t('food.custom')}</button>
 
       {stale && cachedAt !== null && (
         <Banner tone="info">{t.t('menu.stale', { ago: savedAgo(cachedAt, now, t) })}</Banner>

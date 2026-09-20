@@ -187,6 +187,57 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
   await expect(page.getByRole('dialog').getByLabel('Meal')).toHaveValue(last.name.toLowerCase())
 })
 
+// The owner's complaint was measurable and so is the fix: on a 390x844 phone the hall, day and meal strips, the
+// hours line and the search ate 500px — 59% of the viewport — before a single food. This holds the budget.
+//
+// It is asserted in two halves because only one of them is the layout's. `chrome` is everything above the first
+// food row except the hours line: the search row, the UT-names note and the three stamp strips, which are fixed
+// and came to 342px across all 56 hall/day/meal combinations the live feed offered. The hours line is content
+// whose length is the hall's — one line for a hall with one service window, two or three for a hall with more —
+// so it is measured out rather than being allowed to read as the filters bloating again.
+test('the filter block stays out of the way of the food', async ({ page }) => {
+  // The phone the owner measured on, at its full 844: Playwright's own iPhone 13 is 390x664, which is that
+  // screen less Safari's chrome, and the budget below is quoted against the screen.
+  await page.setViewportSize({ width: 390, height: 844 })
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  await page.getByRole('navigation', { name: 'Main' }).getByRole('button', { name: 'Menu' }).click()
+  await expect(page.locator('section.station button.food-row').first()).toBeVisible()
+
+  const m = await page.evaluate(() => {
+    const rows = [...document.querySelectorAll('section.station button.food-row')]
+    const first = rows[0]?.getBoundingClientRect().top ?? 0
+    const hours = document.querySelector('p.hall-hours')?.getBoundingClientRect().height ?? 0
+    const tabbar = document.querySelector('.tabbar')?.getBoundingClientRect().height ?? 0
+    const targets = [...document.querySelectorAll('.menu fieldset.chips .chip input')].map((e) => e.getBoundingClientRect())
+    const overlapping = targets.filter((a, i) => targets.some((b, j) =>
+      i !== j && a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom))
+    return {
+      viewport: window.innerHeight,
+      firstFood: Math.round(first),
+      chrome: Math.round(first - hours),
+      // Fully printed and clear of the tab bar: a row half under it is not a row you can read or tap.
+      rowsVisible: rows.filter((r) => r.getBoundingClientRect().bottom <= window.innerHeight - tabbar).length,
+      undersized: targets.filter((r) => r.height < 44 || r.width < 44).length,
+      overlapping: overlapping.length,
+      strips: [...document.querySelectorAll('.menu fieldset.chips')].map((f) => Math.round(f.getBoundingClientRect().height)),
+    }
+  })
+
+  expect(m.chrome, 'px above the first food row, less the hours line (was 456)').toBeLessThanOrEqual(350)
+  // 0.47, not 0.45: the measured worst case is 376px of 844 (44.6%), and the margin is the third line a hall
+  // with three service windows can add to the hours. The regression this guards against is 59%.
+  expect(m.firstFood, 'px above the first food row (was 500 of 844)').toBeLessThanOrEqual(Math.round(m.viewport * 0.47))
+  expect(m.rowsVisible, 'food rows fully printed above the tab bar without scrolling').toBeGreaterThanOrEqual(3)
+  // The stamps print at 32px; their targets do not shrink with them, and shrinking the strips must never let two
+  // rows' targets overlap into each other.
+  expect(m.strips.every((h) => h <= 44), `strip heights ${m.strips.join(',')}`).toBe(true)
+  expect(m.undersized, 'chip targets under 44x44 CSS px').toBe(0)
+  expect(m.overlapping, 'chip targets overlapping another chip').toBe(0)
+})
+
 test.describe(() => {
   test.use({ allowFailedLoads: true }) // the feed request fails offline on purpose
 

@@ -91,12 +91,14 @@
 .login form, .login label { display: flex; flex-direction: column; gap: 14px; }
 .login label { gap: 4px; font-weight: 700; }
 
-/* Day chips print the date over its weekday; the full date is the chip's accessible name. */
-.chip-stack { flex-direction: column; justify-content: center; gap: 0; padding: 4px 12px; line-height: 1.15; }
-.chip-sub { font-weight: 400; font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; }
+/* Day chips print the date over its weekday; the full date is the chip's accessible name. The two lines fit the
+   browsing strip's 32px of ink on their own, so the stamp carries no vertical padding of its own to fight it. */
+.chip-stack { flex-direction: column; justify-content: center; gap: 0; padding: 0 10px; line-height: 1.15; }
+.chip-sub { font-weight: 400; font-size: 0.7rem; letter-spacing: 0.06em; text-transform: uppercase; }
 
-/* Hall hours: state first in words, then today's windows. */
-.hall-hours { display: flex; flex-wrap: wrap; gap: 2px 10px; margin: 8px 0 0; font-size: 0.9rem; }
+/* Hall hours: state first in words, then today's windows. Set to match the stamps it sits under rather than the
+   body text, so the filter block reads as one small block over the food rather than three sizes of chrome. */
+.hall-hours { display: flex; flex-wrap: wrap; gap: 0 8px; margin: 6px 0 0; font-size: 0.8rem; line-height: 1.35; }
 .hall-hours strong { color: var(--ink-deep); }
 
 /* Profile: a row of section stamps over the page they open. The stamps are the same printed radio marks as every

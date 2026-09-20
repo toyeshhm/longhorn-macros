@@ -239,10 +239,19 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 /* Menu */
 .menu .search::-webkit-search-cancel-button { appearance: none; } /* a geometric × next to the hand-inked glass */
 .menu .search { width: 100%; padding-left: 42px; background: var(--paper-raised) var(--mark-search) no-repeat 12px center / 22px; }
+/* The field takes the room that is left; `10rem` is the basis it refuses to go under, so at 320px and at the
+   reader's larger text the stamp drops to its own line rather than squeezing the field down to its glass. It is
+   10 and not 12 because the Spanish stamp is "Alimento propio": at a 12rem basis the row wrapped on a 390px
+   phone in Spanish and the two lines cost exactly what putting them on one was meant to save. */
+.menu-find { display: flex; flex-wrap: wrap; align-items: center; gap: 2px 10px; }
+.menu-find .search { flex: 1 1 10rem; min-inline-size: 0; }
 /* Said once, under the search box: UT's own words are printed in English whatever the app is set to. */
-.ut-names { margin: 6px 0 0; font-size: 0.8rem; }
-.menu > button.link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; min-height: 44px; }
-.menu > button.link .mark { width: 18px; height: 18px; }
+.ut-names { margin: 4px 0 0; font-size: 0.8rem; }
+/* `0 1 auto`, never `none`: alone on its wrapped line at 320px the stamp is the only item, so nothing else can
+   give, and a stamp that refuses to shrink hangs off the page — at 200% text "Alimento propio" is 310px of an
+   288px line, which widens the layout viewport and drags the fixed tab bar out with it on every screen. */
+.menu-find > button.link { flex: 0 1 auto; display: inline-flex; align-items: center; gap: 4px; min-height: 44px; min-inline-size: 0; }
+.menu-find > button.link .mark { width: 18px; height: 18px; flex: none; }
 .chips { display: flex; gap: 8px; overflow-x: auto; min-inline-size: 0; margin: 10px -16px 0; padding: 4px 16px 6px; border: 0; scrollbar-width: none; }
 /* A closed set of settings (theme, language, sex, goal, chart view, range) wraps instead of scrolling. The strip
    hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish —
@@ -264,11 +273,30 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .chip:has(input:checked):active { background-color: var(--ink); }
 .chip:has(input:focus-visible) { outline: 2.5px solid var(--orange); outline-offset: 2px; }
 
+/* Browsing strips only (hall, day, meal): three of them stack on the Menu above the food, so their stamps print
+   small — 32px of ink, not 44. The target is still 44x44, and it is the input that carries it: the radio is what
+   a pointer, a screen reader and Playwright all act on, so stretching it 6px past the stamp's ink adds the room
+   without putting a transparent box over the control (a pseudo-element there reports clicks as intercepted). The
+   strip's own 6px padding is exactly that overhang, so the scroller contains it rather than clipping it, and the
+   6px between strips keeps two rows' targets touching instead of overlapping. Settings groups (.chips-wrap) keep
+   the full-size stamp: they are read once in Profile, not stacked three deep over a list. */
+.chips:not(.chips-wrap) { gap: 6px; margin-top: 6px; padding-block: 6px; }
+.chips:not(.chips-wrap) .chip { min-height: 32px; min-width: 44px; justify-content: center; padding: 0 10px; font-size: 0.85rem; }
+/* Sized, not inset from the edges: `inset` resolves against the padding box, so the stamp's own 1.5px border
+   made the overhang lopsided and hung the target's last pixel under the sticky station header, which paints over
+   it. A stated 44px centred on the stamp overhangs exactly 6px each way whatever the border does, which is what
+   the strip's padding is. Sideways the -1.5px is that border, so a 44px stamp is a 44px target and not a 41px
+   one; it eats 3px of the 6px between stamps and never reaches the next. */
+.chips:not(.chips-wrap) .chip input { block-size: 44px; inset-block: calc(50% - 22px) auto; inset-inline: -1.5px; }
+
 .station h2 {
   position: sticky; top: 0; z-index: 2; margin: 18px 0 0; padding: 10px 0 8px;
   font-family: var(--display); font-weight: 400; font-size: 0.95rem; letter-spacing: 0.01em; color: var(--ink);
   background: var(--paper) var(--mark-rule) no-repeat bottom / 100% 6px;
 }
+/* The gap over a station header separates it from the station before it. The first one has nothing above it but
+   the filters, which set their own. */
+.station:first-of-type h2 { margin-top: 0; }
 .food-list { list-style: none; margin: 0; padding: 0; }
 .food-row {
   display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; padding: 10px 0;
