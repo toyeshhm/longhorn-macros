@@ -96,13 +96,15 @@ Every screen is a page of a two-ink risograph zine run off at the copy shop: fed
 
 Under the texture it is still a tool used standing in the J2 line with one thumb. The hero answers "how much is left today" at a glance; food rows put the name first and the portion second; state (over target, stale menu, sync failed) is always said in words, never only by ink. The system rejects the generic dark UI with a neon orange accent (rejected by the owner), MyFitnessPal clutter, SaaS card grids and the UT portal look.
 
-There are two presses of the same zine, never an inversion: the **day press** on warm stock and the **night press**
-on ink-navy stock. `:root[data-theme]` picks one, set by `src/ui/theme.ts` from the reader's choice (Light / Night /
-Match phone, default Match phone, kept per device in `localStorage`). Every component rule is written once against
-tokens; the night block re-inks the tokens and re-states nothing.
+There are **six presses** of the same zine, never an inversion of one another: day, night, cherry, newsprint,
+blueprint and meadow (§2). `data-theme` on the root names the one that is running, and `src/ui/theme.ts` writes
+that press's whole token set onto the root element from the reader's choice (a press, or Match phone, which runs
+the press they named for each of the phone's two settings; default Match phone on day and night, kept per device
+in `localStorage`). Every component rule is written once against tokens; a press is a list of inks and re-states
+nothing.
 
 **Key Characteristics:**
-- Two inks plus paper; two extra macro inks used only for carbs (teal) and fat (mustard). Protein prints in the blue drum as a solid fill, calories in the orange.
+- Two inks plus paper on every press; two extra macro inks used only for carbs (teal) and fat (mustard). Protein prints in the first drum as a solid fill, calories in the second.
 - Misregistration is the signature: orange plate offset 1.5 to 3px from the blue.
 - Hand-drawn SVG for every mark; no icon library, no stock primitives.
 - Motion is rare: the "line boil" on doodles, the sheet slide, the toast. Reduced motion stops all of them, plus the tab plate fade.
@@ -111,7 +113,9 @@ tokens; the night block re-inks the tokens and re-states nothing.
 
 ## 2. Colors
 
-A two-ink riso palette on warm stock, with two extra macro inks that only ever mean one nutrient each.
+A two-ink riso palette, with two extra macro inks that only ever mean one nutrient each. The roles below are
+named on the **day press**, which is the run the app ships on; §"The Presses" lists what each of the other five
+inks them in, and every role is the same on all six.
 
 ### Primary
 - **Federal Blue** (#2B4C9B): linework, bar outlines' hatch, chart dots, primary buttons, selected chips, toast. Also the protein ink, always as a solid fill (never as a line), so it stays distinct from blue hatch and type.
@@ -133,40 +137,92 @@ A two-ink riso palette on warm stock, with two extra macro inks that only ever m
 - **Paper Shade** (#EDE7DA): banners.
 - **Over** (#9A3412): over-target amounts, errors, invalid fields (6.6:1). Always paired with words ("over", the error message).
 
-### The Night Press
+### The Presses
 
-Same plates, different stock and inks. Dark navy stock (#141A33, raised #1E2647, shade #0D1226), cream linework and
-type (#EFE8D8, deep #FFFDF6, soft #9AA3C6 at 6.9:1). Every ink is lifted so it still prints: blue #8AA6EE (7.2:1),
-burnt orange #FF9147 (7.7:1), teal #46CFC6, mustard #F5CE5A, over #FF8878 (7.4:1). Nothing falls under 4.5:1 on any
-of the three stocks, and the blue plate carries stock-coloured type (7.2:1) exactly as it does by day.
+Six of them. A press is **one two-ink run on one stock**, and each is a different run, not a hue-rotate of the
+day press: different paper, different drums, different grain, and where it earns it a different stock texture.
+They live in one table in `src/theme.ts`, which is the only place any ink in the app is written down.
 
-**Ink roles are unchanged by the press.** Calories orange, protein blue, carbs teal, fat mustard; blue is linework
-and the protein plate; orange is the second drum. What changes:
+| Press | Stock | First drum (linework, protein) | Second drum (overprint, calories) | Carbs | Fat | Grain |
+| --- | --- | --- | --- | --- | --- | --- |
+| **Day** | warm cream `#F7F3EA` | federal blue `#2B4C9B` | burnt orange `#BF5700` | teal `#00838A` | mustard `#E0A800` | dark specks, 0.4 |
+| **Night** | ink navy `#141A33` | lifted blue `#8AA6EE` | lifted orange `#FF9147` | `#46CFC6` | `#F5CE5A` | pale specks, 0.1 |
+| **Cherry** | bright white `#FCFBFD` | federal blue `#2B4C9B` | fluorescent pink `#DB0068` | `#00767E` | `#C89200` | dark specks, 0.3 |
+| **Newsprint** | tan `#E6DCC4` | graphite `#4A453C` | muted red `#A52E1E` | `#10585A` | `#9A7415` | coarse dark specks, 0.55 |
+| **Blueprint** | deep navy `#0B2039` | cyan `#5FC9EA` | chalk `#F7EFDC` | mint `#63E0B4` | amber `#EBB94F` | a ruled drafting grid, 0.12 |
+| **Meadow** | pale sage `#E7EDE0` | deep green `#1F5B3A` | ochre `#A0651B` | `#17697E` | `#D9A800` | dark specks, 0.35 |
+
+**Ink roles are the same on every press.** Calories are the second drum, protein the first, carbs teal, fat
+mustard. The first drum is all linework, every hand stroke and the solid protein plate; the second is the
+overprint, every offset plate and the calories ink. **`--blue` and `--orange` are plate names, not colour
+names** — on cherry the second drum is pink and on blueprint it is chalk. The tokens keep those names because
+every component rule in the stylesheet is written once against the plate, and renaming sixty call sites buys
+nothing a comment does not.
+
+Fat is the one ink allowed under 3:1 on its stock, because it is the one ink that always carries a first-drum
+outline; the outline is what has to clear 3:1, and the test checks it there.
+
+### What a new press has to do
+
+**Define the whole token set, and pass the contrast check.** Both are enforced, not asked for:
+
+1. `Press` in `src/theme.ts` has no optional fields, so a press that leaves anything out is a compile error.
+2. `tests/theme.test.ts` measures every text token against every one of its three stocks with the grain
+   composited, and every macro ink and the focus ring against its paper. Under 4.5:1 for text or 3:1 for a
+   boundary and `make check` fails.
+3. `e2e/press.spec.ts` measures the same thing on **rendered pixels** — the grain layer really painted over the
+   text, the second drum really multiplied or screened onto the stock — on body text and on the calories fill,
+   for every press. The tokens alone read about 17% high on a light stock, which is what the grain costs.
+4. `public/theme-boot.js` needs the press's stock and scheme, and `tests/theme.test.ts` fails the moment its
+   table drifts from the one in `src/theme.ts`.
+
+Measured, for the record: body text runs 5.4:1 (meadow) to 8.2:1 (blueprint) and the calories fill 4.1:1
+(meadow) to 14.6:1 (blueprint), on rendered pixels.
+
+### What changes with the press, and what does not
 
 - **When the press is chosen.** `public/theme-boot.js` runs blocking in `<head>`, before the bundle that carries
-  the stylesheet: the press is on the root element at first paint, so a Night reader never gets a screenful of cream
-  stock while 300KB of JavaScript parses. `src/ui/theme.ts` owns the choice from then on.
+  the stylesheet: the stock is on the root element at first paint, so a Night reader never gets a screenful of
+  cream while 300KB of JavaScript parses. It carries one line per press — stock and scheme — and nothing else,
+  because nothing but the stock is painted before the bundle mounts the app. `src/ui/theme.ts` owns the press
+  from then on and writes the rest of the token set onto the root.
 - **`--blend`.** The second drum multiplies onto light stock and **screens** onto dark: ink on dark paper lightens
-  what it lands on. One token, swapped on the night root; no component re-states its blend mode.
-- **`--grain-strength`.** Dark specks on dark stock are mud, so the night grain tile is pale (`grain-night.svg`) —
-  and pale specks on near-black stock are a far bigger excursion than dark specks on cream, so the night press runs
-  at **0.1** against the day press's 0.4. Measured over their own stocks those match (1.18:1 vs 1.14:1 speckle
-  contrast); the 0.28 it started at read as sensor noise over every flat navy area.
-- **The hand-inked art.** A CSS-referenced SVG cannot read a token, so every mark has a night twin next to it
-  (`rule-night.svg`, `chevron-night.svg`, `box-checked-night.svg`, …) and a `--mark-*` token picks the press. Draw
-  both, or draw neither: a day-only mark disappears on the night stock.
+  what it lands on. Derived from the press's `scheme`; no component re-states its blend mode.
+- **`--grain-strength`, and the tile itself.** Dark specks on dark stock are mud, so a dark press's speck colour
+  is pale — and pale specks on near-black stock are a far bigger excursion than dark specks on cream, so night
+  runs at **0.1** against day's 0.4. Measured over their own stocks those match (1.18:1 vs 1.14:1 speckle
+  contrast); the 0.28 it started at read as sensor noise over every flat navy area. Newsprint runs the other way:
+  0.55 at a coarser frequency on a bigger tile, because that is what newsprint is. Blueprint's tile is not
+  turbulence at all, it is a ruled 44px drafting grid.
+- **`--rule-weight`.** Every hand-ruled stroke is multiplied by it. Newsprint is 1.35; a smooth stock is 1.
+- **The hand-inked art.** See below: one copy of the path data, re-inked per press.
 - **`--orange-rgb` / `--paper-rgb`.** The off-register text-shadows and the sheet's paper veil are written as
   `rgb(var(--…) / a)` so they follow the press at whatever alpha the component asked for.
-- **`--plate-k`.** An alpha plate mixes toward the stock, so the same orange that *lifts* on cream *darkens* on navy
-  and prints brown — the opposite of what `--blend: screen` states. Every offset plate's alpha is written
-  `calc(a * var(--plate-k))`, 1 by day and 1.7 at night, so the plate stays the lifted orange on both stocks.
-- **`--veil`.** The sheet's paper veil, `calc(1 - var(--grain-strength))`, so its grain equals the page layer's on
-  either press instead of being pinned to the day press's 0.6.
+- **`--plate-k`.** An alpha plate mixes toward the stock, so the same orange that *lifts* on cream *darkens* on
+  navy and prints brown — the opposite of what `--blend: screen` states. Every offset plate's alpha is written
+  `calc(a * var(--plate-k))`, 1 on light stock and 1.7 on dark, so a plate stays lifted on both.
+- **`--veil`.** The sheet's paper veil, `1 - grain-strength`, so its grain equals the page layer's on any press.
+
+### The marks are drawn once, not once per press
+
+A CSS-referenced SVG cannot read a custom property: it is a separate document with no access to the page's
+tokens. The night press solved that with nine duplicate `*-night.svg` files. Six presses that way is
+**fifty-four files of the same path data**, drifting apart one hand-edit at a time, so that is not what happens.
+
+The path data lives once in `src/ink.ts` and the press's own inks are substituted into it, producing a
+`url("data:image/svg+xml,…")` per mark that `src/ui/theme.ts` writes onto the root with the rest of the token
+set. `src/ui/ink/` is gone. Six presses cost nine template strings, and `tests/ink.test.ts` fails if any mark
+prints a hex that is not one of the running press's own.
+
+Inlining them as Preact components was the first idea and it does not work for six of the nine: a `<select>`'s
+chevron, a checkbox, `::-webkit-calendar-picker-indicator` and the fixed grain layer are painted by the browser,
+with no element to put an `<svg>` in. A mark that arrives with the bundle arrives with the screen it is drawn on,
+because this is a single-page app and nothing but the stock is painted before the bundle parses.
 
 ### Named Rules
 **The Macro Ink Rule.** Calories are orange, protein blue, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
 
-**The Two Drum Rule.** Anything decorative is blue or orange. The macro inks are data, not decoration. Blue as protein data is always a solid plate; blue as decoration is always a line or hatch.
+**The Two Drum Rule.** Anything decorative is the first drum or the second. The macro inks are data, not decoration. The first drum as protein data is always a solid plate; as decoration it is always a line or hatch.
 
 ## 3. Typography
 
@@ -199,7 +255,7 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 - Tab icons: `src/ui/icons/TabIcons.tsx`, one per tab (Menu, Tracker, Health, Progress, Profile). Blue line always; orange plate prints only on the active tab, and its label gets an orange underline. **All five are an object drawn inside the same hand-ruled rectangular frame** — the menu card, the calendar, the gauge plate, the vitals card, the ID card — so the bar reads as one set of drawings rather than four drawings and a pictogram. Health was a stock heart-plus-ECG glyph with no frame and with halves that reflected onto each other to within 0.2 user units; it is a vitals card now, a pulse under a header rule with the plate on the header band. Five tabs leave 64px each on a 320px phone, so the bar's buttons carry no side padding and set their label a notch down: at the token's 16px gutters "Progress" wrapped onto three lines and pushed the bar over the page. At 200% text the labels break with `hyphens: auto`, not `overflow-wrap: anywhere`, so "Pro-greso" still reads as a word.
 - Arrows, close, plus, minus, swatches: `src/ui/icons/Marks.tsx`. Badge stamps: `src/ui/icons/Badges.tsx`, one hand-drawn mark per badge, never reused between two of them.
 - Doodles: `src/ui/icons/Doodles.tsx`. Bowl (line boil) on the Tracker's empty state and Login; utensils on empty menu/search and on Health's What to eat; scale on no weigh-ins. A doodle's softer plates go through `--plate-k` like every other alpha plate (`.plate-soft`, `.plate-wash` in the stylesheet), never a bare SVG `opacity`: written as an attribute the utensils plate darkened to brown on the night stock instead of lifting, which is the exact failure the token exists for. An empty state wraps and its drawing may shrink — at 200% text the Spanish line could not fit beside a fixed 150px doodle and ran off the page, which widens the layout viewport and drags the fixed tab bar out with it.
-- CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, grain): `src/ui/ink/*.svg`. Colors are baked in as hex because an image cannot read CSS tokens; keep them in step with the tokens above.
+- CSS-referenced ink (rules, pencil dividers, chevron, checkbox, search glass, date calendar, grain): `src/ink.ts`. One copy of the path data, inked from the running press and handed to CSS as a `data:` URI — see §2, "The marks are drawn once, not once per press". A new mark is written there, once, and it is right on all six presses for free.
 - **Drawing rules:** write path data by hand; coordinates carry decimals and no line is straight or closed perfectly; keep a blue key stroke and, where it earns it, an orange stroke offset 1 to 2px with multiply. No icon libraries, no `<rect>`/`<circle>` stand-ins for drawn things.
 
 ### Line boil
@@ -228,12 +284,12 @@ A scrolling body with the primary plate (and Delete) printed in a footer below i
 ### Toast
 One slip of blue stock, gutter to gutter and then shrunk to its text (never pinned to half the viewport). It is always in the DOM and prints only when it has something to say. A plain confirmation fades after 3s; a delete does not, because its Undo is the only way back and a clock on the sole path to a function is a WCAG failure. It stays until Undo, Dismiss, or the next toast, and the Undo button names what it would restore.
 
-### Chips (hall / day / meal / chart view / range / sex / goal / theme / language)
+### Chips (hall / day / meal / chart view / range / sex / goal / press / language)
 Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. **Every one-of-N pick in the app is a stamp**, including the chart view, which used to be a native `<select>` printed directly above the range stamps — two idioms for the same job, one on top of the other.
 
-Two behaviours. A **browsing strip** (hall, day, meal) scrolls horizontally, full-bleed: its length is the feed's, not a set the reader has to see all of. A **settings group** (`.chips-wrap`: chart view, range, sex, goal, theme, language) wraps to a second row instead, and its stamps give up `nowrap`.
+Two behaviours. A **browsing strip** (hall, day, meal) scrolls horizontally, full-bleed: its length is the feed's, not a set the reader has to see all of. A **settings group** (`.chips-wrap`: chart view, range, sex, goal, press, language) wraps to a second row instead, and its stamps give up `nowrap`.
 
-The two are also **printed at different sizes**, and only the strips are small: three of them stack on the Menu over the thing the screen is for, where a settings group is read once on its own page. A strip's stamp is 32px of ink at 0.85rem, and **the target is still 44x44** — carried by the radio itself (`block-size: 44px`, centred on the stamp, and `inset-inline: -1.5px` for the stamp's own border, since `inset` lands on the padding box and a 44px stamp was otherwise a 41px target). It is the input and not a pseudo-element because a transparent box laid over the control gets clicks reported as intercepted. The strip's 6px padding is exactly the 6px the target overhangs each way, so the scroller contains it instead of clipping it, and 6px between strips leaves two rows' targets touching rather than overlapping. Stated as a size, not as negative insets: insets made the overhang lopsided by the border's width and hung the last pixel of the meal strip under the sticky station header, which paints over it. The strip hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish — was a setting with no cue that it existed at all. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
+The two are also **printed at different sizes**, and only the strips are small: three of them stack on the Menu over the thing the screen is for, where a settings group is read once on its own page. A press stamp carries a drawing as well as a word — see Appearance below. A strip's stamp is 32px of ink at 0.85rem, and **the target is still 44x44** — carried by the radio itself (`block-size: 44px`, centred on the stamp, and `inset-inline: -1.5px` for the stamp's own border, since `inset` lands on the padding box and a 44px stamp was otherwise a 41px target). It is the input and not a pseudo-element because a transparent box laid over the control gets clicks reported as intercepted. The strip's 6px padding is exactly the 6px the target overhangs each way, so the scroller contains it instead of clipping it, and 6px between strips leaves two rows' targets touching rather than overlapping. Stated as a size, not as negative insets: insets made the overhang lopsided by the border's width and hung the last pixel of the meal strip under the sticky station header, which paints over it. The strip hides its scrollbar, so an option pushed off the edge — "All" at 200% text, "Según el teléfono" in Spanish — was a setting with no cue that it existed at all. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
 
 Day chips stack (`.chip-stack`): the numeric date over a smaller caps weekday ("9/19" / "SAT"). Never a relative word
 — "Today" is wrong on a phone left open past midnight and a bare weekday does not say which week. The chip's
@@ -339,6 +395,22 @@ At 320px the row scrolls sideways with its scrollbar left on and a gutter at the
 visibly reachable; hiding the overflow is not an option. The dining-hours week still prints as one two-column
 table per hall (day, hours), which fits a 320px page.
 
+### Appearance
+The press picker is the same printed radio stamps as every other one-of-N pick in the app, with one difference:
+**each stamp prints the press it names** — that press's own stock with its own two drums laid down off register,
+drawn by `PressSwatch` with the inks written as attributes rather than tokens, because a `var()` here would print
+six copies of the press the page is already running. The picked stamp also carries a hand-inked tick, so "this
+one" is said by a shape and not only by the plate; on the blue plate the tick inks in the stock, because in
+`--ink` it was 1.6:1 and effectively unprinted.
+
+Seven stamps (six presses and Match phone) wrap to as many rows as the page needs, at 320px and in both
+languages. **Match phone prints two more groups under it** — which press for light, which for dark — and only
+then: under a named press they would be two rows of stamps that change nothing the reader can see. Those two
+carry a visible `h3` and the group points at it with `aria-labelledby`, rather than repeating the words as an
+`aria-label`, for the same reason the Health sections do.
+
+The language group sits under all of it, and every choice on the page is kept per device in `localStorage`.
+
 ### Achievements
 Sixteen hand-inked **stamps** on a sheet, led by one plain line ("7 of 16 earned") and a note that says there is
 no streak to break. Earned stamps print in full: both drums, the card on raised paper with the hard orange
@@ -356,7 +428,7 @@ there at all), never taken away, never a streak, and never paid for eating less 
 the plan, with a floor under it.
 
 ### Language
-Two languages, English and Spanish, chosen by a chip group in Profile > Appearance under the theme's: a language
+Two languages, English and Spanish, chosen by a chip group in Profile > Appearance under the press's: a language
 switch is not a special control, so it is the same printed radio stamp as hall, day, meal and press. Each option
 names itself in itself (English, Español) and never translates, because the one reader who needs the list is the
 one who cannot read the page it is printed on. The choice lives in `localStorage` per device, like the press, and
@@ -432,11 +504,11 @@ evidence that did not exist — the opposite of what the note under it says.
 
 - **Do** keep numbers the hero: one stamped numeral per screen at most.
 - **Do** say state in words: "over", "Couldn't reach UT dining", "changes waiting to sync".
-- **Do** check every new text color against paper at 4.5:1 **with the grain layer composited over it**, on **both** stocks — the tokens alone read about 17% high on the day press.
+- **Do** check every new text color against paper at 4.5:1 **with the grain layer composited over it**, on **every** press — the tokens alone read about 17% high on a light stock.
 - **Do** let a mark grow with the user's text: reserve room with `min-height`, not `height`, and reflow a row before a track can collapse.
 - **Don't** put a clock on the only way to undo something, or `aria-label` on a paragraph (the role does not take a name; use a section).
-- **Don't** auto-invert. The night press is a second set of tokens, drawn on purpose; a filter over the day press is not it.
-- **Don't** add a colour, a blend mode or a CSS-referenced mark for one press only: both, or neither.
+- **Don't** auto-invert. Every press is its own set of tokens, inked on purpose; a filter over the day press is not one.
+- **Don't** add a press without the whole token set and both contrast checks, or add a colour or a blend mode for one press only: all six, or none. A mark is added once, in `src/ink.ts`, never per press.
 - **Don't** use orange for text below 18px bold.
 - **Don't** use teal or mustard for anything but their macro, fill anything but protein with solid blue in a data mark, or show a macro ink without its name.
 - **Don't** pull icons from a library or draw marks with perfect primitives.

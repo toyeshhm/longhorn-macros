@@ -1,3 +1,4 @@
+import type { ComponentChildren } from 'preact'
 import { useEffect, useMemo, useState } from 'preact/hooks'
 import { dateLabel, daysBetween, localDateKey } from '../../dates'
 import type { T } from '../../i18n'
@@ -31,25 +32,32 @@ function savedAgo(cachedAt: string, now: Date, t: T): string {
 }
 
 // `sub` stacks a smaller second line under the label (the day chips' weekday); `spoken`, when given, is the whole
-// accessible name, so a chip can print "9/19" and still say "Saturday, September 19".
-export interface ChipOption<T extends string> { value: T; label: string; sub?: string; spoken?: string }
+// accessible name, so a chip can print "9/19" and still say "Saturday, September 19"; `mark` prints a drawing
+// before the label (the press stamps' riso swatch and their tick). Pass `false` for no mark, never `undefined`.
+export interface ChipOption<T extends string> { value: T; label: string; sub?: string; spoken?: string; mark?: ComponentChildren }
 
-export function Chips<T extends string>({ legend, name, options, value, onSelect, wrap }: {
+export function Chips<T extends string>({ legend, legendId, name, options, value, onSelect, wrap }: {
   legend: string; name: string; options: readonly ChipOption<T>[]; value: T | null; onSelect: (v: T) => void
   /** A closed set of settings rather than a browsing strip: wraps to a second row instead of scrolling one off. */
   wrap?: boolean
+  /** The id of a heading already printing `legend` on screen. The group points at it instead of repeating it. */
+  legendId?: string
 }) {
   // Named on the fieldset, not by a hidden <legend>: Chromium exposed the legend both as the group's name and as a
-  // text node inside it, so browse mode read every group's name out twice.
+  // text node inside it, so browse mode read every group's name out twice. Where the words are already on screen
+  // as a heading the group points at that heading, for the same reason.
   return (
-    <fieldset class={wrap === true ? 'chips chips-wrap' : 'chips'} role="radiogroup" aria-label={legend}>
+    <fieldset class={wrap === true ? 'chips chips-wrap' : 'chips'} role="radiogroup"
+      aria-label={legendId === undefined ? legend : undefined} aria-labelledby={legendId}>
       {options.map((o) => (
         <label key={o.value} class={o.sub === undefined ? 'chip' : 'chip chip-stack'}>
           <input type="radio" name={name} value={o.value} checked={o.value === value} aria-label={o.spoken}
             onChange={() => { onSelect(o.value) }} />
           {/* A plain chip keeps its bare text node: wrapping it in a span puts the invisible input over the click
               target, and a click aimed at the span is then reported as intercepted. */}
-          {o.sub === undefined ? o.label : <><span>{o.label}</span><span class="chip-sub">{o.sub}</span></>}
+          {o.sub === undefined && o.mark === undefined
+            ? o.label
+            : <>{o.mark}<span>{o.label}</span>{o.sub !== undefined && <span class="chip-sub">{o.sub}</span>}</>}
         </label>
       ))}
     </fieldset>

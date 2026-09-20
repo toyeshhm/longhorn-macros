@@ -1,18 +1,20 @@
 import { useEffect, useRef, useState } from 'preact/hooks'
 import { LOCALES, type Key, type Locale } from '../../i18n'
 import { log } from '../../log'
-import type { ThemeChoice } from '../../theme'
+import {
+  DARK_PRESS_IDS, LIGHT_PRESS_IDS, PRESS_IDS, PRESSES, type PressChoice, type PressId,
+} from '../../theme'
 import { GoalsScreen } from '../goals/GoalsScreen'
 import { useProfile } from '../hooks'
 import { setLocale, useT } from '../i18n'
-import { Chips } from '../menu/MenuScreen'
-import { setThemeChoice, useTheme } from '../theme'
+import { PressSwatch, TickMark } from '../icons/Marks'
+import { Chips, type ChipOption } from '../menu/MenuScreen'
+import { setPressPrefs, usePress } from '../theme'
 import { AccountSection } from './AccountSection'
 import { AchievementsSection } from './AchievementsSection'
 import { DataSection } from './DataSection'
 import { HoursSection } from './HoursSection'
 
-const THEME_OPTIONS: readonly ThemeChoice[] = ['light', 'night', 'auto']
 // Each language names itself, in itself: "Español" is what a Spanish reader looks for on an English screen, and
 // translating the list would hide the one option a reader who cannot read the current language needs to find.
 const LANGUAGE_NAMES: Readonly<Record<Locale, string>> = { en: 'English', es: 'Español' }
@@ -63,13 +65,39 @@ function nextIndex(key: string, from: number): number | null {
 
 function Appearance() {
   const t = useT()
-  const { choice } = useTheme()
+  const { prefs } = usePress()
+  // Every press prints as itself: its own stock with its own two drums laid down off register. The picked one
+  // also carries a tick, because a stamp that said "this one" only by changing ink would be saying it in colour.
+  const stamp = (id: PressId, selected: PressChoice): ChipOption<PressId> => ({
+    value: id,
+    label: t.t(`press.${id}`),
+    mark: <>{id === selected && <TickMark />}<PressSwatch press={PRESSES[id]} /></>,
+  })
+  const presses: readonly ChipOption<PressChoice>[] = [
+    ...PRESS_IDS.map((id) => stamp(id, prefs.choice)),
+    { value: 'auto', label: t.t('press.auto'), mark: prefs.choice === 'auto' && <TickMark /> },
+  ]
   return (
     <>
-      <Chips wrap legend={t.t('profile.theme')} name="theme"
-        options={THEME_OPTIONS.map((c) => ({ value: c, label: t.t(`theme.${c}`) }))}
-        value={choice} onSelect={setThemeChoice} />
-      <p class="muted">{t.t('profile.themeNote')}</p>
+      <Chips wrap legend={t.t('profile.press')} name="press" options={presses}
+        value={prefs.choice} onSelect={(choice) => { setPressPrefs({ ...prefs, choice }) }} />
+      <p class="muted">{t.t('profile.pressNote')}</p>
+      {/* Only while Match phone is on: which press each of the phone's two settings runs. Printed at any other
+          time they would be two groups of stamps that change nothing the reader can see. */}
+      {prefs.choice === 'auto' && (
+        <>
+          {/* These two rows are stamps like the row above them, so they need saying what they pick. The heading
+              is on the page and the group points at it rather than carrying the same words a second time. */}
+          <h3 id="light-press-legend">{t.t('profile.lightPress')}</h3>
+          <Chips wrap legend={t.t('profile.lightPress')} legendId="light-press-legend" name="light-press"
+            options={LIGHT_PRESS_IDS.map((id) => stamp(id, prefs.light))}
+            value={prefs.light} onSelect={(light) => { setPressPrefs({ ...prefs, light }) }} />
+          <h3 id="dark-press-legend">{t.t('profile.darkPress')}</h3>
+          <Chips wrap legend={t.t('profile.darkPress')} legendId="dark-press-legend" name="dark-press"
+            options={DARK_PRESS_IDS.map((id) => stamp(id, prefs.dark))}
+            value={prefs.dark} onSelect={(dark) => { setPressPrefs({ ...prefs, dark }) }} />
+        </>
+      )}
       {/* The same printed radio stamps as every other chip group: a language switch is not a special control. */}
       <Chips wrap legend={t.t('profile.language')} name="language"
         options={LOCALES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l] }))}

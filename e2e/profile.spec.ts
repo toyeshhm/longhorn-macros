@@ -2,7 +2,7 @@ import { expect, test } from './fixtures'
 import { dateLabel, localDateKey } from '../src/dates'
 import { translator } from '../src/i18n'
 import { dayText, fetchHours, parseHours } from '../src/menu/hours'
-import { THEME_COLOR } from '../src/theme'
+import { PRESSES } from '../src/theme'
 
 const signUp = async (page: import('@playwright/test').Page, password = crypto.randomUUID()): Promise<string> => {
   const email = `e2e-${crypto.randomUUID()}@example.test`
@@ -43,7 +43,7 @@ test('Profile: the section stamps are a real tablist, and the page is remembered
   await page.keyboard.press('ArrowRight')
   await expect(nav.getByRole('tab', { name: 'Appearance' })).toBeFocused()
   await expect(nav.getByRole('tab', { name: 'Appearance' })).toHaveAttribute('aria-selected', 'true')
-  await expect(page.getByRole('radiogroup', { name: 'Theme' })).toBeVisible()
+  await expect(page.getByRole('radiogroup', { name: 'Press', exact: true })).toBeVisible()
   await page.keyboard.press('End')
   await expect(nav.getByRole('tab', { name: 'Data' })).toBeFocused()
   await expect(page.getByRole('button', { name: 'Export my log' })).toBeVisible()
@@ -108,38 +108,43 @@ test('Profile: the log exports as one JSON file', async ({ page }) => {
   await expect(page.getByText(/^1 change waiting|^\d+ changes waiting/)).toBeVisible()
 })
 
-test('Appearance: Night repaints on dark stock, survives a reload, and Match phone follows the device', async ({ page }) => {
+test('Appearance: a press repaints on its own stock, survives a reload, and Match phone follows the device', async ({ page }) => {
   await signUp(page)
   await page.getByRole('tab', { name: 'Appearance' }).click()
-  const themes = page.getByRole('radiogroup', { name: 'Theme' })
-  await expect(themes.getByRole('radio', { name: 'Match phone' })).toBeChecked() // the default
+  const presses = page.getByRole('radiogroup', { name: 'Press', exact: true })
+  await expect(presses.getByRole('radio', { name: 'Match phone' })).toBeChecked() // the default
 
-  const light = await page.evaluate(bodyBackground)
-  await themes.getByRole('radio', { name: 'Night' }).check()
+  const day = await page.evaluate(bodyBackground)
+  await presses.getByRole('radio', { name: 'Night press' }).check()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
   const night = await page.evaluate(bodyBackground)
-  expect(night).not.toBe(light)
-  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe(THEME_COLOR.night)
+  expect(night).not.toBe(day)
+  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe(PRESSES.night.paper)
 
   // Per device, so it outlives a reload without ever going to the server.
   await page.reload()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
   expect(await page.evaluate(bodyBackground)).toBe(night)
 
-  // Match phone tracks prefers-color-scheme in both directions.
+  // Match phone tracks prefers-color-scheme in both directions, and runs the press the reader named for each
+  // side of it rather than the two it shipped with.
   await page.getByRole('tab', { name: 'Appearance' }).click()
-  await themes.getByRole('radio', { name: 'Match phone' }).check()
+  await presses.getByRole('radio', { name: 'Match phone' }).check()
+  await page.getByRole('radiogroup', { name: 'Press for light mode' }).getByRole('radio', { name: 'Meadow' }).check()
+  await page.getByRole('radiogroup', { name: 'Press for dark mode' }).getByRole('radio', { name: 'Blueprint' }).check()
   await page.emulateMedia({ colorScheme: 'dark' })
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'blueprint')
   await page.emulateMedia({ colorScheme: 'light' })
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
-  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe(THEME_COLOR.light)
-  expect(await page.evaluate(bodyBackground)).toBe(light)
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'meadow')
+  expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe(PRESSES.meadow.paper)
 
-  // Light stays light on a dark phone.
-  await themes.getByRole('radio', { name: 'Light' }).check()
+  // A named press stays put whatever the phone does.
+  await presses.getByRole('radio', { name: 'Cherry press' }).check()
   await page.emulateMedia({ colorScheme: 'dark' })
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'cherry')
+  // And the two "which press for which mode" groups only print while Match phone is on: printed under a named
+  // press they would be two rows of stamps that change nothing the reader can see.
+  await expect(page.getByRole('radiogroup', { name: 'Press for light mode' })).toHaveCount(0)
 })
 
 test('Appearance: the app still prints when the device blocks storage', async ({ page, context }) => {
@@ -147,10 +152,10 @@ test('Appearance: the app still prints when the device blocks storage', async ({
     Object.defineProperty(window, 'localStorage', { get() { throw new Error('storage blocked'); } })
   })
   await signUp(page)
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'light')
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'day')
   await page.getByRole('tab', { name: 'Appearance' }).click()
-  await page.getByRole('radiogroup', { name: 'Theme' }).getByRole('radio', { name: 'Night' }).check()
-  await expect(page.locator('html')).toHaveAttribute('data-theme', 'night') // applied, just not remembered
+  await page.getByRole('radiogroup', { name: 'Press', exact: true }).getByRole('radio', { name: 'Newsprint' }).check()
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'newsprint') // applied, just not remembered
 })
 
 test.describe(() => {

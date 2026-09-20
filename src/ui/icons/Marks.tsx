@@ -1,3 +1,5 @@
+import type { Press } from '../../theme'
+
 // Small hand-inked marks for buttons and legends. Each has a blue key stroke and, where it earns it,
 // an orange stroke printed a hair off register. All decorative: the button carries the accessible name.
 const LINE = { fill: 'none', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' } as const
@@ -41,6 +43,33 @@ export function MinusMark() {
   return (
     <svg class="mark" viewBox="0 0 26 26" aria-hidden="true">
       <path class="line" {...LINE} stroke-width="2.4" d="M4.6 13.6C10.2 12.8 15.4 13.4 21.4 12.6" />
+    </svg>
+  )
+}
+
+// The tick the selected press stamp carries. The stamp already changes plate when it is picked; a shape says the
+// same thing again for a reader who cannot separate two inks, which is what "never by colour alone" asks for.
+export function TickMark() {
+  return (
+    <svg class="mark tick-mark" viewBox="0 0 26 26" aria-hidden="true">
+      <path class="line" {...LINE} stroke-width="2.8" d="M5.4 13.8C7.6 15.6 9.2 17.4 10.8 20 14.2 13.6 17.8 8.6 22.4 4.4" />
+    </svg>
+  )
+}
+
+// A press, printed: its own stock with its two drums laid down off register, in its own blend. The inks are
+// written as attributes rather than as tokens because the swatch has to print a press that is not the one the
+// page is currently running — a var() here would print six copies of the active press.
+export function PressSwatch({ press }: { press: Press }) {
+  const blend = press.scheme === 'dark' ? 'screen' : 'multiply'
+  return (
+    <svg class="press-swatch" viewBox="0 0 34 24" aria-hidden="true">
+      <path d="M2.4 2.8C11 1.8 22 2.4 31.4 2 32 8.4 31.4 15.4 31.8 21.6 21.8 22.4 11.4 21.6 2.2 22.2 1.6 15.6 2.2 8.6 2.4 2.8Z"
+        fill={press.paper} stroke={press.ink} stroke-width="1.3" stroke-linejoin="round" />
+      <path d="M6.2 7.4C10.4 6.4 14.6 7 18.4 6.6 18.8 10.2 18.4 13.8 18.6 17.2 14.2 17.8 10 17.2 6 17.6 5.6 14 6.2 10.4 6.2 7.4Z"
+        fill={press.blue} style={{ mixBlendMode: blend }} />
+      <path d="M14.6 9.6C18.6 8.6 23 9.2 27.2 8.8 27.6 12.2 27.2 15.6 27.4 18.8 23.2 19.4 18.8 18.8 14.4 19.2 14 15.8 14.6 12.4 14.6 9.6Z"
+        fill={press.orange} style={{ mixBlendMode: blend }} />
     </svg>
   )
 }

@@ -4,78 +4,16 @@
 @font-face { font-family: 'Courier Prime'; font-style: normal; font-weight: 700; font-display: swap; src: url('/fonts/courier-prime-700.woff2') format('woff2'); }
 
 :root {
-  --paper: #F7F3EA;
-  --paper-raised: #FBF9F3;
-  --paper-shade: #EDE7DA;
-  --blue: #2B4C9B;
-  --ink: #1E3470;
-  --ink-deep: #0F1A40;
-  --ink-soft: #4E5780; /* 6.4:1 on paper, 5.3:1 with the grain layer composited over it — measure with grain on */
-  --orange: #BF5700;
-  --teal: #00838A;
-  --mustard: #E0A800;
-  --over: #9A3412;
-  --wash: rgb(30 52 112 / 0.35);
-  --orange-rgb: 191 87 0;
-  --paper-rgb: 247 243 234;
-  /* The orange drum is laid over the blue one. On dark stock ink does not darken what it lands on, it lightens it. */
-  --blend: multiply;
-  --grain-strength: 0.4;
-  /* --veil keeps the sheet's paper veil equal to the page grain; --plate-k lifts the alpha plates on the night
-     press, where an alpha orange darkens toward the stock and prints brown instead of lifting off it. */
-  --veil: calc(1 - var(--grain-strength)); --plate-k: 1;
-  /* Hand-inked art referenced from CSS cannot read these tokens (an image has no access to them), so each press
-     gets its own file and the token picks the press. Keep the pair in step: see DESIGN.md §2. */
-  --mark-rule: url('./ink/rule.svg');
-  --mark-rule-thick: url('./ink/rule-thick.svg');
-  --mark-rule-pencil: url('./ink/rule-pencil.svg');
-  --mark-chevron: url('./ink/chevron.svg');
-  --mark-box: url('./ink/box.svg');
-  --mark-box-checked: url('./ink/box-checked.svg');
-  --mark-search: url('./ink/search.svg');
-  --mark-calendar: url('./ink/calendar.svg');
-  --mark-grain: url('./ink/grain.svg');
+  /* The shapes, the type and the spacing. Every ink, every plate and every hand-inked mark comes from the press:
+     src/theme.ts holds the six token sets and src/ui/theme.ts writes the chosen one onto this element, so a
+     press is a list of colours and nothing below this block is ever re-stated for one. See DESIGN.md §2. */
   --display: 'Bungee', 'Arial Black', Impact, sans-serif;
   --text: 'Courier Prime', 'Courier New', ui-monospace, monospace;
   --wobble: 255px 12px 225px 10px / 12px 225px 10px 255px;
   --wobble-sm: 6px 3px 7px 4px / 4px 7px 3px 6px;
   --tabbar-h: 4rem; /* scales with the user's text size: the bar must never grow past the room .screen reserves */
   --ease: cubic-bezier(0.25, 1, 0.5, 1);
-  color-scheme: light;
   font-family: var(--text);
-}
-
-/* The night press. Same plates, different stock and inks: nothing below this block re-states a component rule,
-   it only re-inks the tokens. `data-theme` is set by src/ui/theme.ts, which also resolves "Match phone". */
-:root[data-theme='night'] {
-  --paper: #141A33;
-  --paper-raised: #1E2647;
-  --paper-shade: #0D1226;
-  --blue: #8AA6EE;
-  --ink: #EFE8D8;
-  --ink-deep: #FFFDF6;
-  --ink-soft: #9AA3C6;
-  --orange: #FF9147;
-  --teal: #46CFC6;
-  --mustard: #F5CE5A;
-  --over: #FF8878;
-  --wash: rgb(4 7 18 / 0.66);
-  --orange-rgb: 255 145 71;
-  --paper-rgb: 20 26 51;
-  --blend: screen;
-  /* Pale specks on near-black are a far bigger excursion than dark specks on cream: 0.1 measures as the day
-     press's 0.4 (1.18:1 vs 1.14:1 speckle contrast), where 0.28 read as sensor noise. */
-  --grain-strength: 0.1; --plate-k: 1.7;
-  --mark-rule: url('./ink/rule-night.svg');
-  --mark-rule-thick: url('./ink/rule-thick-night.svg');
-  --mark-rule-pencil: url('./ink/rule-pencil-night.svg');
-  --mark-chevron: url('./ink/chevron-night.svg');
-  --mark-box: url('./ink/box-night.svg');
-  --mark-box-checked: url('./ink/box-checked-night.svg');
-  --mark-search: url('./ink/search-night.svg');
-  --mark-calendar: url('./ink/calendar-night.svg');
-  --mark-grain: url('./ink/grain-night.svg');
-  color-scheme: dark;
 }
 * { box-sizing: border-box; }
 /* Print has no hover, and iOS's blue tap flash is not one of our two inks: every target says it was pressed itself. */

@@ -126,7 +126,7 @@ test('Spanish moves the numbers, the dates and the clock, and leaves UT’s own 
   await expect(page.getByLabel('Peso (lb)')).toHaveAccessibleDescription('El peso debe estar entre 50 y 700 lb.')
 })
 
-test('the longest Spanish lines still fit a 320px phone, in both presses', async ({ page }) => {
+test('the longest Spanish lines still fit a 320px phone, on the widest-set presses', async ({ page }) => {
   await signUp(page)
   await toSpanish(page)
   await page.setViewportSize({ width: 320, height: 780 })
@@ -135,25 +135,28 @@ test('the longest Spanish lines still fit a 320px phone, in both presses', async
   // A phone does not scroll sideways: it widens its own layout viewport, so innerWidth staying at 320 is the tell.
   const layoutWidth = (): number => window.innerWidth
 
-  for (const theme of ['light', 'night'] as const) {
+  // Two of the six, not all six: the page is laid out once and re-inked per press, so walking every screen on
+  // each of them costs three times the run for the same measurement. These two are the pair that can break it —
+  // one light stock and one dark, both with Spanish names longer than the original presses'.
+  for (const [press, name] of [['newsprint', 'Papel prensa'], ['blueprint', 'Cianotipo']] as const) {
     await tabs.getByRole('button', { name: 'Perfil' }).click()
     await openSection(page, 'Apariencia')
-    await page.getByRole('radiogroup', { name: 'Tema' })
-      .getByRole('radio', { name: theme === 'light' ? 'Claro' : 'Noche' }).check()
-    await expect(page.locator('html')).toHaveAttribute('data-theme', theme)
+    await page.getByRole('radiogroup', { name: 'Tirada', exact: true }).getByRole('radio', { name }).check()
+    await expect(page.locator('html')).toHaveAttribute('data-theme', press)
 
     for (const s of ['Menú', 'Diario', 'Salud', 'Progreso', 'Perfil']) {
       await tabs.getByRole('button', { name: s }).click()
       await expect(tabs.getByRole('button', { name: s })).toHaveAttribute('aria-current', 'page')
-      expect(await page.evaluate(layoutWidth), `${s} in ${theme} at 320px`).toBe(320)
+      expect(await page.evaluate(layoutWidth), `${s} in ${press} at 320px`).toBe(320)
     }
 
     // Every section of the Profile tab in turn, which is where the long notes are, and the widest of them all
-    // is the one that explains why the food names did not move.
+    // is the one that explains why the food names did not move. Appearance is in the list because seven press
+    // stamps, each carrying a swatch, is the widest row of chips in the app.
     await tabs.getByRole('button', { name: 'Perfil' }).click()
-    for (const name of ['Logros', 'Cuenta', 'Horarios', 'Datos']) {
-      await openSection(page, name)
-      expect(await page.evaluate(layoutWidth), `Profile > ${name} in ${theme} at 320px`).toBe(320)
+    for (const section of ['Logros', 'Cuenta', 'Apariencia', 'Horarios', 'Datos']) {
+      await openSection(page, section)
+      expect(await page.evaluate(layoutWidth), `Profile > ${section} in ${press} at 320px`).toBe(320)
     }
   }
 

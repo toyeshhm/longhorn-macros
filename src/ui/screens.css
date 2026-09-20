@@ -161,3 +161,14 @@
 .hours-table tr { background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
 .hours-table th { text-align: left; font-weight: 400; color: var(--ink-soft); padding: 6px 0; width: 4em; }
 .hours-table td { text-align: right; font-weight: 700; padding: 6px 0; color: var(--ink-deep); overflow-wrap: anywhere; }
+
+/* The press stamps in Profile > Appearance. Each one prints the press it names — that press's stock with its own
+   two drums laid down off register — so the row reads as six printed swatches rather than six words. The picked
+   stamp carries a hand-inked tick as well as the blue plate: state is never ink alone. */
+.press-swatch { width: 34px; height: 24px; flex: none; margin-right: 8px; overflow: visible; }
+.chip .tick-mark { width: 18px; height: 18px; flex: none; margin-right: 5px; }
+/* The tick sits on the blue plate once the stamp is picked, so it inks in the stock like the stamp's own label.
+   Left in --ink it was 1.6:1 on the plate and effectively unprinted. */
+.chip:has(input:checked) .tick-mark .line { stroke: var(--paper); }
+/* Wraps inside the stamp at 200% text or in Spanish; the swatch keeps its width and the words give way. */
+.chip:has(.press-swatch) > span { min-width: 0; }
