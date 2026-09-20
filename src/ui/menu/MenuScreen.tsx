@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'preact/hooks'
-import { dateLabel, localDateKey } from '../../dates'
+import { dateLabel, daysBetween, localDateKey } from '../../dates'
 import { log } from '../../log'
 import type { HallId } from '../../menu/feed'
-import { dayIndex, dayText, hallStatus, statusText, UNKNOWN_HOURS, type Week } from '../../menu/hours'
+import { hoursLine, UNKNOWN_HOURS } from '../../menu/hours'
 import { currentMeal, groupByStation, HALLS } from '../../menu/select'
 import { round1 } from '../../nutrition'
 import { buildIndex, fromCustomFood, fromMenuItem, searchItems, type SearchItem } from '../../search'
@@ -11,7 +11,7 @@ import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
 import { UtensilsDoodle } from '../icons/Doodles'
 import { PlusMark, Swatch } from '../icons/Marks'
-import { useHours, useLive, useMenu } from '../hooks'
+import { useHours, useLive, useMenu, useNow } from '../hooks'
 import { CustomFoodForm } from './CustomFoodForm'
 import { FoodSheet } from './FoodSheet'
 
@@ -37,9 +37,10 @@ export interface ChipOption<T extends string> { value: T; label: string; sub?: s
 export function Chips<T extends string>({ legend, name, options, value, onSelect }: {
   legend: string; name: string; options: readonly ChipOption<T>[]; value: T | null; onSelect: (v: T) => void
 }) {
+  // Named on the fieldset, not by a hidden <legend>: Chromium exposed the legend both as the group's name and as a
+  // text node inside it, so browse mode read every group's name out twice.
   return (
-    <fieldset class="chips" role="radiogroup">
-      <legend class="visually-hidden">{legend}</legend>
+    <fieldset class="chips" role="radiogroup" aria-label={legend}>
       {options.map((o) => (
         <label key={o.value} class={o.sub === undefined ? 'chip' : 'chip chip-stack'}>
           <input type="radio" name={name} value={o.value} checked={o.value === value} aria-label={o.spoken}
@@ -69,16 +70,6 @@ function FoodRow({ item, badge, hints, onOpen }: { item: SearchItem; badge: stri
   )
 }
 
-// Whether the hall is serving right now, then today's windows in full: the status word is never carried by ink alone.
-function HallHours({ week, now }: { week: Week; now: Date }) {
-  return (
-    <p class="hall-hours">
-      <strong>{statusText(hallStatus(week, now))}</strong>
-      <span class="muted">Today {dayText(week[dayIndex(now)] ?? null)}</span>
-    </p>
-  )
-}
-
 function dietHints(legends: readonly string[]): string[] {
   return legends.flatMap((l) => { const h = DIET_HINTS.get(l); return h === undefined ? [] : [h] })
 }
@@ -92,7 +83,7 @@ function sourceBadge(item: SearchItem): string {
 export function MenuScreen() {
   const { store } = useApp()
   const { menu, stale, error, cachedAt, retry } = useMenu()
-  const { hours } = useHours()
+  const { hours, error: hoursError } = useHours()
   const history = useLive(() => store.all('food_log'), [])
   const customFoods = useLive(() => store.all('custom_foods'), [])
   const [hall, setHall] = useState<HallId>('J2')
@@ -132,7 +123,7 @@ export function MenuScreen() {
     store.setMeta('lastHall', id).then(undefined, (e: unknown) => { log.error('ui.last_hall_write_failed', { error: String(e) }) })
   }
 
-  const now = new Date()
+  const now = useNow()
   const today = localDateKey(now)
   const dates = menu?.dates ?? []
   const activeDay = day !== null && dates.includes(day) ? day : dates.includes(today) ? today : (dates[0] ?? null)
@@ -142,6 +133,10 @@ export function MenuScreen() {
   const activeMeal = meal !== null && mealNames.includes(meal) ? meal : currentMeal(mealNames, now)
   const stations = groupByStation(meals.find((m) => m.name === activeMeal)?.items ?? [])
   const results = query.trim() === '' ? null : searchItems(index, query)
+  // Still in flight is not the same as failed: the strip stays blank while the feed loads, exactly as the week
+  // table on Profile prints "Loading hours…" rather than "Hours unavailable".
+  const week = hours === null && hoursError === null ? null : hours?.[hall] ?? UNKNOWN_HOURS[hall]
+  const hoursText = week === null || activeDay === null ? null : hoursLine(week, now, daysBetween(today, activeDay))
   const open = (item: SearchItem): void => { setSheet({ kind: 'food', item }) }
   const close = (): void => { setSheet(null) }
 
@@ -153,6 +148,12 @@ export function MenuScreen() {
       {/* ponytail: announced on every keystroke, no debounce — a polite region only speaks once typing pauses. */}
       <p class="visually-hidden" role="status">
         {results === null ? '' : `${results.length === 0 ? 'No' : String(results.length)} ${results.length === 1 ? 'result' : 'results'} for ${query.trim()}`}
+      </p>
+      {/* The strip below is created with the menu, and a live region born with its text is unreliably announced:
+          the hall's state is spoken from here instead, mounted from the first paint and empty until there is
+          something to say. It speaks again whenever the hall, the day or the clock changes it. */}
+      <p class="visually-hidden" role="status">
+        {hoursText === null ? '' : `${hall} ${hoursText.head}${hoursText.detail === null ? '' : `, ${hoursText.detail}`}`}
       </p>
       <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />Custom food</button>
 
@@ -180,7 +181,14 @@ export function MenuScreen() {
       ) : (
         <>
           <Chips legend="Hall" name="hall" options={HALLS.map((h) => ({ value: h.id, label: h.label }))} value={hall} onSelect={selectHall} />
-          <HallHours week={hours?.[hall] ?? UNKNOWN_HOURS[hall]} now={now} />
+          {/* Whether the hall is serving, in words — never carried by ink alone. On a day other than today it is
+              that day's own windows: "Today" printed over a Tuesday menu contradicts the chip 40px below it. */}
+          {hoursText !== null && (
+            <p class="hall-hours">
+              <strong>{hoursText.head}</strong>
+              {hoursText.detail !== null && <span class="muted">{hoursText.detail}</span>}
+            </p>
+          )}
           <Chips legend="Day" name="day" options={dates.map((d) => {
             const { date, weekday, full } = dateLabel(d)
             return { value: d, label: date, sub: weekday, spoken: full }

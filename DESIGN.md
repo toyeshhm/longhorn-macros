@@ -8,7 +8,7 @@ colors:
   riso-blue: "#2B4C9B"
   ink: "#1E3470"
   ink-deep: "#0F1A40"
-  ink-soft: "#56608A"
+  ink-soft: "#4E5780"
   burnt-orange: "#BF5700"
   riso-teal: "#00838A"
   riso-mustard: "#E0A800"
@@ -117,7 +117,7 @@ A two-ink riso palette on warm stock, with two extra macro inks that only ever m
 - **Federal Blue** (#2B4C9B): linework, bar outlines' hatch, chart dots, primary buttons, selected chips, toast. Also the protein ink, always as a solid fill (never as a line), so it stays distinct from blue hatch and type.
 - **Ink** (#1E3470): all body type and hand-drawn strokes (10.6:1 on paper).
 - **Deep Ink** (#0F1A40): food names, eaten amounts, values in tables (15.3:1).
-- **Soft Ink** (#56608A): secondary text: servings/portion, meta rows, units, chart labels (5.5:1 on paper, headroom left for grain).
+- **Soft Ink** (#4E5780): secondary text: servings/portion, meta rows, units, chart labels (6.4:1 on paper, 5.3:1 once the grain layer is composited over it — the grain costs about 17% of a ratio, so measure rendered pixels, not tokens).
 
 ### Secondary
 - **Burnt Orange** (#BF5700): the second drum. Big-number overprint, active-tab plate, primary-button offset plate, link underlines, the calories-eaten bar. Always multiplied; never used for body text (4.1:1).
@@ -143,15 +143,25 @@ of the three stocks, and the blue plate carries stock-coloured type (7.2:1) exac
 **Ink roles are unchanged by the press.** Calories orange, protein blue, carbs teal, fat mustard; blue is linework
 and the protein plate; orange is the second drum. What changes:
 
+- **When the press is chosen.** `public/theme-boot.js` runs blocking in `<head>`, before the bundle that carries
+  the stylesheet: the press is on the root element at first paint, so a Night reader never gets a screenful of cream
+  stock while 300KB of JavaScript parses. `src/ui/theme.ts` owns the choice from then on.
 - **`--blend`.** The second drum multiplies onto light stock and **screens** onto dark: ink on dark paper lightens
   what it lands on. One token, swapped on the night root; no component re-states its blend mode.
-- **`--grain-strength`.** Dark specks on dark stock are mud, so the night grain tile is pale (`grain-night.svg`) and
-  runs at 0.28 against the day press's 0.4.
+- **`--grain-strength`.** Dark specks on dark stock are mud, so the night grain tile is pale (`grain-night.svg`) —
+  and pale specks on near-black stock are a far bigger excursion than dark specks on cream, so the night press runs
+  at **0.1** against the day press's 0.4. Measured over their own stocks those match (1.18:1 vs 1.14:1 speckle
+  contrast); the 0.28 it started at read as sensor noise over every flat navy area.
 - **The hand-inked art.** A CSS-referenced SVG cannot read a token, so every mark has a night twin next to it
   (`rule-night.svg`, `chevron-night.svg`, `box-checked-night.svg`, …) and a `--mark-*` token picks the press. Draw
   both, or draw neither: a day-only mark disappears on the night stock.
 - **`--orange-rgb` / `--paper-rgb`.** The off-register text-shadows and the sheet's paper veil are written as
   `rgb(var(--…) / a)` so they follow the press at whatever alpha the component asked for.
+- **`--plate-k`.** An alpha plate mixes toward the stock, so the same orange that *lifts* on cream *darkens* on navy
+  and prints brown — the opposite of what `--blend: screen` states. Every offset plate's alpha is written
+  `calc(a * var(--plate-k))`, 1 by day and 1.7 at night, so the plate stays the lifted orange on both stocks.
+- **`--veil`.** The sheet's paper veil, `calc(1 - var(--grain-strength))`, so its grain equals the page layer's on
+  either press instead of being pinned to the day press's 0.6.
 
 ### Named Rules
 **The Macro Ink Rule.** Calories are orange, protein blue, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
@@ -179,9 +189,9 @@ Both self-hosted as latin-subset woff2 under `public/fonts/` (OFL, licence files
 
 ## 4. Elevation
 
-Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard orange offset (`box-shadow: 3px 3px 0 #BF5700`, 2px for chips, 4px at 55% for the targets slip). Pressing a button moves it 1px onto its plate. Bottom sheets are a fresh sheet of the same grained stock (grain tile under a 60% paper veil, which equals the page layer's 40%) over a blue ink wash (`rgb(30 52 112 / .35)`).
+Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard orange offset (`box-shadow: 3px 3px 0 #BF5700`, 2px for chips, 4px at 55% for the targets slip). Pressing a button moves it 1px onto its plate. Bottom sheets are a fresh sheet of the same grained stock (grain tile under a `--veil` paper veil, which is 1 minus the page layer's grain, so the two always match) over a blue ink wash (`rgb(30 52 112 / .35)`).
 
-**The Grain Layer.** One `body::after`, fixed, `pointer-events: none`, tiled `src/ui/ink/grain.svg` (feTurbulence rasterised once), 40% opacity, promoted with `will-change: transform`. The tile's specks are dark with alpha, so alpha-over reads as multiply; a full-screen `mix-blend-mode` was tried and doubled repaint cost (e2e went from 21s to 45s with logout timeouts), so don't add it back. Never per element.
+**The Grain Layer.** One `body::after`, fixed, `pointer-events: none`, tiled `src/ui/ink/grain.svg` (feTurbulence rasterised once), `--grain-strength` opacity (0.4 day, 0.1 night), promoted with `will-change: transform`. The tile's specks are dark with alpha, so alpha-over reads as multiply; a full-screen `mix-blend-mode` was tried and doubled repaint cost (e2e went from 21s to 45s with logout timeouts), so don't add it back. Never per element.
 
 ## 5. Components
 
@@ -215,19 +225,31 @@ A scrolling body with the primary plate (and Delete) printed in a footer below i
 One slip of blue stock, gutter to gutter and then shrunk to its text (never pinned to half the viewport). It is always in the DOM and prints only when it has something to say. A plain confirmation fades after 3s; a delete does not, because its Undo is the only way back and a clock on the sole path to a function is a WCAG failure. It stays until Undo, Dismiss, or the next toast, and the Undo button names what it would restore.
 
 ### Chips (hall / day / meal / range / sex / goal)
-Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed.
+Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed. The group is named by `aria-label` on the `<fieldset>`, never by a visually-hidden `<legend>`: Chromium exposes a legend both as the group's name and as a text node inside it, so browse mode reads the name twice.
 
 Day chips stack (`.chip-stack`): the numeric date over a smaller caps weekday ("9/19" / "SAT"). Never a relative word
 — "Today" is wrong on a phone left open past midnight and a bare weekday does not say which week. The chip's
-accessible name is the whole date ("Saturday, September 19"), carried by `aria-label` on the input, so the stack is a
-print decision and not an announcement. A chip with no `sub` keeps its bare text node: wrapping that label in a span
+accessible name starts with what the chip prints and then spells it out ("9/19 Sat, Saturday, September 19"),
+carried by `aria-label` on the input. It must start with the visible text: a name that only spelled the date out
+failed WCAG 2.5.3, and "tap 9/19" and "tap Sat" both missed for anyone driving the app by voice. A chip with no `sub` keeps its bare text node: wrapping that label in a span
 puts the invisible input over the click target.
 
 ### Hall hours line
-Under the hall chips: the state in words first (`Open until 2:00pm · reopens 4:30pm`, `Closed · opens 4:30pm`,
-`Closed today`, `Hours unavailable`), then today's windows in Soft Ink. Split windows are always printed in full;
-a window that runs past midnight keeps the hall open into the next calendar day. Parsing and wording live in
-`src/menu/hours.ts`; anything the feed writes in a way we cannot read is "unknown", never a guess and never a crash.
+Under the hall chips, for **the day the chips have selected** — never today's status over another day's menu. Today
+gets the state in words first (`Open until 2:00pm · reopens 4:30pm`, `Closed · opens 4:30pm`, `Closed today · opens
+Mon 10:30am`, `Hours unavailable`), then today's windows in Soft Ink. Any other day gets that day's own windows under
+its weekday (`Tue 10:30am–10:00pm`) and no open/closed word, because there is no "now" on a Tuesday.
+
+The second line prints only when it is not a restatement of the first: a hall closed all day, one the feed wrote
+unreadably, and one already done for today all say it once. A hall shut for more than a day names the day it opens
+again rather than a bare "Closed" — JCL is shut for about 57 hours every weekend, which is exactly when a student
+needs telling. `now` re-derives every minute (`useNow`), so a phone left open in the queue does not keep printing a
+status that expired. The line is also spoken from a visually-hidden `role="status"` that is mounted with the screen,
+because the strip itself is created with the menu and a region born with its text is unreliably announced.
+
+Parsing and wording live in `src/menu/hours.ts`; anything the feed writes in a way we cannot read is "unknown", never
+a guess and never a crash. While the feed is still in flight the strip prints nothing at all — "Hours unavailable" is
+reserved for a request that actually failed, the same distinction the Profile week table makes.
 
 ### Profile sections
 Folded pages: a `<details>` per section with its `<h2>` inside the `<summary>`, so the heading is in the
@@ -236,7 +258,7 @@ Goals is unfolded on arrival. The fold marker is the hand-drawn chevron, turned 
 week prints as one two-column table per hall (day, hours), which still fits a 320px page.
 
 ### Inputs
-Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`. Focus everywhere: 2.5px orange outline; on the blue toast plate it switches to paper (orange on blue is 1.75:1). Date inputs use a hand-drawn calendar (`ink/calendar.svg`) in place of the browser picker glyph.
+Printed form boxes on raised paper, wobble-sm corners, 16px text, hand-drawn chevron on selects, hand-drawn box and tick for checkboxes. Invalid: 2px over-red border plus the message linked by `aria-describedby`, on the one field the message is about — never pooled across the form, or a wrong current password paints the new-password box red too. Focus everywhere: 2.5px orange outline; on the blue toast plate it switches to paper (orange on blue is 1.75:1). Date inputs use a hand-drawn calendar (`ink/calendar.svg`) in place of the browser picker glyph.
 
 ### Lists
 Station and meal headers are Bungee with a hand-drawn blue rule, sticky on Menu. Rows are divided by a dashed pencil rule. Food name: Courier 700 in Deep Ink. Portion/servings: Courier 400 in Soft Ink, smaller.
@@ -248,7 +270,7 @@ Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per i
 
 - **Do** keep numbers the hero: one stamped numeral per screen at most.
 - **Do** say state in words: "over", "Couldn't reach UT dining", "changes waiting to sync".
-- **Do** check every new text color against paper at 4.5:1 with grain in mind, on **both** stocks.
+- **Do** check every new text color against paper at 4.5:1 **with the grain layer composited over it**, on **both** stocks — the tokens alone read about 17% high on the day press.
 - **Do** let a mark grow with the user's text: reserve room with `min-height`, not `height`, and reflow a row before a track can collapse.
 - **Don't** put a clock on the only way to undo something, or `aria-label` on a paragraph (the role does not take a name; use a section).
 - **Don't** auto-invert. The night press is a second set of tokens, drawn on purpose; a filter over the day press is not it.

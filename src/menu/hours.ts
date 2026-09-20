@@ -91,9 +91,27 @@ function dayAt(week: Week, i: number): DayHours { return week[i] ?? null }
 
 export type Status =
   | { readonly state: 'open'; readonly until: number; readonly reopens: number | null }
-  | { readonly state: 'closed'; readonly opens: number | null; readonly tomorrow: boolean }
-  | { readonly state: 'closed-today' }
+  /** `day` names the day it opens again ("tomorrow", "Mon"); `null` means later today. */
+  | { readonly state: 'closed'; readonly opens: number | null; readonly day: string | null; readonly allDay: boolean }
   | { readonly state: 'unknown' }
+
+/** The short weekday `plus` days from `now`, in the reader's locale. */
+function weekday(now: Date, plus: number): string {
+  return new Date(now.getFullYear(), now.getMonth(), now.getDate() + plus).toLocaleDateString(undefined, { weekday: 'short' })
+}
+
+// Done for the day: walk forward for the next day that opens at all. JCL is shut from Saturday afternoon to Monday
+// morning, and "Closed" with no reopening time is exactly the weekend a student needs told. A day the feed wrote in
+// a way we cannot read ends the walk: we cannot promise Monday when Sunday is a question mark.
+function nextOpening(week: Week, now: Date, i: number): { opens: number | null; day: string | null } {
+  for (let n = 1; n < 7; n++) {
+    const ahead = dayAt(week, (i + n) % 7)
+    if (ahead === null) break
+    const first = ahead[0]
+    if (first !== undefined) return { opens: first.open, day: n === 1 ? 'tomorrow' : weekday(now, n) }
+  }
+  return { opens: null, day: null }
+}
 
 export function hallStatus(week: Week, now: Date): Status {
   const i = dayIndex(now)
@@ -104,12 +122,11 @@ export function hallStatus(week: Week, now: Date): Status {
   // ponytail: no "reopens" on a carried-over window. At 12:30am "Open until 1:00am" is the whole answer.
   if (late !== undefined) return { state: 'open', until: late.close - DAY, reopens: null }
   if (today === null) return { state: 'unknown' }
-  if (today.length === 0) return { state: 'closed-today' }
   const next = today.find((w) => w.open > minutes)
   const open = today.find((w) => w.open <= minutes && minutes < w.close)
   if (open !== undefined) return { state: 'open', until: open.close, reopens: next?.open ?? null }
-  if (next !== undefined) return { state: 'closed', opens: next.open, tomorrow: false }
-  return { state: 'closed', opens: dayAt(week, (i + 1) % 7)?.[0]?.open ?? null, tomorrow: true }
+  if (next !== undefined) return { state: 'closed', opens: next.open, day: null, allDay: false }
+  return { state: 'closed', ...nextOpening(week, now, i), allDay: today.length === 0 }
 }
 
 export function formatTime(minutes: number): string {
@@ -122,10 +139,10 @@ export function formatTime(minutes: number): string {
 /** One line for the selected hall: state first, in words, then the times. */
 export function statusText(s: Status): string {
   if (s.state === 'unknown') return 'Hours unavailable'
-  if (s.state === 'closed-today') return 'Closed today'
   if (s.state === 'open') return `Open until ${formatTime(s.until)}${s.reopens === null ? '' : ` · reopens ${formatTime(s.reopens)}`}`
-  if (s.opens === null) return 'Closed'
-  return `Closed · opens ${formatTime(s.opens)}${s.tomorrow ? ' tomorrow' : ''}`
+  const head = s.allDay ? 'Closed today' : 'Closed'
+  if (s.opens === null) return head
+  return `${head} · opens ${s.day === null ? '' : `${s.day} `}${formatTime(s.opens)}`
 }
 
 /** A day's windows written out, for the status line and the week table. */
@@ -133,6 +150,23 @@ export function dayText(day: DayHours): string {
   if (day === null) return 'Unknown'
   if (day.length === 0) return 'Closed'
   return day.map((w) => `${formatTime(w.open)}–${formatTime(w.close)}`).join(', ')
+}
+
+/**
+ * The hours strip for the day being browsed. `offset` is that day minus today in days: today gets its live status,
+ * any other day its own windows under its weekday, because "Today" over a Tuesday menu is a lie. The second line
+ * is dropped whenever it would only restate the first (closed all day, unreadable, or already done for today).
+ */
+export function hoursLine(week: Week, now: Date, offset: number): { readonly head: string; readonly detail: string | null } {
+  if (offset !== 0) {
+    const at = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offset)
+    return { head: `${weekday(now, offset)} ${dayText(dayAt(week, dayIndex(at)))}`, detail: null }
+  }
+  const status = hallStatus(week, now)
+  const today = dayAt(week, dayIndex(now))
+  const spent = status.state === 'closed' && status.day !== null
+  const said = spent || today === null || today.length === 0
+  return { head: statusText(status), detail: said ? null : `Today ${dayText(today)}` }
 }
 
 export async function fetchHours(fetchFn: typeof fetch): Promise<string> {

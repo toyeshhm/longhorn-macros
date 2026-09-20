@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import {
-  dayIndex, dayText, formatTime, hallStatus, parseDay, parseHours, statusText, UNKNOWN_HOURS,
+  dayIndex, dayText, formatTime, hallStatus, hoursLine, parseDay, parseHours, statusText, UNKNOWN_HOURS,
   type Week,
 } from '../src/menu/hours'
 
@@ -113,26 +113,56 @@ describe('hallStatus / statusText', () => {
   test('before the first window', () => {
     expect(statusText(hallStatus(split, at(0, 7)))).toBe('Closed · opens 9:00am')
   })
-  test('a day with no service', () => {
-    expect(statusText(hallStatus(split, at(1, 12)))).toBe('Closed today')
+  test('a day with no service still says when the hall is next open', () => {
+    expect(statusText(hallStatus(split, at(1, 12)))).toBe('Closed today · opens tomorrow 7:00am')
   })
   test('a day the feed wrote in a way we cannot read', () => {
     expect(statusText(hallStatus(split, at(3, 12)))).toBe('Hours unavailable')
   })
   test('after the last window, the next opening is named as tomorrow', () => {
-    expect(statusText(hallStatus(split, at(6, 12)))).toBe('Closed · opens 9:00am tomorrow') // Sunday, done at 11am
+    expect(statusText(hallStatus(split, at(6, 12)))).toBe('Closed · opens tomorrow 9:00am') // Sunday, done at 11am
   })
-  test('after the last window, a tomorrow that is closed or unreadable just says closed', () => {
-    expect(statusText(hallStatus(split, at(0, 22)))).toBe('Closed') // Tuesday is Closed
+  test('a closed tomorrow is walked past to the day that does open, by name', () => {
+    expect(statusText(hallStatus(split, at(0, 22)))).toBe('Closed · opens Wed 7:00am') // Tuesday is Closed
+  })
+  test('the walk stops at a day the feed wrote in a way we cannot read', () => {
     expect(statusText(hallStatus(split, at(2, 23)))).toBe('Closed') // Thursday is unreadable
+  })
+  test('a hall shut for the whole weekend is told when it reopens, not just "Closed"', () => {
+    // JCL in the live feed: open Mon–Fri, shut Saturday and Sunday.
+    const jcl = week('10:30am-10:00pm', '10:30am-10:00pm', '10:30am-10:00pm', '10:30am-10:00pm', '10:30am-3:00pm', 'Closed', 'Closed')
+    expect(statusText(hallStatus(jcl, at(4, 16)))).toBe('Closed · opens Mon 10:30am') // Friday, after the 3pm close
+    expect(statusText(hallStatus(jcl, at(5, 12)))).toBe('Closed today · opens Mon 10:30am')
+    expect(statusText(hallStatus(jcl, at(6, 23, 59)))).toBe('Closed today · opens tomorrow 10:30am')
   })
   test("a window that runs past midnight keeps the hall open into the next calendar day", () => {
     expect(statusText(hallStatus(split, at(5, 0, 30)))).toBe('Open until 1:00am') // Friday 9pm-1am, seen on Saturday
-    expect(statusText(hallStatus(split, at(5, 2)))).toBe('Closed today') // the window has ended; Saturday is closed
+    // The window has ended and Saturday itself is closed, so the answer is Sunday's opening.
+    expect(statusText(hallStatus(split, at(5, 2)))).toBe('Closed today · opens tomorrow 8:00am')
   })
   test('a week the feed did not give us at all', () => {
     expect(statusText(hallStatus([], at(0, 12)))).toBe('Hours unavailable')
     expect(statusText(hallStatus(UNKNOWN_HOURS.J2, at(0, 12)))).toBe('Hours unavailable')
+  })
+})
+
+describe('hoursLine', () => {
+  const split = week('9:00am-2:00pm|4:30pm-9:00pm', 'Closed', '7:00am-10:00pm', 'nonsense', '9:00pm-1:00am', 'Closed', '8:00am-11:00am')
+
+  test('today: the status, then today’s windows under it', () => {
+    expect(hoursLine(split, at(0, 12), 0)).toEqual({ head: 'Open until 2:00pm · reopens 4:30pm', detail: 'Today 9:00am–2:00pm, 4:30pm–9:00pm' })
+    expect(hoursLine(split, at(0, 7), 0)).toEqual({ head: 'Closed · opens 9:00am', detail: 'Today 9:00am–2:00pm, 4:30pm–9:00pm' })
+  })
+  test('today: no second line when it would only restate the first', () => {
+    expect(hoursLine(split, at(1, 12), 0).detail).toBeNull() // closed all day
+    expect(hoursLine(split, at(3, 12), 0).detail).toBeNull() // unreadable
+    expect(hoursLine(split, at(0, 22), 0).detail).toBeNull() // today is spent; the line already names another day
+  })
+  test('another day: that day’s own windows under its weekday, and no open/closed word', () => {
+    expect(hoursLine(split, at(0, 12), 2)).toEqual({ head: 'Wed 7:00am–10:00pm', detail: null })
+    expect(hoursLine(split, at(0, 12), 1)).toEqual({ head: 'Tue Closed', detail: null })
+    expect(hoursLine(split, at(0, 12), 3)).toEqual({ head: 'Thu Unknown', detail: null })
+    expect(hoursLine(split, at(6, 12), -1)).toEqual({ head: 'Sat Closed', detail: null }) // and backwards over a week edge
   })
 })
 

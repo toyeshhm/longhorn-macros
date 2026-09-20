@@ -54,14 +54,22 @@ test('Profile: the week table prints every hall and day from the live UT hours f
 
 test('Profile: the log exports as one JSON file', async ({ page }) => {
   await signUp(page)
+  // One weigh-in, so the spoken confirmation has a singular count to get right.
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Progress' }).click()
+  await page.getByLabel('Weight (lb)').fill('170')
+  await page.getByRole('button', { name: 'Save weight' }).click()
+  await tabs.getByRole('button', { name: 'Profile' }).click()
   await page.getByRole('heading', { name: 'Data' }).click()
   const [download] = await Promise.all([
     page.waitForEvent('download'),
     page.getByRole('button', { name: 'Export my log' }).click(),
   ])
   expect(download.suggestedFilename()).toBe(`longhorn-macros-${localDateKey(new Date())}.json`)
-  await expect(page.getByRole('status').filter({ hasText: /^Exported / })).toBeVisible()
-  await expect(page.getByText(/changes waiting to sync, /)).toBeVisible()
+  await expect(page.getByRole('status').filter({ hasText: /^Exported / }))
+    .toHaveText('Exported 0 logged foods, 1 weigh-in and 0 custom foods.')
+  // Singular or plural depending on whether the weigh-in has drained yet — the point is that it agrees with itself.
+  await expect(page.getByText(/^1 change waiting|^\d+ changes waiting/)).toBeVisible()
 })
 
 test('Appearance: Night repaints on dark stock, survives a reload, and Match phone follows the device', async ({ page }) => {
@@ -126,10 +134,19 @@ test.describe(() => {
     await submit.click()
     await expect(page.getByRole('alert')).toContainText('New password must be at least 6 characters.')
 
+    // The message belongs to the field it is about: the new-password box is not marked invalid by it.
+    await expect(page.getByLabel('New password')).toHaveAccessibleDescription('New password must be at least 6 characters.')
+    await expect(page.getByLabel('New password')).toHaveAttribute('aria-invalid', 'true')
+    await expect(page.getByLabel('Current password')).toHaveAttribute('aria-invalid', 'false')
+
     const next = crypto.randomUUID()
     await page.getByLabel('New password').fill(next)
     await submit.click()
     await expect(page.getByRole('alert')).toContainText('Current password is incorrect.')
+    await expect(page.getByLabel('Current password')).toHaveAccessibleDescription('Current password is incorrect.')
+    await expect(page.getByLabel('New password')).toHaveAttribute('aria-invalid', 'false')
+    // Password managers need an identifier in the form to tie the new password to the account.
+    await expect(page.locator('form input[autocomplete="username"]')).toHaveValue(email)
 
     await page.getByLabel('Current password').fill(password)
     await submit.click()

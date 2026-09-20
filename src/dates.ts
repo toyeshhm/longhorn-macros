@@ -22,13 +22,14 @@ export function feedDateToKey(s: string): string {
 }
 
 // Menu day chips print the date, not "Today"/"Tomorrow": a relative word is ambiguous on a phone left open
-// overnight, and the weekday alone does not say which week. The full date stays the accessible name.
+// overnight, and the weekday alone does not say which week. `full` is the chip's accessible name, and it starts
+// with the two strings the chip prints: a name that replaced the visible text failed WCAG 2.5.3, so "tap 9/19"
+// and "tap Sat" both missed for anyone driving the app by voice.
 export function dateLabel(key: string): { date: string; weekday: string; full: string } {
   const [y, m, d] = parts(key)
   const at = new Date(y, m - 1, d, 12)
-  return {
-    date: at.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }),
-    weekday: at.toLocaleDateString(undefined, { weekday: 'short' }),
-    full: at.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' }),
-  }
+  const date = at.toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })
+  const weekday = at.toLocaleDateString(undefined, { weekday: 'short' })
+  const spoken = at.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })
+  return { date, weekday, full: `${date} ${weekday}, ${spoken}` }
 }

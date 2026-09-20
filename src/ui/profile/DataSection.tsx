@@ -4,6 +4,9 @@ import { log } from '../../log'
 import { useApp } from '../context'
 import { useLive } from '../hooks'
 
+// The status line is read out verbatim, right under a sync line that already pluralises: "1 logged foods" was audible.
+const count = (n: number, thing: string): string => `${String(n)} ${thing}${n === 1 ? '' : 's'}`
+
 export function DataSection() {
   const { store, engine, userId } = useApp()
   const [status, setStatus] = useState<string | null>(null)
@@ -21,7 +24,7 @@ export function DataSection() {
     a.click()
     // Revoked a tick later: revoking in the same task cancels the download in Chromium.
     setTimeout(() => { URL.revokeObjectURL(url) }, 0)
-    setStatus(`Exported ${String(foodLog.length)} logged foods, ${String(weights.length)} weigh-ins and ${String(customFoods.length)} custom foods.`)
+    setStatus(`Exported ${count(foodLog.length, 'logged food')}, ${count(weights.length, 'weigh-in')} and ${count(customFoods.length, 'custom food')}.`)
   }
 
   return (

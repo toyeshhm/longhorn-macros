@@ -1,7 +1,7 @@
 import { expect, test } from './fixtures'
-import { dateLabel, localDateKey } from '../src/dates'
+import { dateLabel, daysBetween, localDateKey } from '../src/dates'
 import { fetchMenu } from '../src/menu/feed'
-import { dayText, fetchHours, hallStatus, parseHours, statusText } from '../src/menu/hours'
+import { fetchHours, hoursLine, parseHours } from '../src/menu/hours'
 import { currentMeal, groupByStation } from '../src/menu/select'
 
 // Live UT feed on both sides: the test derives the expected first row (default hall J2, today, current meal)
@@ -100,12 +100,30 @@ test('the hall hours line says whether the selected hall is open, from the live 
 
   const line = page.locator('p.hall-hours')
   const now = new Date()
-  const today = (now.getDay() + 6) % 7
-  await expect(line).toContainText(statusText(hallStatus(hours.J2, now)))
-  await expect(line).toContainText(dayText(hours.J2[today] ?? null))
+  const j2 = hoursLine(hours.J2, now, 0)
+  await expect(line).toContainText(j2.head)
+  if (j2.detail !== null) await expect(line).toContainText(j2.detail)
+  // The same line is spoken from a region that was on the page before the menu arrived, so switching hall is
+  // announced rather than silently repainted.
+  const spoken = page.getByRole('status').filter({ hasText: j2.head })
+  await expect(spoken).toHaveCount(1)
+
   // Switching hall switches the line with it.
   await page.getByRole('radiogroup', { name: 'Hall' }).getByRole('radio', { name: 'JCL' }).check()
-  await expect(line).toContainText(statusText(hallStatus(hours.JCL, now)))
+  await expect(line).toContainText(hoursLine(hours.JCL, now, 0).head)
+
+  // A day that is not today prints that day's own windows: never "Today" over another day's menu.
+  const days = page.getByRole('radiogroup', { name: 'Day' }).getByRole('radio')
+  const dates = await page.getByRole('radiogroup', { name: 'Day' }).locator('input').evaluateAll(
+    (els) => els.map((e) => e.getAttribute('value') ?? ''),
+  )
+  const other = dates.findIndex((d) => d !== localDateKey(now))
+  if (other >= 0) {
+    const offset = daysBetween(localDateKey(now), dates[other] ?? '')
+    await days.nth(other).check()
+    await expect(line).toHaveText(hoursLine(hours.JCL, now, offset).head)
+    await expect(line).not.toContainText('Today')
+  }
 })
 
 // Hall choice survives a reload; day and meal chips pick what's shown (checked against the live feed).
@@ -140,6 +158,8 @@ test('hall is remembered; day and meal chips switch the listing', async ({ page 
   if (first === undefined) throw new Error('UT feed has no dates')
   const label = dateLabel(first)
   await expect(days.first()).toHaveAccessibleName(label.full)
+  // WCAG 2.5.3: what the chip prints is where its spoken name starts, so "tap 9/19" and "tap Sat" both land.
+  expect(label.full.startsWith(`${label.date} ${label.weekday}`)).toBe(true)
   await expect(page.getByRole('radiogroup', { name: 'Day' }).locator('label').first()).toContainText(label.date)
   await expect(page.getByRole('radiogroup', { name: 'Day' })).not.toContainText('Today')
   await days.last().check()

@@ -12,7 +12,13 @@ test('feedDateToKey', () => {
   expect(() => feedDateToKey('2026-09-18')).toThrow(/feed date/)
 })
 test('addDays rejects malformed key', () => { expect(() => addDays('nope', 1)).toThrow(/date key/) })
-test('dateLabel prints the date and weekday separately, and the full date for screen readers', () => {
-  expect(dateLabel('2026-09-19')).toEqual({ date: '9/19', weekday: 'Sat', full: 'Saturday, September 19' })
-  expect(dateLabel('2027-01-01').full).toBe('Friday, January 1')
+test('dateLabel prints the date and weekday separately, and speaks both before the full date', () => {
+  expect(dateLabel('2026-09-19')).toEqual({ date: '9/19', weekday: 'Sat', full: '9/19 Sat, Saturday, September 19' })
+  expect(dateLabel('2027-01-01').full).toBe('1/1 Fri, Friday, January 1')
+})
+test('the spoken name of a day chip starts with what the chip prints (WCAG 2.5.3)', () => {
+  for (const key of ['2026-09-19', '2026-12-31', '2027-03-01']) {
+    const { date, weekday, full } = dateLabel(key)
+    expect(full.startsWith(`${date} ${weekday}`)).toBe(true)
+  }
 })

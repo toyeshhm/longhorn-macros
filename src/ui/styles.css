@@ -10,7 +10,7 @@
   --blue: #2B4C9B;
   --ink: #1E3470;
   --ink-deep: #0F1A40;
-  --ink-soft: #56608A;
+  --ink-soft: #4E5780; /* 6.4:1 on paper, 5.3:1 with the grain layer composited over it — measure with grain on */
   --orange: #BF5700;
   --teal: #00838A;
   --mustard: #E0A800;
@@ -21,6 +21,9 @@
   /* The orange drum is laid over the blue one. On dark stock ink does not darken what it lands on, it lightens it. */
   --blend: multiply;
   --grain-strength: 0.4;
+  /* --veil keeps the sheet's paper veil equal to the page grain; --plate-k lifts the alpha plates on the night
+     press, where an alpha orange darkens toward the stock and prints brown instead of lifting off it. */
+  --veil: calc(1 - var(--grain-strength)); --plate-k: 1;
   /* Hand-inked art referenced from CSS cannot read these tokens (an image has no access to them), so each press
      gets its own file and the token picks the press. Keep the pair in step: see DESIGN.md §2. */
   --mark-rule: url('./ink/rule.svg');
@@ -60,8 +63,9 @@
   --orange-rgb: 255 145 71;
   --paper-rgb: 20 26 51;
   --blend: screen;
-  /* Dark specks on dark stock only make mud: the night grain is pale, and lighter-handed so it stays a texture. */
-  --grain-strength: 0.28;
+  /* Pale specks on near-black are a far bigger excursion than dark specks on cream: 0.1 measures as the day
+     press's 0.4 (1.18:1 vs 1.14:1 speckle contrast), where 0.28 read as sensor noise. */
+  --grain-strength: 0.1; --plate-k: 1.7;
   --mark-rule: url('./ink/rule-night.svg');
   --mark-rule-thick: url('./ink/rule-thick-night.svg');
   --mark-rule-pencil: url('./ink/rule-pencil-night.svg');
@@ -144,7 +148,7 @@ button.link {
   min-width: 0; padding: 0 4px; color: var(--ink);
   text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px;
 }
-button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / 0.55); }
+button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
 button.icon-btn { display: inline-grid; place-items: center; padding: 0; border: 0; background: none; }
 :focus-visible { outline: 2.5px solid var(--orange); outline-offset: 2px; }
 .toast :focus-visible { outline-color: var(--paper); }
@@ -185,7 +189,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .screen { padding: 12px 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); max-width: 640px; margin: 0 auto; }
 .masthead {
   margin: 4px 0 14px; font-family: var(--display); font-weight: 400; font-size: min(1.75rem, 9vw); line-height: 1.1;
-  color: var(--ink); text-shadow: 2px 1.5px 0 rgb(var(--orange-rgb) / 0.55);
+  color: var(--ink); text-shadow: 2px 1.5px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k)));
 }
 
 /* Banners: slips of paper tucked above the page. */
@@ -224,6 +228,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .tabbar button[aria-current='page'] span { text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 3px; }
 
 /* Menu */
+.menu .search::-webkit-search-cancel-button { appearance: none; } /* a geometric × next to the hand-inked glass */
 .menu .search { width: 100%; padding-left: 42px; background: var(--paper-raised) var(--mark-search) no-repeat 12px center / 22px; }
 .menu > button.link { display: inline-flex; align-items: center; gap: 4px; margin-top: 6px; min-height: 44px; }
 .menu > button.link .mark { width: 18px; height: 18px; }
@@ -268,8 +273,8 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .sheet {
   width: 100%; max-width: 560px; max-height: 90dvh; overflow: hidden;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
-  /* Same grain strength as the page layer: a 60% paper veil over the tile equals the page's grain at 40% opacity. */
-  background: linear-gradient(rgb(var(--paper-rgb) / 0.6), rgb(var(--paper-rgb) / 0.6)), var(--mark-grain) repeat, var(--paper); color: var(--ink);
+  /* Same grain as the page layer on either press: --veil is 1 minus the page's grain opacity. */
+  background: linear-gradient(rgb(var(--paper-rgb) / var(--veil)), rgb(var(--paper-rgb) / var(--veil))), var(--mark-grain) repeat, var(--paper); color: var(--ink);
 }
 /* The column lives on [open], never on .sheet: a bare `display` here would beat the browser's own
    `dialog:not([open]) { display: none }` and print every closed sheet into the page. */
@@ -296,7 +301,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
    fold on a short viewport. The full name is still the dialog's accessible name. */
 .sheet-head h2 {
   min-width: 0; margin: 8px 0 0; overflow-wrap: break-word; font-family: var(--display); font-weight: 400;
-  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / 0.45);
+  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / calc(0.45 * var(--plate-k)));
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .sheet p { margin: 0; }
@@ -434,7 +439,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .goals-form .toggle { display: flex; gap: 4px; align-items: center; font-weight: 700; }
 .overrides summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .overrides[open] .nutrient-grid { margin-top: 10px; }
-.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(var(--orange-rgb) / 0.55); }
+.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
 .goal-panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; }
 .goal-panel dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); margin: 8px 0; font-variant-numeric: tabular-nums; }
 .goal-panel dt, .goal-panel dd { padding: 7px 0; background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
@@ -448,7 +453,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 /* Login masthead */
 .login { max-width: 420px; margin: 0 auto; padding: 40px 20px; }
 .login-mast { margin-bottom: 28px; }
-.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(var(--orange-rgb) / 0.6); }
+.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(var(--orange-rgb) / calc(0.6 * var(--plate-k))); }
 .login-mast h1 span { display: block; }
 .login-mast h1 span + span { margin-left: 0.6em; }
 .login-mast p { margin: 0; max-width: 32ch; }

@@ -79,6 +79,17 @@ export function useHours(): HoursState {
   return state
 }
 
+// A screen that prints "Open until 10:00pm" has to age with the clock: rendered once, it went on saying it an hour
+// after the hall shut, and only an unrelated tap corrected it. One minute is the finest the hours strip prints.
+export function useNow(): Date {
+  const [now, setNow] = useState(() => new Date())
+  useEffect(() => {
+    const t = setInterval(() => { setNow(new Date()) }, 60_000)
+    return () => { clearInterval(t) }
+  }, [])
+  return now
+}
+
 export function useProfile(): ProfileRow | null | undefined {
   const { store, userId } = useApp()
   return useLive(async () => (await store.get('profile', userId)) ?? null, [userId])
