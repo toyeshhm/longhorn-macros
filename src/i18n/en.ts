@@ -325,9 +325,11 @@ export const en = {
   'profile.language': 'Language',
   'profile.languageNote': "Kept on this device only. UT's own food, hall and station names stay in English, because that is how UT publishes them.",
   'press.auto': 'Match phone',
-  'press.day': 'Day press',
-  'press.night': 'Night press',
-  'press.cherry': 'Cherry press',
+  // One idiom for all six: the press is named by its stock, never "Day press" beside a bare "Newsprint" in the
+  // same one-of-N pick. The DESIGN table names them the same way.
+  'press.day': 'Day',
+  'press.night': 'Night',
+  'press.cherry': 'Cherry',
   'press.newsprint': 'Newsprint',
   'press.blueprint': 'Blueprint',
   'press.meadow': 'Meadow',

@@ -115,7 +115,7 @@ test('Appearance: a press repaints on its own stock, survives a reload, and Matc
   await expect(presses.getByRole('radio', { name: 'Match phone' })).toBeChecked() // the default
 
   const day = await page.evaluate(bodyBackground)
-  await presses.getByRole('radio', { name: 'Night press' }).check()
+  await presses.getByRole('radio', { name: 'Night' }).check()
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'night')
   const night = await page.evaluate(bodyBackground)
   expect(night).not.toBe(day)
@@ -139,7 +139,7 @@ test('Appearance: a press repaints on its own stock, survives a reload, and Matc
   expect(await page.locator('meta[name="theme-color"]').getAttribute('content')).toBe(PRESSES.meadow.paper)
 
   // A named press stays put whatever the phone does.
-  await presses.getByRole('radio', { name: 'Cherry press' }).check()
+  await presses.getByRole('radio', { name: 'Cherry' }).check()
   await page.emulateMedia({ colorScheme: 'dark' })
   await expect(page.locator('html')).toHaveAttribute('data-theme', 'cherry')
   // And the two "which press for which mode" groups only print while Match phone is on: printed under a named

@@ -105,7 +105,7 @@ nothing.
 
 **Key Characteristics:**
 - Two inks plus paper on every press; two extra macro inks used only for carbs (teal) and fat (mustard). Protein prints in the first drum as a solid fill, calories in the second.
-- Misregistration is the signature: orange plate offset 1.5 to 3px from the blue.
+- Misregistration is the signature: the second drum offset 1.5 to 3px from the first, scaled per press by `--reg-x` / `--reg-y` so six runs off one machine do not all slip the same way.
 - Hand-drawn SVG for every mark; no icon library, no stock primitives.
 - Motion is rare: the "line boil" on doodles, the sheet slide, the toast. Reduced motion stops all of them, plus the tab plate fade.
 - Every kcal and mg figure goes through `n()` in `src/ui/format.ts` (thousands separators), and every printed servings count through `formatServings()` in `src/servings.ts` (quarters, thirds and halves print as fractions, everything else to 2dp), so a value never prints two ways and a typed "1 1/3" never comes back as 1.3333333333333333.
@@ -147,10 +147,30 @@ They live in one table in `src/theme.ts`, which is the only place any ink in the
 | --- | --- | --- | --- | --- | --- | --- |
 | **Day** | warm cream `#F7F3EA` | federal blue `#2B4C9B` | burnt orange `#BF5700` | teal `#00838A` | mustard `#E0A800` | dark specks, 0.4 |
 | **Night** | ink navy `#141A33` | lifted blue `#8AA6EE` | lifted orange `#FF9147` | `#46CFC6` | `#F5CE5A` | pale specks, 0.1 |
-| **Cherry** | bright white `#FCFBFD` | federal blue `#2B4C9B` | fluorescent pink `#DB0068` | `#00767E` | `#C89200` | dark specks, 0.3 |
-| **Newsprint** | tan `#E6DCC4` | graphite `#4A453C` | muted red `#A52E1E` | `#10585A` | `#9A7415` | coarse dark specks, 0.55 |
-| **Blueprint** | deep navy `#0B2039` | cyan `#5FC9EA` | chalk `#F7EFDC` | mint `#63E0B4` | amber `#EBB94F` | a ruled drafting grid, 0.12 |
-| **Meadow** | pale sage `#E7EDE0` | deep green `#1F5B3A` | ochre `#A0651B` | `#17697E` | `#D9A800` | dark specks, 0.35 |
+| **Cherry** | bright white `#FCFBFD` | graphite key `#3F3644` | fluorescent pink `#DB0068` | `#00767E` | `#C89200` | fine tight specks, 0.3 |
+| **Newsprint** | tan `#E6DCC4` | steel graphite `#3E4A52` | muted red `#A52E1E` | `#10585A` | `#9A7415` | coarse dark specks, 0.55 |
+| **Blueprint** | deep navy `#0B2039` | cyan `#5FC9EA` | drafting red `#E2693C` | mint `#63E0B4` | amber `#EBB94F` | a ruled drafting grid, 0.12 |
+| **Meadow** | pale sage `#E7EDE0` | deep green `#1F5B3A` | ochre `#A0651B` | `#17697E` | `#D9A800` | soft large specks, 0.35 |
+
+Three of those inks are the way they are because the first cut of the six presses got them wrong, and the
+failures are worth keeping written down:
+
+- **Cherry was day with the second drum swapped.** Its first drum, its Ink and its grain were byte-identical to
+  day's, so the linework, the hatch, the type, the tab icons, the bar outlines and the speckle tile were the
+  day press's plates with a pink over them — one design with the hue slider moved, which is the exact thing the
+  press system exists to avoid. The classic riso pairing is fluorescent pink over a **graphite key**, not over
+  federal blue, so cherry is re-inked in graphite with its own type and its own finer, tighter stock texture.
+- **Newsprint's first drum was the same grey as its Soft Ink** (`#4A453C` against `#4C4535`, 1.00:1). The
+  protein plate, the hand rules, the bar hatch and the secondary body copy all printed in one ink, and the
+  protein row read as an unfilled box beside an inked carbs chip. The drum is cool steel now, so it is a drum.
+- **Blueprint's second drum was the chalk the type was set in** (`#F7EFDC` against `#E4EDF4`, 1.03:1). Every
+  off-register plate — the signature of the run — printed inside the letterform it was supposed to sit beside.
+  It is a drafting red now, which leaves the chalk to the type and keeps amber and mint distinct.
+
+`tests/theme.test.ts` holds both of those shut: no macro ink may be mixed within 24 RGB units of any of the
+press's three text inks, and the second drum composited at the stylesheet's own plate alpha must clear 2:1
+against Ink. Contrast alone cannot carry the first rule — day's protein plate is federal blue against a darker
+federal blue type, 1.15:1 against Soft Ink, and that pair is the design.
 
 **Ink roles are the same on every press.** Calories are the second drum, protein the first, carbs teal, fat
 mustard. The first drum is all linework, every hand stroke and the solid protein plate; the second is the
@@ -169,7 +189,9 @@ outline; the outline is what has to clear 3:1, and the test checks it there.
 1. `Press` in `src/theme.ts` has no optional fields, so a press that leaves anything out is a compile error.
 2. `tests/theme.test.ts` measures every text token against every one of its three stocks with the grain
    composited, and every macro ink and the focus ring against its paper. Under 4.5:1 for text or 3:1 for a
-   boundary and `make check` fails.
+   boundary and `make check` fails. It also holds the three relationships a press can get wrong *between* its
+   own inks rather than against its stock: no macro ink within 24 RGB units of a text ink, the second drum at
+   plate alpha clearing 2:1 against Ink, and no two presses sharing a stock, a stock texture or a slip.
 3. `e2e/press.spec.ts` measures the same thing on **rendered pixels** — the grain layer really painted over the
    text, the second drum really multiplied or screened onto the stock — on body text and on the calories fill,
    for every press. The tokens alone read about 17% high on a light stock, which is what the grain costs.
@@ -184,24 +206,48 @@ Measured, for the record: body text runs 5.4:1 (meadow) to 8.2:1 (blueprint) and
 - **When the press is chosen.** `public/theme-boot.js` runs blocking in `<head>`, before the bundle that carries
   the stylesheet: the stock is on the root element at first paint, so a Night reader never gets a screenful of
   cream while 300KB of JavaScript parses. It carries one line per press — stock and scheme — and nothing else,
-  because nothing but the stock is painted before the bundle mounts the app. `src/ui/theme.ts` owns the press
-  from then on and writes the rest of the token set onto the root.
+  because nothing but the stock is painted before the bundle mounts the app. It also carries the one-shot upgrade
+  off the two-theme build's `lm-theme` key, and it looks its stock table up on a null-prototype object — as a
+  plain literal, a stored `constructor` or `__proto__` came back truthy, `.slice` threw, and the uncaught error
+  killed the rest of the script and cost the whole pre-paint press, which is the one thing it exists to protect.
+  `src/ui/theme.ts` owns the press from then on and writes the rest of the token set onto the root.
+- **The installed app's splash.** An installed PWA's standalone splash is painted from the *manifest's* colours,
+  which the OS reads long before the document exists, so `<meta name="theme-color">` cannot reach it: one
+  manifest meant a full screen of day cream ahead of a navy app at every cold launch on five of the six presses.
+  `vite.config.ts` emits one manifest per press off the same table and `src/ui/theme.ts` points the document's
+  `<link rel="manifest">` at the running press's copy.
 - **`--blend`.** The second drum multiplies onto light stock and **screens** onto dark: ink on dark paper lightens
   what it lands on. Derived from the press's `scheme`; no component re-states its blend mode.
-- **`--grain-strength`, and the tile itself.** Dark specks on dark stock are mud, so a dark press's speck colour
-  is pale — and pale specks on near-black stock are a far bigger excursion than dark specks on cream, so night
-  runs at **0.1** against day's 0.4. Measured over their own stocks those match (1.18:1 vs 1.14:1 speckle
-  contrast); the 0.28 it started at read as sensor noise over every flat navy area. Newsprint runs the other way:
-  0.55 at a coarser frequency on a bigger tile, because that is what newsprint is. Blueprint's tile is not
-  turbulence at all, it is a ruled 44px drafting grid.
-- **`--rule-weight`.** Every hand-ruled stroke is multiplied by it. Newsprint is 1.35; a smooth stock is 1.
+- **`--grain-ink` / `--grain-stock`, and the tile itself.** Dark specks on dark stock are mud, so a dark press's
+  speck colour is pale — and pale specks on near-black stock are a far bigger excursion than dark specks on
+  cream, so night runs at **0.1** against day's 0.4. Measured over their own stocks those match (1.18:1 vs
+  1.14:1 speckle contrast); the 0.28 it started at read as sensor noise over every flat navy area. Newsprint
+  runs the other way: 0.55 at a coarser frequency on a bigger tile, because that is what newsprint is.
+  Blueprint's tile is not turbulence at all, it is a ruled 44px drafting grid. **The tile size and frequency are
+  the press's too, not just the opacity** — day, night, cherry and meadow shipped as the identical turbulence at
+  220/0.9 with four different opacities, which is one texture at four densities rather than four stocks;
+  `tests/theme.test.ts` now fails if two presses rasterise the same tile. Which of the two grain layers a press
+  prints on is derived from `grid`, and is the whole of §4's "The Grain Layer".
+- **`--rule-weight`.** Multiplies every hand-ruled stroke the stylesheet draws — the bar outline and hatch, the
+  fat ink's outline, the chart's axis, ticks, trend and predicted line — and every stroke in the CSS-referenced
+  marks of `src/ink.ts`. Newsprint is 1.35; a smooth stock is 1. **Ceiling:** the component SVGs
+  (`TabIcons.tsx`, `Marks.tsx`, `Badges.tsx`, `Doodles.tsx`) draw their weights as literal `stroke-width`
+  attributes and do not pick it up, so newsprint's coarser press shows on the rules and the bars but not on the
+  tab icons or the badge stamps. Moving them onto the token means `stroke-width="calc(1.8 * var(--rule-weight))"`
+  on about thirty attributes, and `var()` inside an SVG presentation attribute has a history of not resolving in
+  Safari — on an iPhone PWA the failure mode is every hand-drawn icon silently falling back to a 1px hairline.
+  Not worth a cosmetic multiplier; if it is ever wanted, read the weight in Preact and pass it as a prop.
+- **`--reg-x` / `--reg-y`.** How far this run slipped. Every off-register plate in the stylesheet is written
+  `calc(2.5px * var(--reg-x))` rather than a literal pair, so each press misregisters by its own distance in its
+  own direction. They all shipped identical — ten hard-coded px pairs, the same slip up-and-right on all six —
+  which made the one mark the design calls its signature the one thing that did not change with the press.
 - **The hand-inked art.** See below: one copy of the path data, re-inked per press.
 - **`--orange-rgb` / `--paper-rgb`.** The off-register text-shadows and the sheet's paper veil are written as
   `rgb(var(--…) / a)` so they follow the press at whatever alpha the component asked for.
 - **`--plate-k`.** An alpha plate mixes toward the stock, so the same orange that *lifts* on cream *darkens* on
   navy and prints brown — the opposite of what `--blend: screen` states. Every offset plate's alpha is written
   `calc(a * var(--plate-k))`, 1 on light stock and 1.7 on dark, so a plate stays lifted on both.
-- **`--veil`.** The sheet's paper veil, `1 - grain-strength`, so its grain equals the page layer's on any press.
+- **`--veil`.** The sheet's paper veil, `1 - grainStrength`, so its grain equals the page layer's on any press.
 
 ### The marks are drawn once, not once per press
 
@@ -221,6 +267,8 @@ because this is a single-page app and nothing but the stock is painted before th
 
 ### Named Rules
 **The Macro Ink Rule.** Calories are orange, protein blue, carbs teal, fat mustard, everywhere they appear: bars, swatches in the nutrient table, the targets panel, the protein figure on menu rows and stats. The name always sits beside the ink.
+
+That last sentence is load-bearing, not a nicety: **the ink never carries the macro alone, because on four of the six presses two of the four macro inks do collapse under simulated dichromacy.** Measured on the rendered bar fills (grain and blend mode included), Viénot/Brettel/Mollon: cherry's calories and carbs sit at ΔE 7.2 under protanopia, newsprint's protein and carbs at ΔE 8.8, night's calories and fat at ΔE 9.9 under deuteranopia, blueprint's calories and carbs at ΔE 10.3. Day and meadow stay above ΔE 25 in both simulations. Four inks that are all distinct on all six presses under both simulations is not reachable while each press also keeps its own two drums, its own stock and 3:1 against that stock — so the name is the channel and the ink is the decoration, and every sweep of Tracker, Health and the nutrient table confirms the label is inline with its swatch. The upgrade, if this is ever not enough: `Swatch` in `src/ui/icons/Marks.tsx` is hand-drawn, so a different hand-inked mark per macro is four path strings and makes the four readable with no colour at all.
 
 **The Two Drum Rule.** Anything decorative is the first drum or the second. The macro inks are data, not decoration. The first drum as protein data is always a solid plate; as decoration it is always a line or hatch.
 
@@ -245,9 +293,14 @@ Both self-hosted as latin-subset woff2 under `public/fonts/` (OFL, licence files
 
 ## 4. Elevation
 
-Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard orange offset (`box-shadow: 3px 3px 0 #BF5700`, 2px for chips, 4px at 55% for the targets slip). Pressing a button moves it 1px onto its plate. Bottom sheets are a fresh sheet of the same grained stock (grain tile under a `--veil` paper veil, which is 1 minus the page layer's grain, so the two always match) over a blue ink wash (`rgb(30 52 112 / .35)`).
+Flat print. There are no soft shadows. Depth is a second plate: primary buttons, selected chips, the toast and the targets slip carry a hard second-drum offset (`box-shadow: calc(3px * var(--reg-x)) calc(3px * var(--reg-y)) 0 var(--orange)`, 2px for chips, 4px at 55% for the targets slip — the press's own slip, never a literal pair). Pressing a button moves it 1px onto its plate. A control that is unavailable says so with an unprinted plate and a dashed edge (`--paper-shade`, `--ink-soft`, the vocabulary the unearned badge cards already use), never with alpha: a blanket `opacity: .55` faded the label with the plate and put Add under 4.5:1 on every press for as long as the servings box was empty. Bottom sheets are a fresh sheet of the same grained stock (grain tile under a `--veil` paper veil, which is 1 minus the page layer's grain, so the two always match) over a blue ink wash (`rgb(30 52 112 / .35)`).
 
-**The Grain Layer.** One `body::after`, fixed, `pointer-events: none`, tiled `src/ui/ink/grain.svg` (feTurbulence rasterised once), `--grain-strength` opacity (0.4 day, 0.1 night), promoted with `will-change: transform`. The tile's specks are dark with alpha, so alpha-over reads as multiply; a full-screen `mix-blend-mode` was tried and doubled repaint cost (e2e went from 21s to 45s with logout timeouts), so don't add it back. Never per element.
+**The Grain Layer.** Two layers, and a press prints on exactly one of them. The tile itself is `--mark-grain`, built per press by `grain()` in `src/ink.ts` and handed to CSS as a `data:` URI (feTurbulence rasterised once, or a ruled grid on a drafting stock) — there is no `src/ui/ink/` any more, see §2.
+
+- A **speckle** press inks `body::after`: fixed, `pointer-events: none`, `--grain-ink` opacity (0.4 day, 0.1 night), promoted with `will-change: transform`, over the type and over the tab bar like ink on the finished page.
+- A **ruled** press (blueprint) inks `body::before` instead: absolute inside the body, under the type, `--grain-stock` opacity. A random speckle hides that the fixed layer does not move; a 44px ladder of rules does not. Welded to the viewport it stayed put while every line of type slid through it, which reads as a screen overlay laid on the app rather than as the sheet it is printed on — and it printed the grid over the fixed tab bar and its labels.
+
+The tile's specks are dark with alpha, so alpha-over reads as multiply; a full-screen `mix-blend-mode` was tried and doubled repaint cost (e2e went from 21s to 45s with logout timeouts), so don't add it back. Never per element.
 
 ## 5. Components
 
@@ -262,7 +315,7 @@ Flat print. There are no soft shadows. Depth is a second plate: primary buttons,
 Three hand-inked frames of the same doodle, swapped at ~8fps with `step-end` visibility keyframes (`.boil-1/2/3`, 0.36s cycle). `prefers-reduced-motion` freezes frame 1. Only on doodles.
 
 ### Hand-drawn bars (`InkBar`)
-Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble that moves with the amount; the part still left is hatched in blue. Over target: the fill runs full and dark cross-hatch overprints it, and the text says "over". `role="progressbar"` with value text.
+Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble that moves with the amount; the part still left is hatched in blue. Over target: the fill runs full and the cross-hatch is **knocked out of the plate** — stroked in `--paper`, so its gaps print the stock — and the text says "over". Overprinted in an ink instead it was invisible on 14 of the 24 press/bar pairs, worst at 1.13:1 for a chalk hatch on blueprint's chalk calories fill, because the one ink dark enough to read on a light press's fill is the lightest ink on a dark one. Knocked out, the mark's contrast is the fill-against-stock ratio the token test already holds at 3:1 for every macro ink on every press, so there is no new token to keep honest. `role="progressbar"` with value text.
 
 The three macro rows share one subgrid so the bars align, but the bar's track is never allowed to starve: it has a 3rem floor, and under 16em of the row's own width (a container query, because media-query `em` cannot see the page's font-size) the row reflows to two lines, name and number above, bar full width below. A bar that has printed its aria but not its ink is a bug the e2e catches at 320px with 32px root text.
 

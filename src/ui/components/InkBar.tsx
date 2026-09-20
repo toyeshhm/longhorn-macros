@@ -2,7 +2,10 @@ import type { Ink } from '../icons/Marks'
 
 // Hand-drawn progress bar. The outline is inked once by hand; the fill's right edge carries a fixed,
 // hand-picked wobble that travels with the fill amount, and the part still left is hatched in blue.
-// Over target: the whole bar prints in ink and blue cross-hatch overprints it (text says "over" too).
+// Over target: the whole bar prints in the macro's ink and the cross-hatch is knocked out of that plate rather
+// than overprinted on it — it is drawn last and stroked in the stock, so its gaps are unprinted paper. Stroked
+// in an ink it vanished on the presses where the fill and the darkest ink sit at the same value (text says
+// "over" too, which is what actually carries the state).
 const W = 320
 const END = 313 // inner right edge of the outline
 const f = (n: number): string => String(Math.round(n * 10) / 10)

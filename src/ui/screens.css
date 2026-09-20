@@ -29,14 +29,14 @@
 /* Capped, not full-bleed: the type inside is in user units, so a chart stretched across a laptop prints its own
    axis labels at 26px. The geometry sizes that type from the reader's text setting (src/progress.ts). */
 .ink-chart > svg { display: block; width: 100%; max-width: 440px; height: auto; font-family: var(--text); overflow: visible; }
-.ink-chart .tick path { fill: none; stroke: var(--blue); stroke-opacity: 0.35; stroke-width: 1; stroke-dasharray: 14 3 22 4 9 3; }
-.ink-chart .axis { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; }
+.ink-chart .tick path { fill: none; stroke: var(--blue); stroke-opacity: 0.35; stroke-width: calc(1px * var(--rule-weight)); stroke-dasharray: 14 3 22 4 9 3; }
+.ink-chart .axis { fill: none; stroke: var(--ink); stroke-width: calc(1.6px * var(--rule-weight)); stroke-linecap: round; }
 .ink-chart text { fill: var(--ink-soft); }
 .ink-chart .dots { fill: var(--blue); }
-.ink-chart .trend { fill: none; stroke: var(--orange); stroke-width: 3; stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: var(--blend); }
+.ink-chart .trend { fill: none; stroke: var(--orange); stroke-width: calc(3px * var(--rule-weight)); stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: var(--blend); }
 /* Predicted is a dashed blue *line*: blue as decoration is linework, and the dash is what tells it from the
    solid orange trend for a reader who cannot separate the two inks. The key names both in words regardless. */
-.ink-chart .predicted { fill: none; stroke: var(--blue); stroke-width: 2.4; stroke-dasharray: 8 5; stroke-linejoin: round; stroke-linecap: round; }
+.ink-chart .predicted { fill: none; stroke: var(--blue); stroke-width: calc(2.4px * var(--rule-weight)); stroke-dasharray: 8 5; stroke-linejoin: round; stroke-linecap: round; }
 .chart-key { display: flex; flex-wrap: wrap; gap: 4px 18px; margin: 6px 0 0; font-size: 0.8rem; color: var(--ink-soft); }
 .chart-key span { display: inline-flex; align-items: center; gap: 6px; }
 .chart-key svg { width: 14px; height: 14px; overflow: visible; flex: none; }
@@ -70,7 +70,7 @@
 .goals-form .toggle { display: flex; gap: 4px; align-items: center; font-weight: 700; }
 .overrides summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .overrides[open] .nutrient-grid { margin-top: 10px; }
-.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: 4px 4px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
+.goal-panel { margin: 24px 0; padding: 14px 16px 6px; border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised); box-shadow: calc(4px * var(--reg-x)) calc(4px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
 .goal-panel h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: 1rem; }
 .goal-panel dl { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, auto); margin: 8px 0; font-variant-numeric: tabular-nums; }
 .goal-panel dt, .goal-panel dd { padding: 7px 0; background: var(--mark-rule-pencil) no-repeat bottom / 100% 4px; }
@@ -84,7 +84,7 @@
 /* Login masthead */
 .login { max-width: 420px; margin: 0 auto; padding: 40px 20px; }
 .login-mast { margin-bottom: 28px; }
-.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: 3px 2px 0 rgb(var(--orange-rgb) / calc(0.6 * var(--plate-k))); }
+.login-mast h1 { margin: 6px 0 10px; font-family: var(--display); font-weight: 400; font-size: min(2.6rem, 13vw); line-height: 1; color: var(--ink); text-shadow: calc(3px * var(--reg-x)) calc(2px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.6 * var(--plate-k))); }
 .login-mast h1 span { display: block; }
 .login-mast h1 span + span { margin-left: 0.6em; }
 .login-mast p { margin: 0; max-width: 32ch; }
@@ -117,7 +117,7 @@
   background: var(--paper-raised); color: var(--ink); font-weight: 700; white-space: nowrap; flex: none;
 }
 .section-nav [role='tab']:nth-child(3n) { border-radius: 12px 225px 10px 255px / 255px 10px 225px 12px; }
-.section-nav [role='tab'][aria-selected='true'] { background: var(--blue); color: var(--paper); box-shadow: 2px 2px 0 var(--orange); }
+.section-nav [role='tab'][aria-selected='true'] { background: var(--blue); color: var(--paper); box-shadow: calc(2px * var(--reg-x)) calc(2px * var(--reg-y)) 0 var(--orange); }
 .section-nav [role='tab']:active { background-color: var(--paper-shade); }
 .section-nav [role='tab'][aria-selected='true']:active { background-color: var(--ink); }
 .section-panel { display: flex; flex-direction: column; gap: 12px; padding: 14px 0 18px; background: var(--mark-rule) no-repeat top / 100% 6px; }
@@ -132,7 +132,7 @@
 .badge-card {
   display: flex; flex-direction: column; align-items: flex-start; gap: 1px; min-width: 0; padding: 10px 12px 12px;
   border: 1.5px solid var(--ink); border-radius: var(--wobble-sm); background: var(--paper-raised);
-  box-shadow: 3px 3px 0 rgb(var(--orange-rgb) / calc(0.45 * var(--plate-k)));
+  box-shadow: calc(3px * var(--reg-x)) calc(3px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.45 * var(--plate-k)));
 }
 .badge-card:nth-child(3n) { border-radius: 10px 4px 9px 5px / 5px 9px 4px 10px; }
 /* Unprinted: no second drum, no offset plate, and the key stroke drops to the soft ink. The card is dashed, so
@@ -166,7 +166,11 @@
    two drums laid down off register — so the row reads as six printed swatches rather than six words. The picked
    stamp carries a hand-inked tick as well as the blue plate: state is never ink alone. */
 .press-swatch { width: 34px; height: 24px; flex: none; margin-right: 8px; overflow: visible; }
-.chip .tick-mark { width: 18px; height: 18px; flex: none; margin-right: 5px; }
+/* The tick's box is reserved on every stamp and only inked on the picked one: printed only when selected, it
+   made that stamp 23px wider than the rest, re-wrapped the whole picker under the reader's thumb and left the
+   swatches out of line down the column. */
+.chip .tick-mark { width: 18px; height: 18px; flex: none; margin-right: 5px; visibility: hidden; }
+.chip:has(input:checked) .tick-mark { visibility: visible; }
 /* The tick sits on the blue plate once the stamp is picked, so it inks in the stock like the stamp's own label.
    Left in --ink it was 1.6:1 on the plate and effectively unprinted. */
 .chip:has(input:checked) .tick-mark .line { stroke: var(--paper); }

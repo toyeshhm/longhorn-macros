@@ -16,6 +16,8 @@ test('the presses split into the two schemes and nothing is in both or neither',
 
 test('every press inks the whole token set, and no two presses are the same run', () => {
   const stocks = new Set<string>()
+  const textures = new Set<string>()
+  const registrations = new Set<string>()
   for (const id of PRESS_IDS) {
     const p = PRESSES[id]
     for (const [key, value] of Object.entries(p)) {
@@ -25,8 +27,15 @@ test('every press inks the whole token set, and no two presses are the same run'
     // The four macro inks mean one nutrient each and have to stay apart on the stock they print on.
     expect(new Set([p.orange, p.blue, p.teal, p.mustard]).size, `${id} macro inks`).toBe(4)
     stocks.add(p.paper)
+    // Different stock means a different texture too, not one tile at six densities: four presses used to
+    // rasterise the identical turbulence at the identical size and frequency and differ only in opacity.
+    textures.add(`${String(p.grainTile)}/${String(p.grainFreq)}/${String(p.grid)}`)
+    // And a different slip: six runs off one machine do not all misregister by 2.5px right and 2px up.
+    registrations.add(`${String(p.regX)}/${String(p.regY)}`)
   }
   expect(stocks.size, 'two presses on the same stock').toBe(PRESS_IDS.length)
+  expect(textures.size, 'two presses on the same stock texture').toBe(PRESS_IDS.length)
+  expect(registrations.size, 'two presses off register by the same amount').toBe(PRESS_IDS.length)
 })
 
 test('stored prefs survive a round trip, and anything unreadable falls back per field', () => {
@@ -95,6 +104,17 @@ function grained(stock: string, p: Press): string {
   return `#${mix.join('')}`
 }
 
+/** An off-register plate as it prints: the second drum at the stylesheet's `calc(0.55 * var(--plate-k))`. */
+function plated(p: Press): string {
+  const alpha = Math.min(1, 0.55 * (p.scheme === 'dark' ? 1.7 : 1))
+  const mix = [1, 3, 5].map((i) => {
+    const drum = Number.parseInt(p.orange.slice(i, i + 2), 16)
+    const stock = Number.parseInt(p.paper.slice(i, i + 2), 16)
+    return Math.round(drum * alpha + stock * (1 - alpha)).toString(16).padStart(2, '0')
+  })
+  return `#${mix.join('')}`
+}
+
 test('every press prints its text at 4.5:1 and its boundaries at 3:1, over its own grained stock', () => {
   const fails: string[] = []
   const check = (name: string, got: number, min: number): void => {
@@ -116,6 +136,36 @@ test('every press prints its text at 4.5:1 and its boundaries at 3:1, over its o
       check(`${id} ${ink} on its stock`, ratio(p[ink], grained(p.paper, p)), 3)
     }
     check(`${id} the fat ink's outline`, ratio(p.blue, grained(p.paper, p)), 3)
+    // The second drum against the type it is printed beside. Every off-register plate is the second drum at
+    // `calc(0.55 * var(--plate-k))` over its own stock (the mastheads, the stamp, the sheet title), and that
+    // plate 1.5 to 3px off the letterform IS the signature of the run: blueprint's drum used to be the chalk the
+    // type was set in, so the plate composited to 1.09:1 against it and no second ink printed anywhere in the
+    // mark. Only the token check can see it — the e2e measures the drum against the stock, not against the type.
+    check(`${id} the second drum behind its own type`, ratio(plated(p), p.ink), 2)
+  }
+  expect(fails).toEqual([])
+})
+
+/** The RGB distance between two inks: how far apart the drums are on the bench, before any stock is involved. */
+function apart(a: string, b: string): number {
+  return Math.hypot(...[1, 3, 5].map((i) => Number.parseInt(a.slice(i, i + 2), 16) - Number.parseInt(b.slice(i, i + 2), 16)))
+}
+
+test('no macro ink is mixed the same as one of the press\'s text inks', () => {
+  // Newsprint's first drum used to be #4A453C against a #4C4535 Soft Ink — 7.3 apart, 1.00:1, the same grey. The
+  // protein plate, the hand-ruled lines, the bar hatch and the secondary body copy then all printed in one ink
+  // and the protein row read as an unfilled box beside an inked carbs chip. Contrast cannot carry this rule: on
+  // the day press the protein plate is federal blue and the type is a darker federal blue (1.15:1 against Soft
+  // Ink) and that pair is the design, not a defect. What was wrong with newsprint is that it was one ink.
+  const fails: string[] = []
+  for (const id of PRESS_IDS) {
+    const p = PRESSES[id]
+    for (const ink of ['orange', 'blue', 'teal', 'mustard'] as const) {
+      for (const text of ['ink', 'inkDeep', 'inkSoft'] as const) {
+        const d = apart(p[ink], p[text])
+        if (d < 24) fails.push(`${id} ${ink} is ${d.toFixed(1)} from ${text}`)
+      }
+    }
   }
   expect(fails).toEqual([])
 })

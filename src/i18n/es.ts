@@ -329,9 +329,11 @@ export const es: Dictionary = {
   'profile.language': 'Idioma',
   'profile.languageNote': 'Se guarda solo en este dispositivo. Los alimentos, comedores y estaciones de UT quedan en inglés, porque así los publica UT.',
   'press.auto': 'Según el teléfono',
-  'press.day': 'Tirada de día',
-  'press.night': 'Tirada de noche',
-  'press.cherry': 'Tirada cereza',
+  // Un solo registro para las seis: cada tirada se nombra por su papel, sin mezclar "Tirada de día" con "Papel
+  // prensa" en la misma lista de opciones.
+  'press.day': 'Día',
+  'press.night': 'Noche',
+  'press.cherry': 'Cereza',
   'press.newsprint': 'Papel prensa',
   'press.blueprint': 'Cianotipo',
   'press.meadow': 'Pradera',

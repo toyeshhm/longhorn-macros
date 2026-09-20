@@ -25,14 +25,15 @@ function svg(body: string, attrs: string): string {
   return `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" ${attrs}>${body}</svg>`)}")`
 }
 
-function n(value: number): string {
+/** One copy of the rounding: a token or a stroke width never prints binary floating point. */
+export function round(value: number): string {
   return String(Math.round(value * 100) / 100)
 }
 
 /** A rule is one stroke across the page; newsprint runs them coarser than a smooth stock does. */
 function rule(d: string, height: number, stroke: string, width: number, extra = ''): string {
   return svg(
-    `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${n(width)}" stroke-linecap="round" vector-effect="non-scaling-stroke"${extra}/>`,
+    `<path d="${d}" fill="none" stroke="${stroke}" stroke-width="${round(width)}" stroke-linecap="round" vector-effect="non-scaling-stroke"${extra}/>`,
     `viewBox="0 0 320 ${String(height)}" preserveAspectRatio="none"`,
   )
 }
@@ -48,14 +49,14 @@ function grain(p: Press): string {
     const half = p.grainTile / 2
     return svg(
       `<g fill="none" stroke="${p.speck}" stroke-linecap="round">`
-      + `<path stroke-width="1.1" d="M.4 .6C${n(half)} 1 ${n(half)} .2 ${n(p.grainTile)} .8M.6 .4C1 ${n(half)} .2 ${n(half)} .8 ${n(p.grainTile)}"/>`
-      + `<path stroke-width=".7" stroke-opacity=".5" d="M.5 ${n(half)}C${n(half)} ${n(half + 0.5)} ${n(half)} ${n(half - 0.4)} ${n(p.grainTile)} ${n(half + 0.3)}M${n(half)} .5C${n(half + 0.4)} ${n(half)} ${n(half - 0.5)} ${n(half)} ${n(half + 0.2)} ${n(p.grainTile)}"/></g>`,
+      + `<path stroke-width="1.1" d="M.4 .6C${round(half)} 1 ${round(half)} .2 ${round(p.grainTile)} .8M.6 .4C1 ${round(half)} .2 ${round(half)} .8 ${round(p.grainTile)}"/>`
+      + `<path stroke-width=".7" stroke-opacity=".5" d="M.5 ${round(half)}C${round(half)} ${round(half + 0.5)} ${round(half)} ${round(half - 0.4)} ${round(p.grainTile)} ${round(half + 0.3)}M${round(half)} .5C${round(half + 0.4)} ${round(half)} ${round(half - 0.5)} ${round(half)} ${round(half + 0.2)} ${round(p.grainTile)}"/></g>`,
       size,
     )
   }
-  const [r, g, b] = [1, 3, 5].map((i) => n(Number.parseInt(p.speck.slice(i, i + 2), 16) / 255))
+  const [r, g, b] = [1, 3, 5].map((i) => round(Number.parseInt(p.speck.slice(i, i + 2), 16) / 255))
   return svg(
-    `<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="${n(p.grainFreq)}" numOctaves="2" stitchTiles="stitch"/>`
+    `<filter id="g"><feTurbulence type="fractalNoise" baseFrequency="${round(p.grainFreq)}" numOctaves="2" stitchTiles="stitch"/>`
     + `<feColorMatrix values="0 0 0 0 ${String(r)}  0 0 0 0 ${String(g)}  0 0 0 0 ${String(b)}  0 0 0 -1.6 1.05"/></filter>`
     + `<rect ${size} filter="url(#g)"/>`, // encodeURIComponent escapes the # itself; pre-escaping it double-encodes
     size,
@@ -75,31 +76,31 @@ export function markVars(p: Press): Readonly<Record<string, string>> {
     '--mark-rule-thick': rule(RULE_THICK, 6, p.ink, 2 * w),
     '--mark-rule-pencil': rule(RULE_PENCIL, 4, p.blue, 1 * w, ' stroke-opacity=".55" stroke-dasharray="18 3 34 2 9 3 46 2"'),
     '--mark-chevron': svg(
-      `<path d="M4.4 7.2C7 9.6 8.6 11.4 10.2 13.4 12 11 13.8 9.2 15.8 6.8" fill="none" stroke="${p.ink}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
-      + `<path d="M5.6 6.4C8 8.8 9.8 10.4 11.2 12.4" fill="none" stroke="${p.orange}" stroke-width="1.2" stroke-linecap="round"${drum}/>`,
+      `<path d="M4.4 7.2C7 9.6 8.6 11.4 10.2 13.4 12 11 13.8 9.2 15.8 6.8" fill="none" stroke="${p.ink}" stroke-width="${round(2 * w)}" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<path d="M5.6 6.4C8 8.8 9.8 10.4 11.2 12.4" fill="none" stroke="${p.orange}" stroke-width="${round(1.2 * w)}" stroke-linecap="round"${drum}/>`,
       'viewBox="0 0 20 20"',
     ),
     '--mark-box': svg(
-      `<path d="${BOX}" fill="${p.paperRaised}" stroke="${p.ink}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`,
+      `<path d="${BOX}" fill="${p.paperRaised}" stroke="${p.ink}" stroke-width="${round(1.8 * w)}" stroke-linecap="round" stroke-linejoin="round"/>`,
       'viewBox="0 0 28 28"',
     ),
     '--mark-box-checked': svg(
       `<path d="${BOX_PLATE}" fill="${p.orange}"${drum}/>`
-      + `<path d="${BOX}" fill="none" stroke="${p.ink}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>`
-      + `<path d="${TICK}" fill="none" stroke="${p.ink}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>`,
+      + `<path d="${BOX}" fill="none" stroke="${p.ink}" stroke-width="${round(1.8 * w)}" stroke-linecap="round" stroke-linejoin="round"/>`
+      + `<path d="${TICK}" fill="none" stroke="${p.ink}" stroke-width="${round(2.6 * w)}" stroke-linecap="round" stroke-linejoin="round"/>`,
       'viewBox="0 0 28 28"',
     ),
     '--mark-search': svg(
-      `<path d="M10.4 3.6C14.6 3.4 17.4 6.2 17.2 10.2 17 14 14.2 16.8 10.2 16.6 6.4 16.4 3.4 13.8 3.6 10 3.8 6.4 6.6 3.8 10.8 3.8" fill="none" stroke="${p.ink}" stroke-width="2" stroke-linecap="round"/>`
-      + `<path d="M15.2 15.4C17 17.2 18.6 18.8 20.8 21" fill="none" stroke="${p.ink}" stroke-width="2.6" stroke-linecap="round"/>`
-      + `<path d="M7.4 7.6C8.4 6.6 9.6 6.2 11 6.2" fill="none" stroke="${p.orange}" stroke-width="1.4" stroke-linecap="round"/>`,
+      `<path d="M10.4 3.6C14.6 3.4 17.4 6.2 17.2 10.2 17 14 14.2 16.8 10.2 16.6 6.4 16.4 3.4 13.8 3.6 10 3.8 6.4 6.6 3.8 10.8 3.8" fill="none" stroke="${p.ink}" stroke-width="${round(2 * w)}" stroke-linecap="round"/>`
+      + `<path d="M15.2 15.4C17 17.2 18.6 18.8 20.8 21" fill="none" stroke="${p.ink}" stroke-width="${round(2.6 * w)}" stroke-linecap="round"/>`
+      + `<path d="M7.4 7.6C8.4 6.6 9.6 6.2 11 6.2" fill="none" stroke="${p.orange}" stroke-width="${round(1.4 * w)}" stroke-linecap="round"/>`,
       'viewBox="0 0 24 24"',
     ),
     '--mark-calendar': svg(
-      `<path d="M7.4 14.2C12 13.4 18 13.8 23 13.6 23.4 17.6 22.8 21.2 23.2 24.2 18 24.8 12 24.2 7.2 24.6 7 21 7.8 17.4 7.4 14.2Z" fill="${p.orange}" fill-opacity="${n(plate)}"/>`
+      `<path d="M7.4 14.2C12 13.4 18 13.8 23 13.6 23.4 17.6 22.8 21.2 23.2 24.2 18 24.8 12 24.2 7.2 24.6 7 21 7.8 17.4 7.4 14.2Z" fill="${p.orange}" fill-opacity="${round(plate)}"/>`
       + `<g fill="none" stroke="${p.ink}" stroke-linecap="round" stroke-linejoin="round">`
-      + '<path stroke-width="1.8" d="M4.4 7.4C11 6.6 19.4 7 26 6.8 26.4 13 25.8 20.4 26.4 26.4 19 27 11 26.2 4.2 26.8 4.6 20 3.8 13.8 4.6 6.2"/>'
-      + '<path stroke-width="1.5" d="M4.6 11.8C12 11.2 19.6 11.6 26 11.4M10 3.4l.2 6.2M20.2 3.2l-.2 6.4"/></g>',
+      + `<path stroke-width="${round(1.8 * w)}" d="M4.4 7.4C11 6.6 19.4 7 26 6.8 26.4 13 25.8 20.4 26.4 26.4 19 27 11 26.2 4.2 26.8 4.6 20 3.8 13.8 4.6 6.2"/>`
+      + `<path stroke-width="${round(1.5 * w)}" d="M4.6 11.8C12 11.2 19.6 11.6 26 11.4M10 3.4l.2 6.2M20.2 3.2l-.2 6.4"/></g>`,
       'viewBox="0 0 30 30"',
     ),
     '--mark-grain': grain(p),

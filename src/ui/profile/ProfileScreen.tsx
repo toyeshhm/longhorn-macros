@@ -65,22 +65,26 @@ function nextIndex(key: string, from: number): number | null {
 
 function Appearance() {
   const t = useT()
-  const { prefs } = usePress()
-  // Every press prints as itself: its own stock with its own two drums laid down off register. The picked one
-  // also carries a tick, because a stamp that said "this one" only by changing ink would be saying it in colour.
-  const stamp = (id: PressId, selected: PressChoice): ChipOption<PressId> => ({
+  const { prefs, auto } = usePress()
+  // Every press prints as itself: its own stock with its own two drums laid down off register. Every stamp also
+  // carries the tick's box — inked only on the picked one, because a stamp that said "this one" only by changing
+  // ink would be saying it in colour, and printed only there it made that one stamp 23px wider than the rest and
+  // re-wrapped the row. The box is reserved in CSS (screens.css) and the ink is the `:checked` state.
+  const stamp = (id: PressId): ChipOption<PressId> => ({
     value: id,
     label: t.t(`press.${id}`),
-    mark: <>{id === selected && <TickMark />}<PressSwatch press={PRESSES[id]} /></>,
+    mark: <><TickMark /><PressSwatch press={PRESSES[id]} /></>,
   })
   const presses: readonly ChipOption<PressChoice>[] = [
-    ...PRESS_IDS.map((id) => stamp(id, prefs.choice)),
-    { value: 'auto', label: t.t('press.auto'), mark: prefs.choice === 'auto' && <TickMark /> },
+    ...PRESS_IDS.map(stamp),
+    // Match phone prints the press it is running, so the seventh stamp is a press like the other six rather than
+    // a bare word, and the reader can see which of their two presses the phone has picked.
+    { value: 'auto', label: t.t('press.auto'), mark: <><TickMark /><PressSwatch press={PRESSES[auto]} /></> },
   ]
   return (
     <>
       <Chips wrap legend={t.t('profile.press')} name="press" options={presses}
-        value={prefs.choice} onSelect={(choice) => { setPressPrefs({ ...prefs, choice }) }} />
+        value={prefs.choice} onSelect={(choice) => { setPressPrefs({ choice }) }} />
       <p class="muted">{t.t('profile.pressNote')}</p>
       {/* Only while Match phone is on: which press each of the phone's two settings runs. Printed at any other
           time they would be two groups of stamps that change nothing the reader can see. */}
@@ -90,12 +94,12 @@ function Appearance() {
               is on the page and the group points at it rather than carrying the same words a second time. */}
           <h3 id="light-press-legend">{t.t('profile.lightPress')}</h3>
           <Chips wrap legend={t.t('profile.lightPress')} legendId="light-press-legend" name="light-press"
-            options={LIGHT_PRESS_IDS.map((id) => stamp(id, prefs.light))}
-            value={prefs.light} onSelect={(light) => { setPressPrefs({ ...prefs, light }) }} />
+            options={LIGHT_PRESS_IDS.map(stamp)}
+            value={prefs.light} onSelect={(light) => { setPressPrefs({ light }) }} />
           <h3 id="dark-press-legend">{t.t('profile.darkPress')}</h3>
           <Chips wrap legend={t.t('profile.darkPress')} legendId="dark-press-legend" name="dark-press"
-            options={DARK_PRESS_IDS.map((id) => stamp(id, prefs.dark))}
-            value={prefs.dark} onSelect={(dark) => { setPressPrefs({ ...prefs, dark }) }} />
+            options={DARK_PRESS_IDS.map(stamp)}
+            value={prefs.dark} onSelect={(dark) => { setPressPrefs({ dark }) }} />
         </>
       )}
       {/* The same printed radio stamps as every other chip group: a language switch is not a special control. */}

@@ -20,6 +20,7 @@
 button, label, summary, a { -webkit-tap-highlight-color: transparent; }
 body {
   margin: 0;
+  position: relative; /* the stock layer below is absolute inside it, so it scrolls with the page */
   background: var(--paper);
   color: var(--ink);
   line-height: 1.45;
@@ -37,8 +38,22 @@ body::after {
   z-index: 30;
   pointer-events: none;
   background: var(--mark-grain) repeat;
-  opacity: var(--grain-strength);
+  opacity: var(--grain-ink);
   will-change: transform;
+}
+/* A ruled stock (blueprint's drafting grid) prints on the paper, not on the viewport: welded to the fixed layer
+   above, its 44px ladder stayed put while every line of type slid through it, which reads as an overlay laid on
+   the app rather than as the sheet it is printed on. Under the type and under the tab bar, where stock belongs.
+   Exactly one of the two layers is inked per press: --grain-ink and --grain-stock (src/theme.ts). */
+body::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  min-height: 100dvh;
+  z-index: -1;
+  pointer-events: none;
+  background: var(--mark-grain) repeat;
+  opacity: var(--grain-stock);
 }
 h1, h2, h3 { text-wrap: balance; }
 input, select, textarea, button { font: inherit; font-size: max(16px, 1rem); color: inherit; }
@@ -77,16 +92,19 @@ button {
 }
 button:active:not(:disabled) { transform: translate(1px, 1px); }
 /* Primary: a solid blue plate with the orange plate printed off register behind it. */
-button.primary { background: var(--blue); border-color: var(--ink); color: var(--paper); box-shadow: 3px 3px 0 var(--orange); }
-button.primary:active:not(:disabled) { box-shadow: 1px 1px 0 var(--orange); }
-button:disabled { opacity: 0.55; cursor: default; box-shadow: none; }
+button.primary { background: var(--blue); border-color: var(--ink); color: var(--paper); box-shadow: calc(3px * var(--reg-x)) calc(3px * var(--reg-y)) 0 var(--orange); }
+button.primary:active:not(:disabled) { box-shadow: calc(1px * var(--reg-x)) calc(1px * var(--reg-y)) 0 var(--orange); }
+/* "Unavailable" is said with an unprinted plate and a dashed edge, like an unearned badge stamp, never with
+   alpha: 55% faded the label with it and dropped Add under 4.5:1 on every press while the servings box is empty.
+   --ink-soft on --paper-shade is held at 4.5:1 for every press in tests/theme.test.ts. */
+button:disabled { cursor: default; box-shadow: none; border-style: dashed; background: var(--paper-shade); color: var(--ink-soft); }
 button.danger { color: var(--over); border-color: var(--over); }
 button.link, button.stamp { border: 0; background: none; box-shadow: none; }
 button.link {
   min-width: 0; padding: 0 4px; color: var(--ink);
   text-decoration: underline; text-decoration-color: var(--orange); text-decoration-thickness: 2px; text-underline-offset: 4px;
 }
-button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
+button.stamp { font-family: var(--display); font-weight: 400; font-size: 0.85rem; color: var(--ink); letter-spacing: 0.02em; text-shadow: calc(1.5px * var(--reg-x)) calc(1px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k))); }
 button.icon-btn { display: inline-grid; place-items: center; padding: 0; border: 0; background: none; }
 :focus-visible { outline: 2.5px solid var(--orange); outline-offset: 2px; }
 .toast :focus-visible { outline-color: var(--paper); }
@@ -104,7 +122,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .ink-calories .ink-fill { fill: var(--orange); }
 .ink-protein .ink-fill { fill: var(--blue); }
 .ink-carbs .ink-fill { fill: var(--teal); }
-.ink-fat .ink-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: 1.2; }
+.ink-fat .ink-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: calc(1.2px * var(--rule-weight)); }
 
 /* Line boil: three inked frames swapped at ~8fps like cel animation. Reduced motion freezes frame 1. */
 .boil { animation: boil 0.36s step-end infinite; }
@@ -132,7 +150,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .screen { padding: 12px 16px calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 24px); max-width: 640px; margin: 0 auto; }
 .masthead {
   margin: 4px 0 14px; font-family: var(--display); font-weight: 400; font-size: min(1.75rem, 9vw); line-height: 1.1;
-  color: var(--ink); text-shadow: 2px 1.5px 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k)));
+  color: var(--ink); text-shadow: calc(2px * var(--reg-x)) calc(1.5px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.55 * var(--plate-k)));
 }
 
 /* Banners: slips of paper tucked above the page. */
@@ -207,7 +225,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 }
 .chip:nth-child(3n) { border-radius: 12px 225px 10px 255px / 255px 10px 225px 12px; }
 .chip input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
-.chip:has(input:checked) { background: var(--blue); color: var(--paper); box-shadow: 2px 2px 0 var(--orange); }
+.chip:has(input:checked) { background: var(--blue); color: var(--paper); box-shadow: calc(2px * var(--reg-x)) calc(2px * var(--reg-y)) 0 var(--orange); }
 .chip:active { background-color: var(--paper-shade); }
 .chip:has(input:checked):active { background-color: var(--ink); }
 .chip:has(input:focus-visible) { outline: 2.5px solid var(--orange); outline-offset: 2px; }
@@ -295,7 +313,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
    fold on a short viewport. The full name is still the dialog's accessible name. */
 .sheet-head h2 {
   min-width: 0; margin: 8px 0 0; overflow-wrap: break-word; font-family: var(--display); font-weight: 400;
-  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(var(--orange-rgb) / calc(0.45 * var(--plate-k)));
+  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: calc(1.5px * var(--reg-x)) calc(1px * var(--reg-y)) 0 rgb(var(--orange-rgb) / calc(0.45 * var(--plate-k)));
   display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
 }
 .sheet p { margin: 0; }
@@ -353,11 +371,13 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   position: fixed; left: 16px; right: 16px; z-index: 20; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
   width: fit-content; margin-inline: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
   padding: 10px 16px; border-radius: var(--wobble-sm); background: var(--blue); color: var(--paper); font-weight: 700;
-  box-shadow: 3px 3px 0 var(--orange); opacity: 0; pointer-events: none;
+  box-shadow: calc(3px * var(--reg-x)) calc(3px * var(--reg-y)) 0 var(--orange); opacity: 0; pointer-events: none;
 }
 .toast:not(:empty) { opacity: 1; pointer-events: auto; animation: toast-in 200ms var(--ease); }
 @keyframes toast-in { from { transform: translateY(10px); opacity: 0; } }
-.toast button.link { flex: none; color: var(--paper); }
+/* The underline is the only mark that says Undo and Dismiss are controls, so it moves onto the plate with the
+   label: orange on the blue slip is 1.07:1, the same collision the focus ring above already sidesteps. */
+.toast button.link { flex: none; color: var(--paper); text-decoration-color: var(--paper); }
 
 /* Today */
 .date-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin: 4px 0 6px; }
@@ -372,7 +392,7 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   position: relative; font-family: var(--display); font-size: min(4.5rem, 20vw); line-height: 0.95; font-variant-numeric: tabular-nums;
   color: transparent; -webkit-text-stroke: 2px var(--blue); paint-order: stroke; transform: translate(-1px, 1px) rotate(0.4deg);
 }
-.big::before { content: attr(data-ink); content: attr(data-ink) / ''; position: absolute; inset: 0; color: var(--orange); -webkit-text-stroke: 0; mix-blend-mode: var(--blend); transform: translate(2.5px, -2px) rotate(-1deg); }
+.big::before { content: attr(data-ink); content: attr(data-ink) / ''; position: absolute; inset: 0; color: var(--orange); -webkit-text-stroke: 0; mix-blend-mode: var(--blend); transform: translate(calc(2.5px * var(--reg-x)), calc(-2px * var(--reg-y))) rotate(-1deg); }
 .hero-num.over .big { -webkit-text-stroke-color: var(--ink); }
 .hero-num.over .big::before { color: var(--over); }
 .over-word { position: relative; font-family: var(--display); font-size: 1.6rem; color: var(--over); }
@@ -380,15 +400,18 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .eaten strong { color: var(--ink-deep); }
 .ink-bar { display: block; width: 100%; max-width: 100%; height: 22px; overflow: visible; }
 .calories .ink-bar { margin: 10px 0 2px; }
-.bar-outline { fill: none; stroke: var(--ink); stroke-width: 1.7; stroke-linecap: round; vector-effect: non-scaling-stroke; }
-.bar-hatch { fill: none; stroke: var(--blue); stroke-width: 1; stroke-linecap: round; opacity: 0.8; vector-effect: non-scaling-stroke; }
+.bar-outline { fill: none; stroke: var(--ink); stroke-width: calc(1.7px * var(--rule-weight)); stroke-linecap: round; vector-effect: non-scaling-stroke; }
+.bar-hatch { fill: none; stroke: var(--blue); stroke-width: calc(1px * var(--rule-weight)); stroke-linecap: round; opacity: 0.8; vector-effect: non-scaling-stroke; }
 .bar-fill { mix-blend-mode: var(--blend); }
 .ink-calories .bar-fill { fill: var(--orange); }
 /* Protein is a solid blue plate; the blue hatch beside it is line-only, so filled and left never read alike. */
 .ink-protein .bar-fill { fill: var(--blue); }
 .ink-carbs .bar-fill { fill: var(--teal); }
-.ink-fat .bar-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
-.bar-fill.over ~ .bar-hatch { stroke: var(--ink-deep); opacity: 1; stroke-width: 1.3; }
+.ink-fat .bar-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: calc(1.2px * var(--rule-weight)); vector-effect: non-scaling-stroke; }
+/* Over target the fill runs the whole bar, so the hatch is knocked out of the plate instead of overprinting it:
+   the gaps print the stock, which is the fill-against-stock ratio tests/theme.test.ts holds at 3:1 for every
+   macro ink on every press. Stroked in an ink it was 1.13:1 on blueprint's chalk calories plate. */
+.bar-fill.over ~ .bar-hatch { stroke: var(--paper); opacity: 1; stroke-width: calc(1.3px * var(--rule-weight)); }
 
 /* The name and number columns are `auto`, so at raised text sizes they take the whole row and the bar's track
    collapses to 0px: three of the four hand-drawn bars stop printing while their progressbar nodes survive.
