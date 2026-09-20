@@ -5,7 +5,7 @@ the calories and macros you have left today.
 
 **Live:** https://longhorn-macros.vercel.app (install it: Safari → Share → Add to Home Screen)
 
-![The Tracker screen](docs/screenshots/today.png)
+![The Tracker screen](docs/screenshots/tracker.png)
 
 ## What it does
 
