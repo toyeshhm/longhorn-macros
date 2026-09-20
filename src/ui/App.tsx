@@ -91,11 +91,15 @@ function Shell({ session }: { session: Session }) {
 
   return (
     <AppContext.Provider value={{ ...session, viewDate, setViewDate }}>
-      {adaptive && (
-        <AdaptiveCard update={adaptive} onDismiss={() => { setAdaptive(null) }} onUndo={() => {
-          undo().then(undefined, (e: unknown) => { log.error('adaptive.undo_failed', { userId, error: String(e) }) })
-        }} />
-      )}
+      {/* The slot, not the card, is the live region: it is mounted from the first paint, so the target change is
+          announced when the card arrives. A region that appears with its text already in it often is not. */}
+      <div role="status">
+        {adaptive && (
+          <AdaptiveCard update={adaptive} onDismiss={() => { setAdaptive(null) }} onUndo={() => {
+            undo().then(undefined, (e: unknown) => { log.error('adaptive.undo_failed', { userId, error: String(e) }) })
+          }} />
+        )}
+      </div>
       <Tabs />
     </AppContext.Provider>
   )

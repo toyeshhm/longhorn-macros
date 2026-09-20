@@ -1,4 +1,5 @@
 import { NUTRIENT_KEYS, round1, type Nutrients } from '../../nutrition'
+import { n } from '../format'
 import { Swatch } from '../icons/Marks'
 
 const NUTRIENT_LABELS: Readonly<Record<keyof Nutrients, { label: string; unit: string }>> = {
@@ -32,8 +33,10 @@ export function NutrientTable({ caption, columns }: { caption: string; columns: 
         {NUTRIENT_KEYS.map((k) => (
           <tr key={k} class={k === 'calories' ? 'kcal-row' : undefined}>
             <th scope="row">{(k === 'protein' || k === 'carbs' || k === 'fat') && <Swatch ink={k} />}{NUTRIENT_LABELS[k].label}</th>
+            {/* kcal and mg are whole-unit figures and go through n(), so the sheet prints the same string as the
+                row the user tapped; round1 is for the gram macros only. */}
             {columns.map((c, i) => (
-              <td key={i}>{c.values === null ? '—' : `${String(k === 'calories' ? Math.round(c.values[k]) : round1(c.values[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
+              <td key={i}>{c.values === null ? '—' : `${k === 'calories' || k === 'sodium' ? n(c.values[k]) : String(round1(c.values[k]))} ${NUTRIENT_LABELS[k].unit}`}</td>
             ))}
           </tr>
         ))}

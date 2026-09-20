@@ -218,7 +218,8 @@ function GoalsForm({ profile, latestWeightLb, status, setStatus }: {
 
         {errors.form !== undefined && <p role="alert" class="error">{errors.form}</p>}
         <button type="submit" class="primary" disabled={busy}>Save</button>
-        {status !== null && <p role="status" class="muted">{status}</p>}
+        {/* Always mounted, empty until there is something to confirm: a region created with its text is unreliably announced. */}
+        <p role="status" class="muted">{status}</p>
       </form>
 
       {live ? (

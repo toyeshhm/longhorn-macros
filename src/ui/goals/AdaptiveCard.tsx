@@ -38,7 +38,8 @@ export async function runAdaptive(store: LocalStore, engine: SyncEngine, userId:
 
 export function AdaptiveCard({ update, onUndo, onDismiss }: { update: AdaptiveUpdate; onUndo: () => void; onDismiss: () => void }) {
   return (
-    <section class="adaptive-card notice" aria-label="Targets updated" aria-live="polite">
+    // The live region is the always-mounted slot in App; this card is only its content.
+    <section class="adaptive-card notice" aria-label="Targets updated">
       <p>Targets updated {n(update.from)} → {n(update.to)} kcal: {update.reason}</p>
       <button type="button" class="stamp" onClick={onUndo}>Undo</button>
       <button type="button" class="link" onClick={onDismiss}>Dismiss</button>

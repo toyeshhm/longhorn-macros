@@ -56,7 +56,7 @@ test('totals, edit servings, delete with undo, date nav, repeat a meal', async (
   await expect(shake).toContainText('Custom food')
   await expect(shake).toContainText('Portion: 1 serving')
   await expect(shake.getByLabel('Meal')).toHaveValue('lunch')
-  await expect(shake).toContainText('These are the numbers saved with this entry on ')
+  await expect(shake).toContainText('These are the numbers saved with this entry, last edited ')
   await expect(nutrients.locator('caption')).toHaveText('Nutrition for 1 serving')
   await expect(nutrients).toContainText('Calories160 kcal160 kcal')
   await expect(nutrients).toContainText('Protein30 g30 g')
@@ -196,4 +196,14 @@ test('targets: left / over text and progressbars', async ({ page }) => {
   await expect(calories.locator('.bar-fill.over')).toHaveCount(1)
   await expect(calBar).toHaveAttribute('aria-valuenow', '300')
   await expect(calBar).toHaveAttribute('aria-valuetext', '320 of 300 kcal')
+
+  // The bars are the design, not only the aria: on a 320px phone at 200% text the macro track used to collapse to
+  // 0px, so three of the four hand-drawn bars stopped printing while every assertion above still passed.
+  await page.setViewportSize({ width: 320, height: 780 })
+  await page.addStyleTag({ content: 'html { font-size: 32px }' })
+  const bars = await page.evaluate(() => [...document.querySelectorAll('[role="progressbar"]')]
+    .map((b) => ({ label: b.getAttribute('aria-label'), width: Math.round(b.getBoundingClientRect().width) })))
+  expect(bars.map((b) => b.label)).toEqual(['Calories eaten', 'Protein', 'Carbs', 'Fat'])
+  for (const b of bars) expect(b.width, `${b.label ?? '?'} bar at 320px with 32px root text`).toBeGreaterThan(0)
+  expect(await page.evaluate(() => window.innerWidth)).toBe(320)
 })

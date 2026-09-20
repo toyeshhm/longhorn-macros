@@ -143,6 +143,9 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .banner { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 16px; font-size: 0.95rem; background: var(--paper-shade) url('./ink/rule-thick.svg') no-repeat bottom / 100% 6px; }
 .banner.error { color: var(--over); }
 .banner.error::before { content: '!'; font-family: var(--display); font-size: 1.1rem; color: var(--over); }
+/* Sync banners are mounted from the first paint so their live regions are already in the accessibility tree
+   when the text arrives. Empty, a banner prints nothing and takes no room, but it is still there to speak from. */
+.banner:empty { padding: 0; background: none; }
 .banner details { flex-basis: 100%; }
 .banner summary { min-height: 44px; display: flex; align-items: center; cursor: pointer; text-decoration: underline; text-decoration-color: var(--orange); text-underline-offset: 4px; }
 .menu .banner { margin: 12px -16px 0; }
@@ -154,9 +157,12 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
   padding: 4px env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
   background: var(--paper) url('./ink/rule-thick.svg') no-repeat top / 100% 6px;
 }
+/* min-height, not height: at the user's largest text the icon and a wrapped label need more than the token, and a
+   fixed box printed the icon above the bar's rule and cut the label off the bottom of the screen. The bar grows
+   instead; .screen already reserves the token plus 24px, and the a11y e2e holds that reserve to the real height. */
 .tabbar button {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px;
-  height: var(--tabbar-h); border: 0; border-radius: 0; background: none; font-size: 0.8rem; color: var(--ink-soft);
+  min-height: var(--tabbar-h); border: 0; border-radius: 0; background: none; font-size: 0.8rem; color: var(--ink-soft);
 }
 .tabbar button span { overflow-wrap: anywhere; } /* at 200% text "Progress" would otherwise run into its neighbours */
 .tabbar button:active .line { stroke: var(--ink-deep); }
@@ -211,27 +217,42 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 
 /* Bottom sheet: a fresh sheet of the same stock slid over an ink wash. */
 .sheet {
-  width: 100%; max-width: 560px; max-height: 90dvh; overflow-y: auto; overscroll-behavior: contain;
+  width: 100%; max-width: 560px; max-height: 90dvh; overflow: hidden;
   margin: auto auto 0; padding: 0; border: 0; border-top: 2px solid var(--ink); border-radius: 18px 22px 0 0 / 10px 14px 0 0;
   /* Same grain strength as the page layer: a 60% paper veil over the tile equals the page's grain at 40% opacity. */
   background: linear-gradient(rgb(247 243 234 / 0.6), rgb(247 243 234 / 0.6)), url('./ink/grain.svg') repeat, var(--paper); color: var(--ink);
 }
-.sheet[open] { animation: sheet-in 240ms var(--ease); }
+/* The column lives on [open], never on .sheet: a bare `display` here would beat the browser's own
+   `dialog:not([open]) { display: none }` and print every closed sheet into the page. */
+.sheet[open] { display: flex; flex-direction: column; animation: sheet-in 240ms var(--ease); }
 @keyframes sheet-in { from { transform: translateY(24px); opacity: 0.4; } }
 .sheet::backdrop { background: var(--wash); }
 /* The sheet is in the top layer, so it does not inherit the body's safe-area padding: keep its own clear of the
    notch and the home indicator in both orientations. */
 .sheet-body {
-  padding: 10px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding: 10px calc(16px + env(safe-area-inset-right)) 12px calc(16px + env(safe-area-inset-left));
   display: flex; flex-direction: column; gap: 12px;
+}
+/* The Add/Save plate is printed outside the scrollport, not stuck to the bottom of it: with the on-screen keyboard
+   up a sticky plate sat on top of the Meal select and, at 320px, the whole servings stepper. A footer cannot. */
+.sheet-foot {
+  display: flex; flex-direction: column; gap: 10px;
+  padding: 12px calc(16px + env(safe-area-inset-right)) calc(16px + env(safe-area-inset-bottom)) calc(16px + env(safe-area-inset-left));
+  background: url('./ink/rule.svg') no-repeat top / 100% 6px;
 }
 .sheet-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; padding-top: 6px; }
 .sheet-head .icon-btn { flex: none; }
-.sheet-head h2 { min-width: 0; margin: 8px 0 0; overflow-wrap: break-word; font-family: var(--display); font-weight: 400; font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(191 87 0 / 0.45); }
+/* Dining-hall names run long and Bungee is caps: three lines, so the stepper and the Meal select stay above the
+   fold on a short viewport. The full name is still the dialog's accessible name. */
+.sheet-head h2 {
+  min-width: 0; margin: 8px 0 0; overflow-wrap: break-word; font-family: var(--display); font-weight: 400;
+  font-size: 1.25rem; line-height: 1.15; color: var(--ink-deep); text-shadow: 1.5px 1px 0 rgb(191 87 0 / 0.45);
+  display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden;
+}
 .sheet p { margin: 0; }
 .sheet .where { color: var(--ink-soft); font-size: 0.9rem; margin-top: -6px; }
 .sheet .portion { font-weight: 700; }
-.sheet-body > button.primary { position: sticky; bottom: 0; }
 .field { display: flex; flex-direction: column; gap: 4px; font-weight: 700; color: var(--ink); }
 .stepper label { font-weight: 700; }
 .stepper-row { display: flex; gap: 8px; margin-top: 4px; align-items: center; }
@@ -254,19 +275,24 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .nutrient-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(8.5rem, 1fr)); gap: 12px; }
 .nutrient-grid input { width: 100%; }
 
+/* Gutter to gutter, then shrunk to its text: pinning to left:50% capped the box at half the viewport, so a normal
+   dining-hall name wrapped the slip into a tall column over the middle of the screen.
+   Always mounted (it is a live region) and only printed when it has something to say. */
 .toast {
-  position: fixed; left: 50%; z-index: 20; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
-  transform: translateX(-50%); display: flex; align-items: center; gap: 8px; max-width: calc(100% - 32px);
+  position: fixed; left: 16px; right: 16px; z-index: 20; bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom) + 14px);
+  width: fit-content; margin-inline: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;
   padding: 10px 16px; border-radius: var(--wobble-sm); background: var(--blue); color: var(--paper); font-weight: 700;
-  box-shadow: 3px 3px 0 var(--orange); animation: toast-in 200ms var(--ease);
+  box-shadow: 3px 3px 0 var(--orange); opacity: 0; pointer-events: none;
 }
-@keyframes toast-in { from { transform: translate(-50%, 10px); opacity: 0; } }
+.toast:not(:empty) { opacity: 1; pointer-events: auto; animation: toast-in 200ms var(--ease); }
+@keyframes toast-in { from { transform: translateY(10px); opacity: 0; } }
 .toast button.link { flex: none; color: var(--paper); }
 
 /* Today */
-.date-nav { position: relative; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin: 4px 0 6px; }
-/* The jump-back stamp hangs under the next arrow so the arrows and the date never move when it appears. */
-.date-nav .stamp { position: absolute; right: 0; top: 100%; z-index: 1; }
+.date-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin: 4px 0 6px; }
+/* The jump-back stamp gets its own row under the arrows: they still never move when it appears, and unlike the
+   old absolute hang, the row it prints in is reserved, so at raised text sizes it cannot land on the hero label. */
+.date-nav .stamp { grid-row: 2; grid-column: 1 / -1; justify-self: end; }
 .date-nav h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: min(1.3rem, 7vw); text-align: center; color: var(--ink); }
 .calories { margin: 0 0 8px; }
 .hero-label { margin: 6px 0 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.04em; color: var(--ink); }
@@ -293,8 +319,17 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .ink-fat .bar-fill { fill: var(--mustard); stroke: var(--blue); stroke-width: 1.2; vector-effect: non-scaling-stroke; }
 .bar-fill.over ~ .bar-hatch { stroke: var(--ink-deep); opacity: 1; stroke-width: 1.3; }
 
-.macros { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 10px; margin: 18px 0 10px; }
+/* The name and number columns are `auto`, so at raised text sizes they take the whole row and the bar's track
+   collapses to 0px: three of the four hand-drawn bars stop printing while their progressbar nodes survive.
+   A floor on the track buys a little room, and past that the row reflows (below). The query is on the container,
+   not a media query, because media-query `em` ignores the page's own font-size and so misses enlarged text. */
+.macros { display: grid; grid-template-columns: auto minmax(3rem, 1fr) auto; gap: 8px 10px; margin: 18px 0 10px; container-type: inline-size; }
 .macro { display: grid; grid-column: 1 / -1; grid-template-columns: subgrid; align-items: center; font-size: 0.875rem; }
+/* Under 16 of its own em: name and number keep the first row, the bar takes the full width of a second one. */
+@container (max-width: 16em) {
+  .macro { grid-template-columns: minmax(0, 1fr) auto; row-gap: 2px; }
+  .macro > *:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+}
 .macro .ink-bar { height: 18px; }
 .macro-name { display: inline-flex; align-items: center; font-weight: 700; }
 .macro-num { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-soft); }

@@ -4,7 +4,7 @@ import { MEALS, type Meal } from '../../db/types'
 import { log } from '../../log'
 import { scaleNutrients } from '../../nutrition'
 import type { SearchItem } from '../../search'
-import { defaultMealFor, parseServings } from '../../servings'
+import { defaultMealFor, formatServings, parseServings } from '../../servings'
 import { NutrientTable } from '../components/NutrientTable'
 import { Sheet } from '../components/Sheet'
 import { Stepper } from '../components/Stepper'
@@ -69,13 +69,15 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
 
   const where = [item.hall, item.station].filter((s): s is string => s !== null).join(' · ')
   return (
-    <Sheet title={item.name} onClose={onClose}>
+    <Sheet title={item.name} onClose={onClose} footer={
+      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>Add</button>
+    }>
       {where !== '' && <p class="where">{where}</p>}
       <p class="portion">Portion: {item.portion}</p>
       <Stepper text={text} onText={setText} />
       <MealSelect meal={meal} onMeal={setMeal} />
       <NutrientTable
-        caption={`Nutrition${servings !== null && servings !== 1 ? ` for ${String(servings)} servings` : ''}`}
+        caption={`Nutrition${servings !== null && servings !== 1 ? ` for ${formatServings(servings)} servings` : ''}`}
         columns={[{ head: null, values: servings === null ? null : scaled }]} />
       {legends.length > 0 && (
         <ul class="legends" aria-label="Allergens and diet">
@@ -83,7 +85,6 @@ export function FoodSheet({ item, legends, menuMeal, onClose, onAdded }: {
         </ul>
       )}
       {error !== null && <p role="alert" class="error">{error}</p>}
-      <button type="button" class="primary" disabled={servings === null || busy} onClick={() => { void add() }}>Add</button>
     </Sheet>
   )
 }

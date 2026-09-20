@@ -28,11 +28,12 @@ export function SyncBanner() {
     const reasons = failed > 0 ? (await store.outbox()).flatMap((i) => (i.failed === null ? [] : [`${i.table}: ${i.failed}`])) : []
     return { queued, failed, reasons, waiting: queued > 0 && (!navigator.onLine || engine.retrying) }
   }, [engine, tick])
-  if (!s) return null
   return (
     <>
-      {s.waiting && <Banner tone="info">{s.queued} {s.queued === 1 ? 'change' : 'changes'} waiting to sync</Banner>}
-      {s.failed > 0 && (
+      {/* Mounted from the first paint and empty while everything is synced: a polite region that appears together
+          with its text is unreliably announced (VoiceOver drops it). `.banner:empty` takes no room on the page. */}
+      <Banner tone="info">{s?.waiting === true && <>{s.queued} {s.queued === 1 ? 'change' : 'changes'} waiting to sync</>}</Banner>
+      {s !== undefined && s.failed > 0 && (
         <Banner tone="error">
           {s.failed} {s.failed === 1 ? 'change was' : 'changes were'} rejected
           <details>

@@ -4,6 +4,7 @@ import { summarizeDay } from '../../daySummary'
 import type { LogEntry } from '../../db/types'
 import { log } from '../../log'
 import { round1 } from '../../nutrition'
+import { formatServings } from '../../servings'
 import { InkBar } from '../components/InkBar'
 import { MacroBar } from '../components/MacroBar'
 import type { Tab } from '../components/TabBar'
@@ -16,7 +17,9 @@ import { capitalize } from '../menu/FoodSheet'
 import { EntrySheet } from './EntrySheet'
 import { RepeatMeal } from './RepeatMeal'
 
-const UNDO_MS = 10_000 // long enough to find and press Undo with a screen reader or one thumb, not only to see it flash by
+// A delete is only undoable from this toast, so it carries no clock: a time limit on the sole path to a function
+// is WCAG 2.2.1 (and 10s is nowhere near enough to hear it, decide and act). It stays until Undo, Dismiss, or the
+// next toast. Plain confirmations do time out; nothing is lost when they go.
 const TOAST_MS = 3000
 
 function dateLabel(key: string, today: string): string {
@@ -39,16 +42,17 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
   // A delete takes the focused row with it, so focus moves to Undo; when the toast goes it hands focus to the
   // screen rather than leaving it on <body>.
   const undoRef = useRef<HTMLButtonElement>(null)
+  const toastRef = useRef<HTMLDivElement>(null)
   const dropToast = (): void => {
-    const held = undoRef.current !== null && undoRef.current === document.activeElement
+    const held = toastRef.current?.contains(document.activeElement) === true
     setToast(null)
     if (held) document.querySelector<HTMLElement>('main.screen')?.focus()
   }
 
   useEffect(() => {
     if (toast === null) return
-    if (toast.kind === 'deleted') undoRef.current?.focus()
-    const t = setTimeout(dropToast, toast.kind === 'deleted' ? UNDO_MS : TOAST_MS)
+    if (toast.kind === 'deleted') { undoRef.current?.focus(); return }
+    const t = setTimeout(dropToast, TOAST_MS)
     return () => { clearTimeout(t) }
   }, [toast])
 
@@ -69,7 +73,9 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
     <div class="today">
       <header class="date-nav">
         <button type="button" class="icon-btn" aria-label="Previous day" onClick={() => { setViewDate(addDays(viewDate, -1)) }}><ArrowMark dir="prev" /></button>
-        <h2>{dateLabel(viewDate, today)}</h2>
+        {/* Both arrows replace the whole screen while focus stays on the button: the heading is always mounted,
+            so announcing the new day from it is reliable (a region created with its text is not). */}
+        <h2 aria-live="polite">{dateLabel(viewDate, today)}</h2>
         <button type="button" class="icon-btn" aria-label="Next day" onClick={() => { setViewDate(addDays(viewDate, 1)) }}><ArrowMark dir="next" /></button>
         {viewDate !== today && <button type="button" class="stamp" onClick={() => { setViewDate(today) }}>Today</button>}
       </header>
@@ -95,9 +101,10 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         <MacroBar ink="carbs" label="Carbs" eaten={s.total.carbs} target={targets?.carbs ?? null} unit="g" />
         <MacroBar ink="fat" label="Fat" eaten={s.total.fat} target={targets?.fat ?? null} unit="g" />
       </section>
-      <p class="micros" aria-label="Micronutrients">
+      {/* A <p> cannot carry aria-label (the paragraph role does not support naming), so the name goes on a section. */}
+      <section class="micros" aria-label="Micronutrients">
         Fiber&nbsp;{round1(s.total.fiber)}&nbsp;g · Sugar&nbsp;{round1(s.total.sugar)}&nbsp;g · Sodium&nbsp;{n(s.total.sodium)}&nbsp;mg
-      </p>
+      </section>
 
       <section aria-label="Logged foods" class="logged">
         {s.byMeal.map((g) => (
@@ -109,7 +116,7 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
                   <button type="button" class="food-row entry-row" onClick={() => { setSheet({ kind: 'entry', entry: e }) }}>
                     <span class="food-main">
                       <span class="food-name">{e.name}</span>
-                      <span class="food-meta">{e.servings} × {e.portion}</span>
+                      <span class="food-meta">{formatServings(e.servings)} × {e.portion}</span>
                     </span>
                     <span class="food-kcal">{n(e.perServing.calories * e.servings)} kcal</span>
                   </button>
@@ -135,13 +142,18 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         <RepeatMeal onClose={() => { setSheet(null) }}
           onAdded={(n) => { setSheet(null); setToast({ kind: 'info', text: `Added ${String(n)} ${n === 1 ? 'item' : 'items'}` }) }} />
       )}
-      {toast !== null && (
-        <div class="toast" role="status">
-          {toast.kind === 'info' ? toast.text : (
-            <>Deleted {toast.entry.name} <button ref={undoRef} type="button" class="link" onClick={() => { undo(toast.entry) }}>Undo</button></>
-          )}
-        </div>
-      )}
+      {/* Always mounted, empty when there is nothing to say: a live region that appears together with its text is
+          unreliably announced. The Undo button carries the item name because the focus move pre-empts the region. */}
+      <div ref={toastRef} class="toast" role="status">
+        {toast === null ? null : toast.kind === 'info' ? toast.text : (
+          <>
+            Deleted {toast.entry.name}
+            <button ref={undoRef} type="button" class="link" aria-label={`Undo deleting ${toast.entry.name}`}
+              onClick={() => { undo(toast.entry) }}>Undo</button>
+            <button type="button" class="link" onClick={dropToast}>Dismiss</button>
+          </>
+        )}
+      </div>
     </div>
   )
 }

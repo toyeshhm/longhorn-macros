@@ -138,6 +138,10 @@ export function MenuScreen() {
       <input type="search" enterKeyHint="search" class="search" aria-label="Search foods"
         placeholder="Search menu, history, custom foods" value={query}
         onInput={(ev) => { setQuery(ev.currentTarget.value) }} />
+      {/* ponytail: announced on every keystroke, no debounce — a polite region only speaks once typing pauses. */}
+      <p class="visually-hidden" role="status">
+        {results === null ? '' : `${results.length === 0 ? 'No' : String(results.length)} ${results.length === 1 ? 'result' : 'results'} for ${query.trim()}`}
+      </p>
       <button type="button" class="link" onClick={() => { setSheet({ kind: 'custom' }) }}><PlusMark />Custom food</button>
 
       {stale && cachedAt !== null && (
@@ -191,7 +195,9 @@ export function MenuScreen() {
           legends={sheet.item.recipeNumber === null ? [] : legendsByRecipe.get(sheet.item.recipeNumber) ?? []}
           onClose={close} onAdded={(m) => { setSheet(null); setToast(`Added to ${m}`) }} />
       )}
-      {toast !== null && <div class="toast" role="status">{toast}</div>}
+      {/* Both regions are mounted for the screen's whole life and only their text changes: a live region that is
+          created in the same paint as its content is unreliably announced. */}
+      <div class="toast" role="status">{toast}</div>
     </div>
   )
 }

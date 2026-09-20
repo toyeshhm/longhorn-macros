@@ -21,6 +21,19 @@ export function parseServings(input: string): number | null {
   return value > 0 && value <= MAX_SERVINGS ? value : null
 }
 
+const FRACTIONS: readonly (readonly [number, string])[] = [[0.25, '1/4'], [1 / 3, '1/3'], [0.5, '1/2'], [2 / 3, '2/3'], [0.75, '3/4']]
+
+// The stored value is a double, so a typed "1 1/3" comes back as 1.3333333333333333. Print the quarters, thirds
+// and halves the parser accepts as fractions again, and round anything else to 2dp. Only the printed form changes.
+export function formatServings(value: number): string {
+  const whole = Math.floor(value)
+  const rest = value - whole
+  for (const [amount, text] of FRACTIONS) {
+    if (Math.abs(rest - amount) < 1e-6) return whole === 0 ? text : `${String(whole)} ${text}`
+  }
+  return String(Math.round(value * 100) / 100)
+}
+
 // ±0.5; an off-grid value first moves to the next 0.5 in the step direction (1.3 +1 → 1.5, 1.3 −1 → 1).
 export function stepServings(current: number, dir: 1 | -1): number {
   const halves = current * 2

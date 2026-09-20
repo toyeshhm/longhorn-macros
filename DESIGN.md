@@ -91,7 +91,8 @@ The theme is light only (`color-scheme: light`). A printed page does not invert;
 - Misregistration is the signature: orange plate offset 1.5 to 3px from the blue.
 - Hand-drawn SVG for every mark; no icon library, no stock primitives.
 - Motion is rare: the "line boil" on doodles, the sheet slide, the toast. Reduced motion stops all of them, plus the tab plate fade.
-- Every kcal and mg figure goes through `n()` in `src/ui/format.ts` (thousands separators), so a value never prints two ways.
+- Every kcal and mg figure goes through `n()` in `src/ui/format.ts` (thousands separators), and every printed servings count through `formatServings()` in `src/servings.ts` (quarters, thirds and halves print as fractions, everything else to 2dp), so a value never prints two ways and a typed "1 1/3" never comes back as 1.3333333333333333.
+- Nothing the design says is "said in words" is announced from a region that appears with its text: every live region (toast, sync banners, the Goals save line, the search count, the adaptive card's slot) is mounted empty from the first paint, and only its text changes.
 
 ## 2. Colors
 
@@ -162,6 +163,8 @@ Three hand-inked frames of the same doodle, swapped at ~8fps with `step-end` vis
 ### Hand-drawn bars (`InkBar`)
 Fixed hand-drawn outline; the fill's right edge carries a hand-picked wobble that moves with the amount; the part still left is hatched in blue. Over target: the fill runs full and dark cross-hatch overprints it, and the text says "over". `role="progressbar"` with value text.
 
+The three macro rows share one subgrid so the bars align, but the bar's track is never allowed to starve: it has a 3rem floor, and under 16em of the row's own width (a container query, because media-query `em` cannot see the page's font-size) the row reflows to two lines, name and number above, bar full width below. A bar that has printed its aria but not its ink is a bug the e2e catches at 320px with 32px root text.
+
 ### Today hero
 Label ("calories left today" / "target passed today" / "calories eaten today" with no targets), the stamped numeral (plus "over" when over), "**eaten** eaten of **target**" (no unit; the label already says calories), then the full-width calories InkBar in orange. Macro rows below share one subgrid so the three bars align.
 
@@ -169,6 +172,12 @@ Label ("calories left today" / "target passed today" / "calories eaten today" wi
 - **Shape:** hand-drawn wobble radius (`255px 12px 225px 10px / 12px 225px 10px 255px`), 1.5px ink border, 44px tall.
 - **Primary:** blue plate, paper text, orange offset plate.
 - **Secondary:** raised paper, ink text. **Danger:** over-red text and border. **Link:** ink text with a 2px orange underline. **Stamp:** Bungee in ink with an orange off-register text-shadow (the "Today" jump, hung under the next arrow so the date nav never shifts).
+
+### Sheets
+A scrolling body with the primary plate (and Delete) printed in a footer below it, outside the scrollport, over a hand-drawn rule. Never sticky inside the scroller: with the on-screen keyboard up a sticky plate sits on top of the Meal select and, on a small phone, the whole servings stepper. Long dining-hall names in caps Bungee clamp to three lines so the controls stay above the fold; the full name is still the dialog's accessible name.
+
+### Toast
+One slip of blue stock, gutter to gutter and then shrunk to its text (never pinned to half the viewport). It is always in the DOM and prints only when it has something to say. A plain confirmation fades after 3s; a delete does not, because its Undo is the only way back and a clock on the sole path to a function is a WCAG failure. It stays until Undo, Dismiss, or the next toast, and the Undo button names what it would restore.
 
 ### Chips (hall / day / meal / range / sex / goal)
 Printed radio stamps: wobble border, bold Courier; selected is the blue plate with a 2px orange offset. Scroll horizontally, full-bleed.
@@ -187,6 +196,8 @@ Blue weigh-in dots drawn as lumpy ink blobs (four quadratic curves, turned per i
 - **Do** keep numbers the hero: one stamped numeral per screen at most.
 - **Do** say state in words: "over", "Couldn't reach UT dining", "changes waiting to sync".
 - **Do** check every new text color against paper at 4.5:1 with grain in mind.
+- **Do** let a mark grow with the user's text: reserve room with `min-height`, not `height`, and reflow a row before a track can collapse.
+- **Don't** put a clock on the only way to undo something, or `aria-label` on a paragraph (the role does not take a name; use a section).
 - **Don't** add dark mode or auto-invert.
 - **Don't** use orange for text below 18px bold.
 - **Don't** use teal or mustard for anything but their macro, fill anything but protein with solid blue in a data mark, or show a macro ink without its name.

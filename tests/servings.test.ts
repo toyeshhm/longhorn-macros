@@ -1,5 +1,20 @@
 import { expect, test } from 'vitest'
-import { defaultMealFor, parseServings, stepServings } from '../src/servings'
+import { defaultMealFor, formatServings, parseServings, stepServings } from '../src/servings'
+
+test('formatServings prints fractions back as fractions and everything else to 2dp', () => {
+  expect(formatServings(1)).toBe('1')
+  expect(formatServings(2)).toBe('2')
+  expect(formatServings(1.5)).toBe('1 1/2')
+  expect(formatServings(0.5)).toBe('1/2')
+  expect(formatServings(parseServings('1/3') ?? 0)).toBe('1/3')
+  expect(formatServings(parseServings('1 1/3') ?? 0)).toBe('1 1/3')
+  expect(formatServings(parseServings('2/3') ?? 0)).toBe('2/3')
+  expect(formatServings(0.25)).toBe('1/4')
+  expect(formatServings(3.75)).toBe('3 3/4')
+  expect(formatServings(1.2)).toBe('1.2')
+  expect(formatServings(0.125)).toBe('0.13')
+  expect(formatServings(1.234)).toBe('1.23')
+})
 
 test('parseServings accepts integers, decimals, fractions and mixed numbers', () => {
   expect(parseServings('1')).toBe(1)

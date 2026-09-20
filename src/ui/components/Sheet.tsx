@@ -3,7 +3,9 @@ import { useEffect, useId, useRef } from 'preact/hooks'
 import { CloseMark } from '../icons/Marks'
 
 // Native modal <dialog>: showModal() makes the page inert (focus trap) and Esc fires `close`.
-export function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: ComponentChildren }) {
+// `footer` is printed outside the scrollport, so the Add/Save plate can never sit on top of a field when the
+// on-screen keyboard shrinks the sheet (a sticky button inside the scroller covered the Meal select and the stepper).
+export function Sheet({ title, onClose, footer, children }: { title: string; onClose: () => void; footer?: ComponentChildren; children: ComponentChildren }) {
   const ref = useRef<HTMLDialogElement>(null)
   const titleId = useId()
   useEffect(() => {
@@ -34,6 +36,7 @@ export function Sheet({ title, onClose, children }: { title: string; onClose: ()
         </header>
         {children}
       </div>
+      {footer !== undefined && <footer class="sheet-foot">{footer}</footer>}
     </dialog>
   )
 }

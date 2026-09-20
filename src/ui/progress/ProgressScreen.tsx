@@ -81,6 +81,9 @@ export function ProgressScreen() {
 
   return (
     <div class="progress">
+      {/* Headings for every block, so VO-Cmd-H skims this screen like the others. Hidden: the zine layout leads
+          with the form itself, and the masthead already names the page. */}
+      <h2 class="visually-hidden">Log a weigh-in</h2>
       <form class="weight-form" noValidate onSubmit={(ev) => { ev.preventDefault(); void save() }}>
         <label class="field">
           Weight (lb)
@@ -98,9 +101,11 @@ export function ProgressScreen() {
         <button type="submit" class="primary" disabled={busy}>Save weight</button>
       </form>
 
+      <h2 class="visually-hidden">Weight trend</h2>
       <Chips legend="Chart range" name="range" options={RANGES} value={range} onSelect={setRange} />
       {weights && <WeightChart raw={raw} trend={trend} />}
 
+      <h2 class="visually-hidden">Last 7 days</h2>
       <section class="stats" aria-label="Last 7 days">
         <div class="stat"><span class="stat-label">Avg calories</span><span class="stat-value">{stats.avgCalories === null ? '—' : <>{n(stats.avgCalories)}<small> kcal</small></>}</span></div>
         <div class="stat"><span class="stat-label"><Swatch ink="protein" />Avg protein</span><span class="stat-value">{stats.avgProtein === null ? '—' : <>{Math.round(stats.avgProtein)}<small> g</small></>}</span></div>

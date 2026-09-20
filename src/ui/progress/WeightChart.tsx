@@ -50,7 +50,7 @@ export function WeightChart({ raw, trend }: { raw: readonly WeightPoint[]; trend
     <figure class="weight-chart">
       <svg viewBox={`0 0 ${String(W)} ${String(H)}`} role="img" aria-labelledby="weight-chart-title">
         <title id="weight-chart-title">
-          {`Weight chart: ${String(raw.length)} weigh-ins${latest ? `, trend ${String(round1(latest.weightLb))} lb` : ''}`}
+          {`Weight chart: ${String(raw.length)} ${raw.length === 1 ? 'weigh-in' : 'weigh-ins'}${latest ? `, trend ${String(round1(latest.weightLb))} lb` : ''}`}
         </title>
         {geo.yTicks.map((t) => (
           <g key={t.label} class="tick">

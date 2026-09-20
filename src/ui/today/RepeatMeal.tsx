@@ -3,7 +3,7 @@ import { addDays } from '../../dates'
 import { copyMeal } from '../../daySummary'
 import { MEALS, type Meal } from '../../db/types'
 import { log } from '../../log'
-import { defaultMealFor } from '../../servings'
+import { defaultMealFor, formatServings } from '../../servings'
 import { Sheet } from '../components/Sheet'
 import { useApp } from '../context'
 import { useLive } from '../hooks'
@@ -37,7 +37,11 @@ export function RepeatMeal({ onClose, onAdded }: { onClose: () => void; onAdded:
   }
 
   return (
-    <Sheet title="Repeat a past meal" onClose={onClose}>
+    <Sheet title="Repeat a past meal" onClose={onClose} footer={
+      <button type="button" class="primary" disabled={items.length === 0 || busy} onClick={() => { void add() }}>
+        Add {items.length} {items.length === 1 ? 'item' : 'items'}
+      </button>
+    }>
       <label class="field">
         From date
         <input type="date" value={date} onInput={(ev) => { setDate(ev.currentTarget.value) }} />
@@ -50,13 +54,10 @@ export function RepeatMeal({ onClose, onAdded }: { onClose: () => void; onAdded:
       </label>
       {items.length === 0 ? <p class="muted">Nothing logged for that meal.</p> : (
         <ul aria-label="Items to copy">
-          {items.map((e) => <li key={e.id}>{e.name} · {e.servings} × {e.portion}</li>)}
+          {items.map((e) => <li key={e.id}>{e.name} · {formatServings(e.servings)} × {e.portion}</li>)}
         </ul>
       )}
       {error !== null && <p role="alert" class="error">{error}</p>}
-      <button type="button" class="primary" disabled={items.length === 0 || busy} onClick={() => { void add() }}>
-        Add {items.length} {items.length === 1 ? 'item' : 'items'}
-      </button>
     </Sheet>
   )
 }
