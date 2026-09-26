@@ -20,6 +20,7 @@ import { EntrySheet } from './EntrySheet'
 // is WCAG 2.2.1 (and 10s is nowhere near enough to hear it, decide and act). It stays until Undo, Dismiss, or the
 // next toast. Plain confirmations do time out; nothing is lost when they go.
 const TOAST_MS = 3000
+const DATE_KEY = /^\d{4}-\d{2}-\d{2}$/
 
 function dateLabel(key: string, today: string, t: T): string {
   const offset = daysBetween(today, key)
@@ -84,6 +85,8 @@ export function TodayScreen({ onGo }: { onGo: (tab: Tab) => void }) {
         {/* Both arrows replace the whole screen while focus stays on the button: the heading is always mounted,
             so announcing the new day from it is reliable (a region created with its text is not). */}
         <h2 aria-live="polite">{dateLabel(viewDate, today, t)}</h2>
+        <input type="date" class="date-pick" aria-label={t.t('today.pickDay')} max={today} value={viewDate}
+          onChange={(ev) => { const v = ev.currentTarget.value; if (DATE_KEY.test(v) && v <= today) setViewDate(v) }} />
         <button type="button" class="icon-btn" aria-label={t.t('today.nextDay')} onClick={() => { setViewDate(addDays(viewDate, 1)) }}><ArrowMark dir="next" /></button>
         {viewDate !== today && <button type="button" class="stamp" onClick={() => { setViewDate(today) }}>{t.t('today.today')}</button>}
       </header>

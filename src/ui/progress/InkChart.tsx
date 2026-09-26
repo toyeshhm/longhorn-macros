@@ -40,7 +40,7 @@ function chartFont(): number {
 }
 
 function KeyMark({ mark }: { mark: Mark }) {
-  if (mark === 'dots') return <svg viewBox="0 0 14 14" aria-hidden="true"><path class="dots" d={blob(7, 7, 2)} /></svg>
+  if (mark === 'dots' || mark === 'assumed') return <svg viewBox="0 0 14 14" aria-hidden="true"><path class={mark} d={blob(7, 7, 2)} /></svg>
   return <svg class="key-line" viewBox="0 0 26 14" aria-hidden="true"><path class={mark} d="M2.4 8.6C8 6.4 15 8.8 23.6 5.8" /></svg>
 }
 
@@ -75,8 +75,8 @@ export function InkChart({ title, series, yPad, format }: {
         ))}
         <path class="axis" d={`M${f(x0 - 3)} ${f(y0)}C${f(x0 - 1)} ${f(y0 + (y1 - y0) * 0.35)} ${f(x0 - 4)} ${f(y0 + (y1 - y0) * 0.72)} ${f(x0 - 2)} ${f(y1 + 3)}C${f(x0 + (x1 - x0) * 0.3)} ${f(y1 + 1)} ${f(x0 + (x1 - x0) * 0.7)} ${f(y1 + 4)} ${f(x1 + 4)} ${f(y1 + 2)}`} />
         {geo.xLabels.map((l) => <text key={l.label} class="x-label" x={l.x} y={l.y} text-anchor={l.anchor}>{l.label}</text>)}
-        {geo.plots.map((p) => (p.mark === 'dots'
-          ? <g key={p.id}>{p.xy.map(([cx, cy], i) => <path key={`${f(cx)},${f(cy)}`} class="dots" d={blob(cx, cy, i)} />)}</g>
+        {geo.plots.map((p) => (p.mark === 'dots' || p.mark === 'assumed'
+          ? <g key={p.id}>{p.xy.map(([cx, cy], i) => <path key={`${f(cx)},${f(cy)}`} class={p.mark} d={blob(cx, cy, i)} />)}</g>
           : <path key={p.id} class={p.mark} transform={p.mark === 'trend' ? 'translate(1.5 -1)' : undefined} d={wobblyLine(p.xy)} />))}
       </svg>
       <p class="chart-key" aria-hidden="true">

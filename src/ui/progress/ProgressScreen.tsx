@@ -4,7 +4,7 @@ import { maintenance } from '../../goals'
 import type { Key } from '../../i18n'
 import { log } from '../../log'
 import {
-  adaptiveStatus, calorieSeries, movingMean, MEAN_DAYS, predictedSeries, predictionNote, RANGES,
+  adaptiveStatus, ASSUMED_KCAL, assumedCalories, calorieSeries, movingMean, MEAN_DAYS, predictedSeries, predictionNote, RANGES,
   signed, summarize, weightSeries, type ChartSeries, type Range,
 } from '../../progress'
 import { useApp } from '../context'
@@ -81,7 +81,8 @@ export function ProgressScreen() {
 
   const { weighIns, trend } = weightSeries(weights ?? [], today, range)
   const calories = calorieSeries(allLog ?? [], today, range)
-  const summary = summarize({ trend, calories, range, t })
+  const assumed = assumedCalories(allLog ?? [], today, range)
+  const summary = summarize({ trend, calories, assumed, range, t })
   // The prediction runs on the same maintenance the targets do, which is the adaptive estimate once there is one.
   const maint = profile && latest ? Math.round(maintenance(profile, latest.weightLb, new Date().getFullYear())) : null
 
@@ -94,7 +95,11 @@ export function ProgressScreen() {
     calories: {
       series: [
         { id: 'day', label: t.t('progress.series.day'), mark: 'dots', points: calories },
-        { id: 'mean', label: t.t('progress.series.mean', { days: MEAN_DAYS }), mark: 'trend', points: movingMean(calories, MEAN_DAYS) },
+        { id: 'assumed', label: t.t('progress.series.assumed', { kcal: t.n(ASSUMED_KCAL) }), mark: 'assumed', points: assumed },
+        {
+          id: 'mean', label: t.t('progress.series.mean', { days: MEAN_DAYS }), mark: 'trend',
+          points: movingMean([...calories, ...assumed].sort((a, b) => a.date.localeCompare(b.date)), MEAN_DAYS),
+        },
       ] satisfies ChartSeries[],
       yPad: 100, format: t.n,
     },
@@ -107,19 +112,19 @@ export function ProgressScreen() {
     },
   }[view]
   const title = t.t('progress.chartTitle', { title: t.t(VIEW_TITLE[view]), range: t.t(RANGE_WORDS[range]) })
-  // The first series is what the view is of: with nothing in it there is no chart to draw, only a line saying so.
-  const drawable = (chart.series[0]?.points.length ?? 0) > 0
+  // The first series is what the view is of (for calories, assumed days count): with nothing in it there is no
+  // chart to draw, only a line saying so.
+  const drawable = (chart.series[0]?.points.length ?? 0) > 0 || (view === 'calories' && assumed.length > 0)
 
   return (
     <div class="progress">
       <section aria-label={t.t('progress.chart')}>
         {/* The masthead already names the page; this heading is here so VO-Cmd-H skims the screen like the others. */}
         <h2 class="visually-hidden">{t.t('progress.chart')}</h2>
-        {/* Both one-of-three picks are printed stamps. A native select for the view above chip stamps for the range
-            put two idioms for the same job one on top of the other; the section speaks one now. */}
-        <Chips wrap legend={t.t('progress.view')} name="view"
+        {/* Both one-of-three picks are one-row segmented bars: wrapping chip stamps stacked three rows deep on a phone. */}
+        <Chips segmented legend={t.t('progress.view')} name="view"
           options={VIEWS.map((v) => ({ value: v, label: t.t(VIEW_LABEL[v]) }))} value={view} onSelect={setView} />
-        <Chips wrap legend={t.t('progress.range')} name="range"
+        <Chips segmented legend={t.t('progress.range')} name="range"
           options={RANGES.map((r) => ({ value: r, label: t.t(RANGE_LABEL[r]) }))} value={range} onSelect={setRange} />
         {view === 'predicted' && <p class="chart-note">{predictionNote(maint, profile?.tdeeEstimate != null, t)}</p>}
         {weights && allLog && (drawable

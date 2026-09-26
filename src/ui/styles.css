@@ -390,10 +390,16 @@ button.icon-btn { display: inline-grid; place-items: center; padding: 0; border:
 .toast button.link { flex: none; color: var(--paper); text-decoration-color: var(--paper); }
 
 /* Today */
-.date-nav { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 4px; margin: 4px 0 6px; }
+.date-nav { display: grid; grid-template-columns: 44px minmax(0, 1fr) 44px; align-items: center; gap: 4px; margin: 4px 0 6px; }
 /* The jump-back stamp gets its own row under the arrows: they still never move when it appears, and unlike the
    old absolute hang, the row it prints in is reserved, so at raised text sizes it cannot land on the hero label. */
 .date-nav .stamp { grid-row: 2; grid-column: 1 / -1; justify-self: end; }
+/* The day heading is also a native date picker: a transparent date input laid over the same cell, so a tap on the
+   date opens the phone's own picker for jumping back to a day that was never logged. */
+.date-nav h2, .date-nav .date-pick { grid-row: 1; grid-column: 2; }
+.date-nav .date-pick { position: relative; z-index: 1; width: 100%; min-inline-size: 0; font-size: 1rem; height: 44px; margin: 0; padding: 0; border: 0; opacity: 0; cursor: pointer; }
+.date-nav h2 { text-decoration: underline dotted var(--ink-soft); text-underline-offset: 5px; text-decoration-thickness: 1.5px; }
+.date-nav:has(.date-pick:focus-visible) h2 { outline: 2.5px solid var(--orange); outline-offset: 2px; }
 .date-nav h2 { margin: 0; font-family: var(--display); font-weight: 400; font-size: min(1.3rem, 7vw); text-align: center; color: var(--ink); }
 .calories { margin: 0 0 8px; }
 .hero-label { margin: 6px 0 0; font-size: 0.9rem; font-weight: 700; letter-spacing: 0.04em; color: var(--ink); }

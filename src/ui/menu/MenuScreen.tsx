@@ -36,10 +36,12 @@ function savedAgo(cachedAt: string, now: Date, t: T): string {
 // before the label (the press stamps' riso swatch and their tick). Pass `false` for no mark, never `undefined`.
 export interface ChipOption<T extends string> { value: T; label: string; sub?: string; spoken?: string; mark?: ComponentChildren }
 
-export function Chips<T extends string>({ legend, legendId, name, options, value, onSelect, wrap }: {
+export function Chips<T extends string>({ legend, legendId, name, options, value, onSelect, wrap, segmented }: {
   legend: string; name: string; options: readonly ChipOption<T>[]; value: T | null; onSelect: (v: T) => void
   /** A closed set of settings rather than a browsing strip: wraps to a second row instead of scrolling one off. */
   wrap?: boolean
+  /** A short closed set shown as one equal-width bar that never wraps (the Progress chart's view and range). */
+  segmented?: boolean
   /** The id of a heading already printing `legend` on screen. The group points at it instead of repeating it. */
   legendId?: string
 }) {
@@ -47,7 +49,7 @@ export function Chips<T extends string>({ legend, legendId, name, options, value
   // text node inside it, so browse mode read every group's name out twice. Where the words are already on screen
   // as a heading the group points at that heading, for the same reason.
   return (
-    <fieldset class={wrap === true ? 'chips chips-wrap' : 'chips'} role="radiogroup"
+    <fieldset class={segmented === true ? 'chips chips-wrap chips-seg' : wrap === true ? 'chips chips-wrap' : 'chips'} role="radiogroup"
       aria-label={legendId === undefined ? legend : undefined} aria-labelledby={legendId}>
       {options.map((o) => (
         <label key={o.value} class={o.sub === undefined ? 'chip' : 'chip chip-stack'}>
@@ -94,7 +96,7 @@ function sourceBadge(item: SearchItem, t: T): string {
 
 export function MenuScreen() {
   const t = useT()
-  const { store } = useApp()
+  const { store, viewDate, setViewDate } = useApp()
   const { menu, stale, error, cachedAt, retry } = useMenu()
   const { hours, error: hoursError } = useHours()
   const history = useLive(() => store.all('food_log'), [])
@@ -144,6 +146,7 @@ export function MenuScreen() {
   // table on Profile prints "Loading hours…" rather than "Hours unavailable".
   const week = hours === null && hoursError === null ? null : hours?.[hall] ?? UNKNOWN_HOURS[hall]
   const hoursText = week === null || activeDay === null ? null : hoursLine(week, now, daysBetween(today, activeDay), t)
+  const loggingDay = ((d) => `${d.weekday} ${d.date}`)(dateLabel(viewDate, t))
   const open = (item: SearchItem): void => { setSheet({ kind: 'food', item }) }
   const close = (): void => { setSheet(null) }
 
@@ -174,6 +177,12 @@ export function MenuScreen() {
         {hoursText === null ? '' : `${hall} ${hoursText.head}${hoursText.detail === null ? '' : `, ${hoursText.detail}`}`}
       </p>
 
+      {/* Logging goes to the day open on the Tracker; say so whenever that is not today, or a back-fill is invisible. */}
+      {viewDate !== today && (
+        <Banner tone="info">
+          {t.t('menu.loggingTo', { day: loggingDay })} <button type="button" onClick={() => { setViewDate(today) }}>{t.t('menu.logToday')}</button>
+        </Banner>
+      )}
       {stale && cachedAt !== null && (
         <Banner tone="info">{t.t('menu.stale', { ago: savedAgo(cachedAt, now, t) })}</Banner>
       )}
@@ -235,7 +244,12 @@ export function MenuScreen() {
       {sheet?.kind === 'food' && (
         <FoodSheet key={sheet.item.key} item={sheet.item} menuMeal={activeMeal}
           legends={sheet.item.recipeNumber === null ? [] : legends.get(sheet.item.recipeNumber) ?? []}
-          onClose={close} onAdded={(m) => { setSheet(null); setToast(t.t('food.addedTo', { meal: t.t(`meal.${m}`) })) }} />
+          onClose={close} onAdded={(m) => {
+            setSheet(null)
+            setToast(viewDate === today
+              ? t.t('food.addedTo', { meal: t.t(`meal.${m}`) })
+              : t.t('food.addedToDay', { meal: t.t(`meal.${m}`), day: loggingDay }))
+          }} />
       )}
       {/* Both regions are mounted for the screen's whole life and only their text changes: a live region that is
           created in the same paint as its content is unreliably announced. */}

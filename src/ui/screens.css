@@ -24,6 +24,20 @@
 /* Progress: change over time, so the chart is the page. The weigh-in form keeps its place at the foot, where it
    cannot crowd the thing the screen is for. */
 .progress .chips { margin-top: 10px; }
+/* The chart's view and range: one equal-width bar each, ruled between segments, so neither wraps on a phone. The
+   bar clips its segments to its own wobble, so focus draws inside the segment rather than being clipped off. */
+.chips-seg {
+  display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 0; padding: 0; overflow: hidden;
+  border: 1.5px solid var(--ink); border-radius: var(--wobble); background: var(--paper-raised);
+}
+.chips-seg .chip {
+  justify-content: center; min-height: 40px; padding: 0 6px; border: 0; border-radius: 0;
+  font-size: 0.85rem; text-align: center; line-height: 1.15;
+}
+.chips-seg .chip + .chip { border-inline-start: 1.5px solid var(--ink); }
+.chips-seg .chip:has(input:checked) { box-shadow: none; }
+.chips-seg .chip:has(input:focus-visible) { outline-offset: -4px; outline-color: var(--paper); }
+.progress .chips-seg + .chips-seg { margin-top: 8px; }
 .chart-note { margin: 10px 0 0; font-size: 0.85rem; color: var(--ink-soft); }
 .ink-chart { margin: 12px 0 0; }
 /* Capped, not full-bleed: the type inside is in user units, so a chart stretched across a laptop prints its own
@@ -33,6 +47,8 @@
 .ink-chart .axis { fill: none; stroke: var(--ink); stroke-width: calc(1.6px * var(--rule-weight)); stroke-linecap: round; }
 .ink-chart text { fill: var(--ink-soft); }
 .ink-chart .dots { fill: var(--blue); }
+/* An assumed day is the same blob, hollow: there, but not something that was logged. */
+.ink-chart .assumed { fill: none; stroke: var(--blue); stroke-opacity: 0.6; stroke-width: calc(1.2px * var(--rule-weight)); }
 .ink-chart .trend { fill: none; stroke: var(--orange); stroke-width: calc(3px * var(--rule-weight)); stroke-linejoin: round; stroke-linecap: round; mix-blend-mode: var(--blend); }
 /* Predicted is a dashed blue *line*: blue as decoration is linework, and the dash is what tells it from the
    solid orange trend for a reader who cannot separate the two inks. The key names both in words regardless. */

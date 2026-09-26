@@ -252,3 +252,40 @@ test('entry sheet: calories and all three macros open above the fold', async ({ 
     }
   }
 })
+
+test('a forgotten day is back-filled from the day picker, and Menu says which day it is adding to', async ({ page }) => {
+  await page.goto('/')
+  await page.getByLabel('Email').fill(`e2e-${crypto.randomUUID()}@example.test`)
+  await page.getByLabel('Password').fill(crypto.randomUUID())
+  await page.getByRole('button', { name: 'Create account' }).click()
+  const tabs = page.getByRole('navigation', { name: 'Main' })
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
+
+  const day = new Date()
+  day.setDate(day.getDate() - 3)
+  const key = `${String(day.getFullYear())}-${String(day.getMonth() + 1).padStart(2, '0')}-${String(day.getDate()).padStart(2, '0')}`
+  await page.getByLabel('Pick a day').fill(key)
+  await expect(page.locator('.date-nav h2')).not.toHaveText('Today')
+
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  const banner = page.getByText(/^Adding to /)
+  await expect(banner).toBeVisible()
+  await page.getByRole('button', { name: 'Custom food', exact: true }).click()
+  const form = page.getByRole('dialog', { name: 'Custom food' })
+  await form.getByLabel('Name').fill('Late Burrito')
+  for (const [label, v] of Object.entries({ 'Calories (kcal)': '700', 'Protein (g)': '30', 'Carbs (g)': '80', 'Fat (g)': '25' })) await form.getByLabel(label).fill(v)
+  await form.getByRole('button', { name: 'Save food' }).click()
+  await page.getByRole('dialog', { name: 'Late Burrito' }).getByRole('button', { name: 'Add' }).click()
+  await expect(page.locator('.toast')).toContainText(/Added to \w+, /)
+
+  await tabs.getByRole('button', { name: 'Tracker' }).click()
+  await expect(page.getByText('Late Burrito')).toBeVisible()
+  await page.getByRole('button', { name: 'Today' }).click()
+  await expect(page.getByText('Late Burrito')).toBeHidden()
+
+  // Switching back from Menu clears the banner.
+  await page.getByLabel('Pick a day').fill(key)
+  await tabs.getByRole('button', { name: 'Menu' }).click()
+  await page.getByRole('button', { name: 'Switch to today' }).click()
+  await expect(banner).toBeHidden()
+})

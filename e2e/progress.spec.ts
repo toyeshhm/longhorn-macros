@@ -79,13 +79,13 @@ test('weigh-ins, the three chart views and the range they all answer to', async 
   await expect(dots).toHaveCount(2)
   await expect(page.getByRole('img', { name: 'Weight, all time' })).toBeVisible()
 
-  await view.getByRole('radio', { name: 'Daily calories' }).click()
+  await view.getByRole('radio', { name: 'Calories' }).click()
   await expect(page.getByRole('img', { name: 'Daily calories, all time' })).toBeVisible()
   await expect(dots).toHaveCount(1) // one logged day, not one weigh-in
-  await expect(rows).toHaveText([`${today}160160`])
+  await expect(rows).toHaveText([`${today}160no reading160`])
   await expect(page.locator('.chart-key')).toContainText('7-day average')
 
-  await view.getByRole('radio', { name: 'Predicted vs actual' }).click()
+  await view.getByRole('radio', { name: 'Predicted' }).click()
   await expect(page.getByRole('img', { name: 'Predicted and actual weight, all time' })).toBeVisible()
   // Yesterday's weigh-in anchors the line; today's 160 kcal against maintenance drops it about half a pound.
   // The estimate is the Mifflin-St Jeor guess, not one learned from this account's own data, and the note says so.
@@ -127,9 +127,9 @@ test('with nothing logged at all, every view says so in words rather than drawin
 
   const view = page.getByRole('radiogroup', { name: 'View' })
   await expect(page.getByText('No weigh-ins in this range yet.')).toBeVisible()
-  await view.getByRole('radio', { name: 'Daily calories' }).click()
+  await view.getByRole('radio', { name: 'Calories' }).click()
   await expect(page.getByText('Nothing logged in this range yet.')).toBeVisible()
-  await view.getByRole('radio', { name: 'Predicted vs actual' }).click()
+  await view.getByRole('radio', { name: 'Predicted' }).click()
   await expect(page.locator('.chart-note')).toHaveText('No maintenance estimate yet, so there is nothing to predict from. Set up your goals first.')
   await expect(page.getByText('No weigh-ins in this range yet, so there is nothing to compare a prediction with.')).toBeVisible()
 

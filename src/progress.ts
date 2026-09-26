@@ -10,9 +10,9 @@ import { round1 } from './nutrition'
  * daily calories, and weight predicted from what was eaten), the numbers printed under the chart, and the
  * geometry of the hand-inked chart itself. The screen draws what these return and judges nothing.
  *
- * The same two rules Health follows hold here. A day with nothing logged is absent from every average and
- * from the prediction, never a zero. And nothing is quietly assumed: the prediction says out loud which
- * maintenance figure it ran on, because that figure is an estimate and it moves.
+ * One rule differs from Health, by the owner's choice: a finished day with nothing logged, after the first day
+ * anything was, counts as ASSUMED_KCAL (a forgotten day, not a fast). It is drawn as its own hollow mark and never
+ * counted as logged, and the prediction says out loud both that and which maintenance figure it ran on.
  */
 
 export interface Point { readonly date: string; readonly value: number }
@@ -22,6 +22,8 @@ export type Range = (typeof RANGES)[number]
 
 /** The pound of body mass the prediction converts a calorie surplus or deficit with. */
 export const KCAL_PER_LB = 3500
+/** What an unlogged day is taken to have been: the owner's usual on-goal day. */
+export const ASSUMED_KCAL = 1500
 /** Days the calories view's moving average looks back over, today included. */
 export const MEAN_DAYS = 7
 
@@ -61,6 +63,22 @@ export function calorieSeries(entries: readonly LogEntry[], today: string, range
 }
 
 /**
+ * One ASSUMED_KCAL point per unlogged day in range, strictly between the first logged day and today: before the
+ * first log the app was not in use, and today is not over.
+ * ponytail: walks every day since the first log; a few hundred at worst.
+ */
+export function assumedCalories(entries: readonly LogEntry[], today: string, range: Range): Point[] {
+  const logged = new Set(dailyIntake(entries).map((d) => d.date))
+  const first = [...logged][0]
+  if (first === undefined) return []
+  const out: Point[] = []
+  for (let d = addDays(first, 1); d < today; d = addDays(d, 1)) {
+    if (!logged.has(d) && inRange(d, today, range)) out.push({ date: d, value: ASSUMED_KCAL })
+  }
+  return out
+}
+
+/**
  * Trailing mean over the days that exist, one value per logged day. A week with three days logged averages
  * those three; it does not divide by seven and report a fast.
  * ponytail: O(n²) over at most a few hundred days, and it runs once per render. A sliding window if that changes.
@@ -75,9 +93,9 @@ export function movingMean(points: readonly Point[], days: number): Point[] {
 
 /**
  * Weight predicted from intake: start at the first weigh-in in range and add (intake − maintenance) ÷ 3,500 lb
- * for every logged day after it. Two deliberate choices, both stated on screen:
+ * for every day after it, an unlogged day counting as ASSUMED_KCAL. Two deliberate choices, both stated on screen:
  *
- * - A day with nothing logged adds nothing, and carries the previous value forward so the drawn line *holds flat*
+ * - A day with no figure at all (today unlogged, or before the first log) adds nothing, and carries the previous value forward so the drawn line *holds flat*
  *   across the gap. Emitting no point for it was the older behaviour and it drew the opposite of what it claimed:
  *   the chart joins consecutive points with one cubic, so a single logged day twenty days after the weigh-in
  *   printed as a smooth twenty-day descent, selling evidence that does not exist.
@@ -98,7 +116,8 @@ export function predictedSeries(a: {
   const out: Point[] = [anchor]
   let lb = anchor.value
   let prev = anchor.date
-  for (const day of calorieSeries(a.entries, a.today, a.range)) {
+  const days = [...calorieSeries(a.entries, a.today, a.range), ...assumedCalories(a.entries, a.today, a.range)].sort(byDate)
+  for (const day of days) {
     if (day.date <= anchor.date) continue
     for (let gap = addDays(prev, 1); gap < day.date; gap = addDays(gap, 1)) out.push({ date: gap, value: lb })
     lb += (day.value - a.maintenance) / KCAL_PER_LB
@@ -117,7 +136,7 @@ export function predictedSeries(a: {
  */
 export function predictionNote(maintenance: number | null, learned: boolean, t: T): string {
   if (maintenance === null) return t.t('progress.note.none')
-  return t.t(learned ? 'progress.note' : 'progress.note.formula', { maintenance: t.n(maintenance), perPound: t.n(KCAL_PER_LB) })
+  return t.t(learned ? 'progress.note' : 'progress.note.formula', { maintenance: t.n(maintenance), perPound: t.n(KCAL_PER_LB), assumed: t.n(ASSUMED_KCAL) })
 }
 
 export interface Summary {
@@ -128,16 +147,17 @@ export interface Summary {
   readonly spanDays: number
   /** The change's own label, because a change is meaningless without the days it happened over. */
   readonly changeLabel: string
+  /** Over logged and assumed days alike. */
   readonly avgCalories: number | null
   readonly daysLogged: number
   readonly rangeDays: number | null
 }
 
-export function summarize(a: { trend: readonly Point[]; calories: readonly Point[]; range: Range; t: T }): Summary {
+export function summarize(a: { trend: readonly Point[]; calories: readonly Point[]; assumed: readonly Point[]; range: Range; t: T }): Summary {
   const first = a.trend[0]
   const last = a.trend[a.trend.length - 1]
   const ends = first === undefined || last === undefined ? null : { first, last }
-  const days = a.calories.length
+  const all = [...a.calories, ...a.assumed]
   const spanDays = ends === null ? 0 : daysBetween(ends.first.date, ends.last.date)
   return {
     trendWeight: ends === null ? null : round1(ends.last.value),
@@ -146,8 +166,8 @@ export function summarize(a: { trend: readonly Point[]; calories: readonly Point
     changeLabel: spanDays === 0
       ? a.t.t('progress.change')
       : a.t.t(spanDays === 1 ? 'progress.changeOver.one' : 'progress.changeOver.other', { days: spanDays }),
-    avgCalories: days === 0 ? null : a.calories.reduce((sum, p) => sum + p.value, 0) / days,
-    daysLogged: days,
+    avgCalories: all.length === 0 ? null : all.reduce((sum, p) => sum + p.value, 0) / all.length,
+    daysLogged: a.calories.length,
     rangeDays: rangeDays(a.range),
   }
 }
@@ -180,7 +200,7 @@ export function adaptiveStatus(profile: ProfileRow | null | undefined, weights: 
 
 // ------------------------------------------------------------------------------------------------- chart
 
-export type Mark = 'dots' | 'trend' | 'predicted'
+export type Mark = 'dots' | 'assumed' | 'trend' | 'predicted'
 export interface ChartSeries { readonly id: string; readonly label: string; readonly mark: Mark; readonly points: readonly Point[] }
 export interface Plot { readonly id: string; readonly label: string; readonly mark: Mark; readonly xy: readonly (readonly [number, number])[] }
 export type Anchor = 'start' | 'middle' | 'end'

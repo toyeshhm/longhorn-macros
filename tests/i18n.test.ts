@@ -213,10 +213,10 @@ describe('Spanish across the app', () => {
   test('Progress prints its figures, its dates and its prompts in Spanish', () => {
     expect(signed(1.3, spanish)).toBe('+1,3')
     expect(signed(-2.4, spanish)).toBe('-2,4')
-    expect(summarize({ trend: [], calories: [], range: '30', t: spanish }).changeLabel).toBe('Cambio (suavizado)')
+    expect(summarize({ trend: [], calories: [], assumed: [], range: '30', t: spanish }).changeLabel).toBe('Cambio (suavizado)')
     expect(summarize({
       trend: [{ date: '2026-09-18', value: 170 }, { date: '2026-09-19', value: 170.5 }],
-      calories: [], range: '30', t: spanish,
+      calories: [], assumed: [], range: '30', t: spanish,
     }).changeLabel).toBe('Cambio en un día (suavizado)')
 
     expect(predictionNote(2400, true, spanish))

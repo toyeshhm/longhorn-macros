@@ -3,7 +3,7 @@ import { addDays } from '../src/dates'
 import type { LogEntry, ProfileRow, WeightEntry } from '../src/db/types'
 import { translator } from '../src/i18n'
 import {
-  adaptiveStatus as adaptiveStatusIn, calorieSeries, chartDates, chartGeometry as chartGeometryIn, inRange,
+  adaptiveStatus as adaptiveStatusIn, ASSUMED_KCAL, assumedCalories, calorieSeries, chartDates, chartGeometry as chartGeometryIn, inRange,
   movingMean, predictedSeries, predictionNote as predictionNoteIn, rangeDays, rangeStart, signed as signedIn,
   summarize as summarizeIn, weightSeries,
   type ChartGeometry, type ChartSeries, type Point, type Summary,
@@ -93,6 +93,22 @@ test('calorie series is one point per logged day in range, servings applied, gap
   expect(calorieSeries([], TODAY, '30')).toEqual([])
 })
 
+test('an unlogged finished day after the first log is assumed at 1,500; before the first log and today are not', () => {
+  const entries = [entry('2026-09-15', 2000), { ...entry('2026-09-17', 2000), deletedAt: '2026-09-18T00:00:00.000Z' }, entry('2026-09-18', 1800)]
+  // 16th and 17th (only a deleted row) are assumed; the 14th is before any log; today is not over.
+  expect(assumedCalories(entries, TODAY, '30')).toEqual([
+    { date: '2026-09-16', value: ASSUMED_KCAL }, { date: '2026-09-17', value: ASSUMED_KCAL },
+  ])
+  // A range that starts after the first log clips the fill to the range.
+  expect(assumedCalories([entry('2026-06-01', 2000), entry('2026-09-18', 2000)], TODAY, '30')[0]?.date).toBe(addDays(TODAY, -29))
+  expect(assumedCalories([], TODAY, '30')).toEqual([])
+})
+
+test('summary averages over logged and assumed days but counts only the logged ones', () => {
+  const s = summarize({ trend: [], calories: [{ date: '2026-09-17', value: 2100 }], assumed: [{ date: '2026-09-18', value: 1500 }], range: '30' })
+  expect(s).toMatchObject({ avgCalories: 1800, daysLogged: 1 })
+})
+
 test('the moving mean averages the days that exist in its window, never dividing by days that do not', () => {
   const points: Point[] = [{ date: '2026-09-13', value: 2000 }, { date: '2026-09-17', value: 3000 }, { date: TODAY, value: 1000 }]
   expect(movingMean(points, 7)).toEqual([
@@ -115,11 +131,21 @@ test('prediction starts at the first weigh-in in range and adds each later day o
   expect(predictedSeries({ weighIns, entries, maintenance: 2400, today: TODAY, range: '30' })).toEqual([
     { date: '2026-09-16', value: 170 },
     { date: '2026-09-17', value: 170 + 2850 / 3500 },
-    // Nothing logged on the 18th: it carries the day before forward, so the drawn line holds visibly flat over
-    // the gap instead of running one smooth slope from the 17th to the 19th.
-    { date: '2026-09-18', value: 170 + 2850 / 3500 },
-    { date: TODAY, value: 170 + 2850 / 3500 - 1500 / 3500 },
+    // Nothing logged on the 18th: it counts as the assumed 1,500, 900 under maintenance.
+    { date: '2026-09-18', value: 170 + 2850 / 3500 - 900 / 3500 },
+    { date: TODAY, value: 170 + 2850 / 3500 - 900 / 3500 - 1500 / 3500 },
   ])
+})
+
+test('before the first log there is nothing to assume, so the prediction holds flat until it', () => {
+  const { weighIns } = weightSeries([weigh('2026-09-15', 170)], TODAY, '30')
+  expect(predictedSeries({ weighIns, entries: [entry('2026-09-17', 2400), entry('2026-09-18', 2400)], maintenance: 2400, today: TODAY, range: '30' }))
+    .toEqual([
+      { date: '2026-09-15', value: 170 },
+      { date: '2026-09-16', value: 170 }, // no log yet: carried, not assumed
+      { date: '2026-09-17', value: 170 },
+      { date: '2026-09-18', value: 170 },
+    ])
 })
 
 test('prediction with no weigh-ins is empty, and with one weigh-in and nothing logged is just that point', () => {
@@ -131,7 +157,7 @@ test('prediction with no weigh-ins is empty, and with one weigh-in and nothing l
 test('the prediction always says what it assumed, and says so plainly when it cannot assume anything', () => {
   expect(predictionNote(2400)).toContain('2,400 kcal a day of maintenance')
   expect(predictionNote(2400)).toContain('3,500 kcal to the pound')
-  expect(predictionNote(2400)).toContain('Days you did not log add nothing')
+  expect(predictionNote(2400)).toContain('Days you did not log count as 1,500 kcal')
   // A learned estimate and a formula guess are not the same claim, and the note is the only place that says which.
   expect(predictionNote(2400, false)).toContain('at an estimated 2,400 kcal a day of maintenance')
   expect(predictionNote(2400, false)).toContain('rather than learned from your own data')
@@ -144,22 +170,22 @@ test('the prediction always says what it assumed, and says so plainly when it ca
 test('summary reads the trend, its change over the days it actually spans, and the logged-day average', () => {
   const trend: Point[] = [{ date: '2026-09-01', value: 172.44 }, { date: TODAY, value: 170.02 }]
   const calories: Point[] = [{ date: '2026-09-01', value: 2000 }, { date: TODAY, value: 2500 }]
-  expect(summarize({ trend, calories, range: '30' })).toEqual({
+  expect(summarize({ trend, calories, assumed: [], range: '30' })).toEqual({
     trendWeight: 170, changeLb: -2.4, spanDays: 18, changeLabel: 'Change over 18 days (smoothed)',
     avgCalories: 2250, daysLogged: 2, rangeDays: 30,
   })
 })
 
 test('summary with nothing at all reports nulls, not zeros', () => {
-  expect(summarize({ trend: [], calories: [], range: 'all' })).toEqual({
+  expect(summarize({ trend: [], calories: [], assumed: [], range: 'all' })).toEqual({
     trendWeight: null, changeLb: null, spanDays: 0, changeLabel: 'Change (smoothed)', avgCalories: null, daysLogged: 0, rangeDays: null,
   })
 })
 
 test('summary with a single weigh-in has a weight but no change to speak of', () => {
-  const one = summarize({ trend: [{ date: TODAY, value: 170 }], calories: [], range: '30' })
+  const one = summarize({ trend: [{ date: TODAY, value: 170 }], calories: [], assumed: [], range: '30' })
   expect(one).toMatchObject({ trendWeight: 170, changeLb: 0, spanDays: 0, changeLabel: 'Change (smoothed)' })
-  const twoDays = summarize({ trend: [{ date: '2026-09-18', value: 170 }, { date: TODAY, value: 170.5 }], calories: [], range: '30' })
+  const twoDays = summarize({ trend: [{ date: '2026-09-18', value: 170 }, { date: TODAY, value: 170.5 }], calories: [], assumed: [], range: '30' })
   expect(twoDays.changeLabel).toBe('Change over a day (smoothed)')
 })
 
